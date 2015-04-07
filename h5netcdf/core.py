@@ -4,11 +4,10 @@
 #
 # For details on how netCDF4 builds on HDF5:
 # https://www.unidata.ucar.edu/software/netcdf/docs/netcdf/NetCDF_002d4-Format.html
-from collections import OrderedDict
-
 import h5py
 import numpy as np
 
+from .compat import OrderedDict
 from .attrs import HasAttributesMixin, Attributes
 from .utils import Frozen
 

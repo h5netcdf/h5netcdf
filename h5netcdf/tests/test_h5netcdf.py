@@ -47,7 +47,8 @@ def roundtrip_netcdf(tmp_netcdf, read_module, write_module):
     v[...] = np.arange(5)
 
     v = ds.createVariable('z', 'S1', ('z', 'string3'))
-    char_array = string_to_char(['a', 'b', 'c', 'foo', 'bar', 'baz'])
+    char_array = string_to_char(np.array(['a', 'b', 'c', 'foo', 'bar', 'baz'],
+                                         dtype='S'))
     v[...] = char_array
 
     v = ds.createVariable('scalar', np.float32, ())
