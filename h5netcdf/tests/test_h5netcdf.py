@@ -69,10 +69,12 @@ def roundtrip_netcdf(tmp_netcdf, read_module, write_module):
     assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
     assert set(ds.variables) == set(['foo', 'y', 'z', 'scalar', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
+    assert ds.parent is None
 
     assert array_equal(ds.variables['foo'], np.ones((4, 5)))
     assert ds.variables['foo'].dtype == float
     assert ds.variables['foo'].dimensions == ('x', 'y')
+    assert ds.variables['foo'].ndim == 2
     assert ds.variables['foo'].ncattrs() == ['units']
     if write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
@@ -81,21 +83,26 @@ def roundtrip_netcdf(tmp_netcdf, read_module, write_module):
     assert array_equal(ds.variables['y'], np.arange(5))
     assert ds.variables['y'].dtype == int
     assert ds.variables['y'].dimensions == ('y',)
+    assert ds.variables['y'].ndim == 1
     assert ds.variables['y'].ncattrs() == []
 
     assert array_equal(ds.variables['z'], char_array)
     assert ds.variables['z'].dtype == 'S1'
+    assert ds.variables['z'].ndim == 2
     assert ds.variables['z'].dimensions == ('z', 'string3')
     assert ds.variables['z'].ncattrs() == []
 
     assert array_equal(ds.variables['scalar'], np.array(2.0))
     assert ds.variables['scalar'].dtype == 'float32'
+    assert ds.variables['scalar'].ndim == 0
     assert ds.variables['scalar'].dimensions == ()
     assert ds.variables['scalar'].ncattrs() == []
 
     v = ds.groups['subgroup'].variables['subvar']
+    assert ds.groups['subgroup'].parent is ds
     assert array_equal(v, np.arange(4.0))
     assert v.dtype == 'int32'
+    assert v.ndim == 1
     assert v.dimensions == ('x',)
     assert v.ncattrs() == []
 

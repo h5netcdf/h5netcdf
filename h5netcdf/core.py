@@ -16,15 +16,16 @@ NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
 
 class Group(HasAttributesMixin):
-    def __init__(self, root, h5group):
-        self._root = root
+    def __init__(self, parent, h5group):
+        self._parent = parent
+        self._root = parent._root
         self._h5group = h5group
 
         self._variables = OrderedDict()
         self._groups = OrderedDict()
         for k, v in h5group.items():
             if isinstance(v, h5py.Group):
-                self._groups[k] = Group(root, v)
+                self._groups[k] = Group(self, v)
             else:
                 if v.attrs.get('CLASS') == b'DIMENSION_SCALE':
                     dim_id = v.attrs['_Netcdf4Dimid']
@@ -45,7 +46,7 @@ class Group(HasAttributesMixin):
         if name in self._groups:
             raise IOError('group %r already exists' % name)
         h5group = self._h5group.create_group(name)
-        group = Group(self._root, h5group)
+        group = Group(self, h5group)
         self._groups[name] = group
         return group
 
@@ -74,6 +75,10 @@ class Group(HasAttributesMixin):
             subgroup._attach_dim_scales()
 
     @property
+    def parent(self):
+        return self._parent
+
+    @property
     def groups(self):
         return Frozen(self._groups)
 
@@ -92,8 +97,13 @@ class Dataset(Group):
         self._dim_sizes = {}
         self._dim_order = {}
         self._mode = mode
+        self._root = self
         self._closed = False
         super(Dataset, self).__init__(self, self._file)
+
+    @property
+    def parent(self):
+        return None
 
     def createDimension(self, name, size=None):
         if name in self._dim_sizes:
@@ -183,6 +193,10 @@ class Variable(HasAttributesMixin):
     @property
     def shape(self):
         return self._h5ds.shape
+
+    @property
+    def ndim(self):
+        return len(self.shape)
 
     def __len__(self):
         return self.shape[0]
