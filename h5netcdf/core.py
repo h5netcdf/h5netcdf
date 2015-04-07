@@ -12,7 +12,7 @@ from .attrs import HasAttributesMixin, Attributes
 from .utils import Frozen
 
 
-NOT_A_VARIABLE = 'This is a netCDF dimension but not a netCDF variable.'
+NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
 
 class Group(HasAttributesMixin):
@@ -26,7 +26,7 @@ class Group(HasAttributesMixin):
             if isinstance(v, h5py.Group):
                 self._groups[k] = Group(root, v)
             else:
-                if v.attrs.get('CLASS') == 'DIMENSION_SCALE':
+                if v.attrs.get('CLASS') == b'DIMENSION_SCALE':
                     dim_id = v.attrs['_Netcdf4Dimid']
                     if '_Netcdf4Coordinates' in v.attrs:
                         coord_ids = v.attrs['_Netcdf4Coordinates']
@@ -35,7 +35,7 @@ class Group(HasAttributesMixin):
                         size = v.size
                     self._root._dim_sizes[k] = size
                     self._root._dim_order[k] = dim_id
-                if NOT_A_VARIABLE not in v.attrs.get('NAME', ''):
+                if NOT_A_VARIABLE not in v.attrs.get('NAME', b''):
                     name = k
                     if k.startswith('_nc4_non_coord_'):
                         name = k[len('_nc4_non_coord_'):]
