@@ -2,7 +2,10 @@ import netCDF4
 import numpy as np
 
 import h5netcdf
+import h5py
 import pytest
+
+from pytest import fixture, raises
 
 
 @pytest.fixture
@@ -135,3 +138,29 @@ def test_attrs_api(tmp_netcdf):
         assert dict(ds.variables['x'].attrs) == {'units': 'meters', 'foo': 'bar'}
         assert len(ds.variables['x'].attrs) == 2
         assert sorted(ds.variables['x'].attrs) == ['foo', 'units']
+
+
+def test_optional_netcdf4_attrs(tmp_netcdf):
+    with h5py.File(tmp_netcdf) as f:
+        foo_data = np.arange(50).reshape(5, 10)
+        f.create_dataset('foo', data=foo_data)
+        f.create_dataset('x', data=np.arange(5))
+        f.create_dataset('y', data=np.arange(10))
+        f['foo'].dims.create_scale(f['x'])
+        f['foo'].dims.create_scale(f['y'])
+        f['foo'].dims[0].attach_scale(f['x'])
+        f['foo'].dims[1].attach_scale(f['y'])
+    with h5netcdf.Dataset(tmp_netcdf, 'r') as ds:
+        assert ds.variables['foo'].dimensions == ('x', 'y')
+        assert ds.dimensions == {'x': 5, 'y': 10}
+        assert array_equal(ds.variables['foo'], foo_data)
+
+
+def test_invalid_netcdf4(tmp_netcdf):
+    with h5py.File(tmp_netcdf) as f:
+        f.create_dataset('foo', data=np.arange(5))
+        # labeled dimensions but no dimension scales
+        f['foo'].dims[0].label = 'x'
+    with h5netcdf.Dataset(tmp_netcdf, 'r') as ds:
+        with raises(ValueError):
+            ds.variables['foo'].dimensions

@@ -28,13 +28,17 @@ class Group(HasAttributesMixin):
                 self._groups[k] = Group(self, v)
             else:
                 if v.attrs.get('CLASS') == b'DIMENSION_SCALE':
-                    dim_id = v.attrs['_Netcdf4Dimid']
+                    dim_id = v.attrs.get('_Netcdf4Dimid')
                     if '_Netcdf4Coordinates' in v.attrs:
+                        assert dim_id is not None
                         coord_ids = v.attrs['_Netcdf4Coordinates']
                         size = v.shape[list(coord_ids).index(dim_id)]
                     else:
+                        assert len(v.shape) == 1
                         size = v.size
                     self._root._dim_sizes[k] = size
+                    if dim_id is None:
+                        dim_id = len(self._root._dim_order)
                     self._root._dim_order[k] = dim_id
                 if NOT_A_VARIABLE not in v.attrs.get('NAME', b''):
                     name = k
@@ -182,7 +186,19 @@ class Variable(HasAttributesMixin):
         elif self._name in self._root.dimensions:
             return (self._name,)
         else:
-            return tuple(k[0].name[1:] for k in self._h5ds.dims)
+            dims = []
+            for axis, dim in enumerate(self._h5ds.dims):
+                # TODO: read dimension labels even if there is no associated
+                # scale? it's not netCDF4 spec, but it is unambiguous...
+                # Also: the netCDF lib can read HDF5 datasets with unlabeled
+                # dimensions.
+                if len(dim) == 0:
+                    raise ValueError('variable %s has no dimension scale '
+                                     'associated with axis %s'
+                                     % (self._name, axis))
+                name = dim[0].name[1:]
+                dims.append(name)
+            return tuple(dims)
 
     @property
     def dimensions(self):
