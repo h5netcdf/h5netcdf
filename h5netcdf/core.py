@@ -54,7 +54,8 @@ class Group(HasAttributesMixin):
         self._groups[name] = group
         return group
 
-    def createVariable(self, name, dtype, dimensions, **kwargs):
+    def createVariable(self, name, dtype, dimensions, fill_value=None,
+                       **kwargs):
         if name in self._variables:
             raise IOError('variable %r already exists' % name)
 
@@ -64,8 +65,11 @@ class Group(HasAttributesMixin):
         else:
             h5name = name
 
-        h5ds = self._h5group.create_dataset(h5name, shape, dtype, **kwargs)
+        h5ds = self._h5group.create_dataset(h5name, shape, dtype,
+                                            fillvalue=fill_value, **kwargs)
         variable = Variable(self._root, h5ds, h5name, dimensions)
+        if fill_value is not None:
+            variable.attrs['_FillValue'] = variable.dtype.type(fill_value)
         self._variables[name] = variable
         return variable
 

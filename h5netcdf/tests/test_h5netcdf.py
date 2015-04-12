@@ -46,10 +46,10 @@ def roundtrip_netcdf(tmp_netcdf, read_module, write_module):
     v[...] = 1
     v.setncattr('units', 'meters')
 
-    v = ds.createVariable('y', int, ('y',))
-    v[...] = np.arange(5)
+    v = ds.createVariable('y', int, ('y',), fill_value=-1)
+    v[:4] = np.arange(4)
 
-    v = ds.createVariable('z', 'S1', ('z', 'string3'))
+    v = ds.createVariable('z', 'S1', ('z', 'string3'), fill_value=b'X')
     char_array = string_to_char(np.array(['a', 'b', 'c', 'foo', 'bar', 'baz'],
                                          dtype='S'))
     v[...] = char_array
@@ -74,32 +74,38 @@ def roundtrip_netcdf(tmp_netcdf, read_module, write_module):
     assert set(ds.groups) == set(['subgroup'])
     assert ds.parent is None
 
-    assert array_equal(ds.variables['foo'], np.ones((4, 5)))
-    assert ds.variables['foo'].dtype == float
-    assert ds.variables['foo'].dimensions == ('x', 'y')
-    assert ds.variables['foo'].ndim == 2
-    assert ds.variables['foo'].ncattrs() == ['units']
+    v = ds.variables['foo']
+    assert array_equal(v, np.ones((4, 5)))
+    assert v.dtype == float
+    assert v.dimensions == ('x', 'y')
+    assert v.ndim == 2
+    assert v.ncattrs() == ['units']
     if write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.variables['foo'].getncattr('units') == 'meters'
 
-    assert array_equal(ds.variables['y'], np.arange(5))
-    assert ds.variables['y'].dtype == int
-    assert ds.variables['y'].dimensions == ('y',)
-    assert ds.variables['y'].ndim == 1
-    assert ds.variables['y'].ncattrs() == []
+    v = ds.variables['y']
+    assert array_equal(v, np.r_[np.arange(4), [-1]])
+    assert v.dtype == int
+    assert v.dimensions == ('y',)
+    assert v.ndim == 1
+    assert v.ncattrs() == ['_FillValue']
+    assert v.getncattr('_FillValue') == -1
 
-    assert array_equal(ds.variables['z'], char_array)
-    assert ds.variables['z'].dtype == 'S1'
-    assert ds.variables['z'].ndim == 2
-    assert ds.variables['z'].dimensions == ('z', 'string3')
-    assert ds.variables['z'].ncattrs() == []
+    v = ds.variables['z']
+    assert array_equal(v, char_array)
+    assert v.dtype == 'S1'
+    assert v.ndim == 2
+    assert v.dimensions == ('z', 'string3')
+    assert v.ncattrs() == ['_FillValue']
+    assert v.getncattr('_FillValue') == b'X'
 
-    assert array_equal(ds.variables['scalar'], np.array(2.0))
-    assert ds.variables['scalar'].dtype == 'float32'
-    assert ds.variables['scalar'].ndim == 0
-    assert ds.variables['scalar'].dimensions == ()
-    assert ds.variables['scalar'].ncattrs() == []
+    v = ds.variables['scalar']
+    assert array_equal(v, np.array(2.0))
+    assert v.dtype == 'float32'
+    assert v.ndim == 0
+    assert v.dimensions == ()
+    assert v.ncattrs() == []
 
     v = ds.groups['subgroup'].variables['subvar']
     assert ds.groups['subgroup'].parent is ds
