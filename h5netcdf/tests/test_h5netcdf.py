@@ -162,6 +162,21 @@ def test_optional_netcdf4_attrs(tmp_netcdf):
         assert array_equal(ds.variables['foo'], foo_data)
 
 
+def test_error_handling(tmp_netcdf):
+    with h5netcdf.Dataset(tmp_netcdf, 'w') as ds:
+        with raises(NotImplementedError):
+            ds.createDimension('x', None)
+        ds.createDimension('x', 1)
+        with raises(IOError):
+            ds.createDimension('x', 2)
+        ds.createVariable('x', float, ('x',))
+        with raises(IOError):
+            ds.createVariable('x', float, ('x',))
+        ds.createGroup('subgroup')
+        with raises(IOError):
+            ds.createGroup('subgroup')
+
+
 def test_invalid_netcdf4(tmp_netcdf):
     with h5py.File(tmp_netcdf) as f:
         f.create_dataset('foo', data=np.arange(5))

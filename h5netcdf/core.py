@@ -116,6 +116,9 @@ class Dataset(Group):
     def createDimension(self, name, size=None):
         if name in self._dim_sizes:
             raise IOError('dimension %r already exists' % name)
+        if not size:
+            raise NotImplementedError('h5netcdf does not yet support '
+                                      'unlimited dimensions')
         self._dim_sizes[name] = size
         self._dim_order[name] = len(self._dim_order)
 
