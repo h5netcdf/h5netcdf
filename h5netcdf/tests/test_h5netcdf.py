@@ -1,5 +1,8 @@
 import netCDF4
 import numpy as np
+import sys
+
+PY2 = sys.version_info[0] < 3
 
 import h5netcdf
 import h5py
@@ -37,6 +40,7 @@ def array_equal(a, b):
 def roundtrip_netcdf(tmp_netcdf, read_module, write_module):
     ds = write_module.Dataset(tmp_netcdf, 'w')
     ds.setncattr('global', 42)
+    ds.other_attr = 'yes'
     ds.createDimension('x', 4)
     ds.createDimension('y', 5)
     ds.createDimension('z', 6)
@@ -60,6 +64,8 @@ def roundtrip_netcdf(tmp_netcdf, read_module, write_module):
     g = ds.createGroup('subgroup')
     v = g.createVariable('subvar', np.int32, ('x',))
     v[...] = np.arange(4.0)
+    with raises(AttributeError):
+        v._FillValue = -1
 
     ds.createDimension('mismatched_dim', 1)
     ds.createVariable('mismatched_dim', int, ())
@@ -67,8 +73,11 @@ def roundtrip_netcdf(tmp_netcdf, read_module, write_module):
     ds.close()
 
     ds = read_module.Dataset(tmp_netcdf, 'r')
-    assert ds.ncattrs() == ['global']
+    assert ds.ncattrs() == ['global', 'other_attr']
     assert ds.getncattr('global') == 42
+    if not PY2 and write_module is not netCDF4:
+        # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
+        assert ds.other_attr == 'yes'
     assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
     assert set(ds.variables) == set(['foo', 'y', 'z', 'scalar', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
@@ -80,8 +89,7 @@ def roundtrip_netcdf(tmp_netcdf, read_module, write_module):
     assert v.dimensions == ('x', 'y')
     assert v.ndim == 2
     assert v.ncattrs() == ['units']
-    if write_module is not netCDF4:
-        # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
+    if not PY2 and write_module is not netCDF4:
         assert ds.variables['foo'].getncattr('units') == 'meters'
 
     v = ds.variables['y']

@@ -16,6 +16,8 @@ NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
 
 class Group(HasAttributesMixin):
+    _initialized = False
+
     def __init__(self, parent, h5group):
         self._parent = parent
         self._root = parent._root
@@ -45,6 +47,7 @@ class Group(HasAttributesMixin):
                     if k.startswith('_nc4_non_coord_'):
                         name = k[len('_nc4_non_coord_'):]
                     self._variables[name] = Variable(self._root, v, k)
+        self._initialized = True
 
     def createGroup(self, name):
         if name in self._groups:
@@ -69,7 +72,8 @@ class Group(HasAttributesMixin):
                                             fillvalue=fill_value, **kwargs)
         variable = Variable(self._root, h5ds, h5name, dimensions)
         if fill_value is not None:
-            variable.attrs['_FillValue'] = variable.dtype.type(fill_value)
+            value = variable.dtype.type(fill_value)
+            variable.attrs._h5attrs['_FillValue'] = value
         self._variables[name] = variable
         return variable
 
@@ -178,11 +182,14 @@ def reverse_dict(dict_):
 
 
 class Variable(HasAttributesMixin):
+    _initialized = False
+
     def __init__(self, root, h5ds, name, dimensions=None):
         self._root = root
         self._h5ds = h5ds
         self._name = name
         self._dimensions = dimensions
+        self._initialized = True
 
     def _lookup_dimensions(self):
         attrs = self._h5ds.attrs
