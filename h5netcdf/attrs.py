@@ -1,26 +1,6 @@
 from collections import MutableMapping
 
 
-class HasAttributesMixin(object):
-    def getncattr(self, name):
-        return self.attrs[name]
-
-    def setncattr(self, name, value):
-        self.attrs[name] = value
-
-    def ncattrs(self):
-        return list(self.attrs)
-
-    def __getattr__(self, name):
-        return self.attrs[name]
-
-    def __setattr__(self, name, value):
-        if self._initialized and name not in self.__dict__:
-            self.attrs[name] = value
-        else:
-            object.__setattr__(self, name, value)
-
-
 _hidden_attrs = frozenset(['REFERENCE_LIST', 'CLASS', 'DIMENSION_LIST', 'NAME',
                            '_Netcdf4Dimid', '_Netcdf4Coordinates',
                            '_nc3_strict'])
@@ -56,5 +36,5 @@ class Attributes(MutableMapping):
         return len(self._h5attrs) - hidden_count
 
     def __repr__(self):
-        return '\n'.join(['<h5netcdf.%s>' % type(self).__name__] +
+        return '\n'.join(['%r' % type(self)] +
                          ['%s: %r' % (k, v) for k, v in self.items()])
