@@ -36,6 +36,7 @@ class Group(core.Group, HasAttributesMixin):
         return Group
 
     createGroup = core.Group.create_group
+    createDimension = core.Group.create_dimension
 
     def createVariable(self, varname, datatype, dimensions=(), zlib=False,
                        complevel=4, shuffle=True, fletcher32=False,
@@ -55,4 +56,3 @@ class Group(core.Group, HasAttributesMixin):
 
 class Dataset(core.File, Group, HasAttributesMixin):
     _cls_name = 'h5netcdf.legacyapi.Dataset'
-    createDimension = core.File.create_dimension

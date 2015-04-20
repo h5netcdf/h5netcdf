@@ -73,6 +73,9 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     with raises(AttributeError):
         v._FillValue = -1
 
+    g.createDimension('y', 10)
+    g.createVariable('y_var', float, ('y',))
+
     ds.createDimension('mismatched_dim', 1)
     ds.createVariable('mismatched_dim', int, ())
 
@@ -107,6 +110,9 @@ def write_h5netcdf(tmp_netcdf):
     v[...] = np.arange(4.0)
     with raises(AttributeError):
         v.attrs['_FillValue'] = -1
+
+    g.create_dimension('y', 10)
+    g.create_variable('y_var', ('y',), float)
 
     ds.create_dimension('mismatched_dim', 1)
     ds.create_variable('mismatched_dim', dtype=int)
@@ -165,6 +171,10 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.ndim == 1
     assert v.dimensions == ('x',)
     assert v.ncattrs() == []
+
+    v = ds.groups['subgroup'].variables['y_var']
+    assert v.shape == (10,)
+    assert 'y' in ds.groups['subgroup'].dimensions
 
     ds.close()
 
@@ -227,6 +237,9 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v.ndim == 1
     assert v.dimensions == ('x',)
     assert list(v.attrs) == []
+
+    assert ds['/subgroup/y_var'].shape == (10,)
+    assert ds['/subgroup'].dimensions['y'] == 10
 
     ds.close()
 
@@ -336,13 +349,13 @@ def test_error_handling(tmp_netcdf):
         with raises(NotImplementedError):
             ds.create_dimension('x', None)
         ds.create_dimension('x', 1)
-        with raises(IOError):
+        with raises(ValueError):
             ds.create_dimension('x', 2)
         ds.create_variable('x', ('x',), dtype=float)
-        with raises(IOError):
+        with raises(ValueError):
             ds.create_variable('x', ('x',), dtype=float)
         ds.create_group('subgroup')
-        with raises(IOError):
+        with raises(ValueError):
             ds.create_group('subgroup')
 
 
