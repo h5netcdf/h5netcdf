@@ -165,12 +165,20 @@ class Group(Mapping):
         self._variables[name] = variable
         return variable
 
-    def __getitem__(self, key):
-        # TODO: handle relative and absolute paths like '/group/variable'
+    def _get_child(self, key):
         try:
             return self.variables[key]
         except KeyError:
             return self.groups[key]
+
+    def __getitem__(self, key):
+        if key.startswith('/'):
+            return self._root[key[1:]]
+        keys = key.split('/')
+        item = self
+        for k in keys:
+            item = item._get_child(k)
+        return item
 
     def __iter__(self):
         for name in self.groups:

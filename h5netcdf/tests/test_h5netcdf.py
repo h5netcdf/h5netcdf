@@ -207,7 +207,10 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v.dimensions == ()
     assert list(v.attrs) == []
 
-    v = ds['subgroup']['subvar']
+    v = ds['/subgroup/subvar']
+    assert v is ds['subgroup']['subvar']
+    assert v is ds['subgroup/subvar']
+    assert v is ds['subgroup']['/subgroup/subvar']
     assert ds['subgroup'].parent is ds
     assert array_equal(v, np.arange(4.0))
     assert v.dtype == 'int32'
