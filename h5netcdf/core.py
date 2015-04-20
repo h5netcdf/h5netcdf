@@ -180,6 +180,9 @@ class Group(Mapping):
                 if d not in self._root.dimensions:
                     self.create_dimension(d, s)
 
+        if (dtype or data.dtype) == np.bool_:
+            raise TypeError('netCDF4 does not implement a boolean dtype')
+
         shape = tuple(self._root.dimensions[d] for d in dimensions)
         if name in self._root.dimensions and name not in dimensions:
             h5name = '_nc4_non_coord_' + name

@@ -64,6 +64,9 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     v = ds.createVariable('scalar', np.float32, ())
     v[...] = 2.0
 
+    with raises(TypeError):
+        ds.createVariable('boolean', np.bool_, ('x'))
+
     g = ds.createGroup('subgroup')
     v = g.createVariable('subvar', np.int32, ('x',))
     v[...] = np.arange(4.0)
@@ -95,6 +98,9 @@ def write_h5netcdf(tmp_netcdf):
                            fillvalue=b'X')
 
     v = ds.create_variable('scalar', data=np.float32(2.0))
+
+    with raises(TypeError):
+        ds.create_variable('boolean', data=True)
 
     g = ds.create_group('subgroup')
     v = g.create_variable('subvar', ('x',), np.int32)
