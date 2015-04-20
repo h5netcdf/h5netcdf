@@ -165,6 +165,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 def read_h5netcdf(tmp_netcdf, write_module):
     ds = h5netcdf.Dataset(tmp_netcdf, 'r')
+    assert ds.name == '/'
     assert list(ds.attrs) == ['global', 'other_attr']
     assert ds.attrs['global'] == 42
     if not PY2 and write_module is not netCDF4:
@@ -176,6 +177,7 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert ds.parent is None
 
     v = ds['foo']
+    assert v.name == '/foo'
     assert array_equal(v, np.ones((4, 5)))
     assert v.dtype == float
     assert v.dimensions == ('x', 'y')
@@ -211,6 +213,8 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v is ds['subgroup']['subvar']
     assert v is ds['subgroup/subvar']
     assert v is ds['subgroup']['/subgroup/subvar']
+    assert v.name == '/subgroup/subvar'
+    assert ds['subgroup'].name == '/subgroup'
     assert ds['subgroup'].parent is ds
     assert array_equal(v, np.arange(4.0))
     assert v.dtype == 'int32'

@@ -15,12 +15,15 @@ def _reverse_dict(dict_):
 
 
 class Variable(object):
-    def __init__(self, root, h5ds, name, dimensions=None):
+    def __init__(self, root, h5ds, dimensions=None):
         self._root = root
         self._h5ds = h5ds
-        self._name = name
         self._dimensions = dimensions
         self._initialized = True
+
+    @property
+    def name(self):
+        return self._h5ds.name
 
     def _lookup_dimensions(self):
         attrs = self._h5ds.attrs
@@ -28,22 +31,24 @@ class Variable(object):
             order_dim = _reverse_dict(self._root._dim_order)
             return tuple(order_dim[coord_id]
                          for coord_id in attrs['_Netcdf4Coordinates'])
-        elif self._name in self._root.dimensions:
-            return (self._name,)
-        else:
-            dims = []
-            for axis, dim in enumerate(self._h5ds.dims):
-                # TODO: read dimension labels even if there is no associated
-                # scale? it's not netCDF4 spec, but it is unambiguous...
-                # Also: the netCDF lib can read HDF5 datasets with unlabeled
-                # dimensions.
-                if len(dim) == 0:
-                    raise ValueError('variable %s has no dimension scale '
-                                     'associated with axis %s'
-                                     % (self._name, axis))
-                name = dim[0].name[1:]
-                dims.append(name)
-            return tuple(dims)
+
+        child_name = self.name.split('/')[-1]
+        if child_name in self._root.dimensions:
+            return (child_name,)
+
+        dims = []
+        for axis, dim in enumerate(self._h5ds.dims):
+            # TODO: read dimension labels even if there is no associated
+            # scale? it's not netCDF4 spec, but it is unambiguous...
+            # Also: the netCDF lib can read HDF5 datasets with unlabeled
+            # dimensions.
+            if len(dim) == 0:
+                raise ValueError('variable %r has no dimension scale '
+                                 'associated with axis %s'
+                                 % (self.name, axis))
+            name = dim[0].name[1:]
+            dims.append(name)
+        return tuple(dims)
 
     @property
     def dimensions(self):
@@ -127,10 +132,14 @@ class Group(Mapping):
                     name = k
                     if k.startswith('_nc4_non_coord_'):
                         name = k[len('_nc4_non_coord_'):]
-                    self._variables[name] = self._variable_cls(self._root, v, k)
+                    self._variables[name] = self._variable_cls(self._root, v)
         self._initialized = True
 
-    def _create_group(self, name):
+    @property
+    def name(self):
+        return self._h5group.name
+
+    def _create_child_group(self, name):
         if name in self._groups:
             raise IOError('group %r already exists' % name)
         h5group = self._h5group.create_group(name)
@@ -138,11 +147,11 @@ class Group(Mapping):
         self._groups[name] = group
         return group
 
-    def _require_group(self, name):
+    def _require_child_group(self, name):
         try:
             return self.groups[name]
         except KeyError:
-            return self._create_group(name)
+            return self._create_child_group(name)
 
     def create_group(self, name):
         if name.startswith('/'):
@@ -150,10 +159,11 @@ class Group(Mapping):
         keys = name.split('/')
         group = self
         for k in keys[:-1]:
-            group = group._require_group(k)
-        return group._create_group(keys[-1])
+            group = group._require_child_group(k)
+        return group._create_child_group(keys[-1])
 
-    def _create_variable(self, name, dimensions, dtype, data, fillvalue, **kwargs):
+    def _create_child_variable(self, name, dimensions, dtype, data, fillvalue,
+                               **kwargs):
         if name in self._variables:
             raise IOError('variable %r already exists' % name)
 
@@ -172,7 +182,7 @@ class Group(Mapping):
         h5ds = self._h5group.create_dataset(h5name, shape, dtype=dtype,
                                             data=data, fillvalue=fillvalue,
                                             **kwargs)
-        variable = self._variable_cls(self._root, h5ds, h5name, dimensions)
+        variable = self._variable_cls(self._root, h5ds, dimensions)
         if fillvalue is not None:
             value = variable.dtype.type(fillvalue)
             variable.attrs._h5attrs['_FillValue'] = value
@@ -187,9 +197,9 @@ class Group(Mapping):
         keys = name.split('/')
         group = self
         for k in keys[:-1]:
-            group = group._require_group(k)
-        return group._create_variable(keys[-1], dimensions, dtype, data,
-                                      fillvalue, **kwargs)
+            group = group._require_child_group(k)
+        return group._create_child_variable(keys[-1], dimensions, dtype, data,
+                                            fillvalue, **kwargs)
 
     def _get_child(self, key):
         try:
