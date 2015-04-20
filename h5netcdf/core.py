@@ -130,7 +130,7 @@ class Group(Mapping):
                     self._variables[name] = self._variable_cls(self._root, v, k)
         self._initialized = True
 
-    def create_group(self, name):
+    def _create_group(self, name):
         if name in self._groups:
             raise IOError('group %r already exists' % name)
         h5group = self._h5group.create_group(name)
@@ -138,8 +138,22 @@ class Group(Mapping):
         self._groups[name] = group
         return group
 
-    def create_variable(self, name, dimensions=(), dtype=None, data=None,
-                        fillvalue=None, **kwargs):
+    def _require_group(self, name):
+        try:
+            return self.groups[name]
+        except KeyError:
+            return self._create_group(name)
+
+    def create_group(self, name):
+        if name.startswith('/'):
+            return self._root.create_group(name[1:])
+        keys = name.split('/')
+        group = self
+        for k in keys[:-1]:
+            group = group._require_group(k)
+        return group._create_group(keys[-1])
+
+    def _create_variable(self, name, dimensions, dtype, data, fillvalue, **kwargs):
         if name in self._variables:
             raise IOError('variable %r already exists' % name)
 
@@ -164,6 +178,18 @@ class Group(Mapping):
             variable.attrs._h5attrs['_FillValue'] = value
         self._variables[name] = variable
         return variable
+
+    def create_variable(self, name, dimensions=(), dtype=None, data=None,
+                        fillvalue=None, **kwargs):
+        if name.startswith('/'):
+            return self._root.create_variable(name[1:], dimensions, dtype,
+                                              data, fillvalue, **kwargs)
+        keys = name.split('/')
+        group = self
+        for k in keys[:-1]:
+            group = group._require_group(k)
+        return group._create_variable(keys[-1], dimensions, dtype, data,
+                                      fillvalue, **kwargs)
 
     def _get_child(self, key):
         try:

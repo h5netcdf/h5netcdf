@@ -338,3 +338,18 @@ def test_invalid_netcdf4(tmp_netcdf):
     with h5netcdf.Dataset(tmp_netcdf, 'r') as ds:
         with raises(ValueError):
             ds.variables['foo'].dimensions
+
+
+def test_hierarchical_access_auto_create(tmp_netcdf):
+    ds = h5netcdf.Dataset(tmp_netcdf, 'w')
+    ds.create_variable('/foo/bar', data=1)
+    g = ds.create_group('foo/baz')
+    g.create_variable('/foo/hello', data=2)
+    assert set(ds) == set(['foo'])
+    assert set(ds['foo']) == set(['bar', 'baz', 'hello'])
+    ds.close()
+
+    ds = h5netcdf.Dataset(tmp_netcdf, 'r')
+    assert set(ds) == set(['foo'])
+    assert set(ds['foo']) == set(['bar', 'baz', 'hello'])
+    ds.close()
