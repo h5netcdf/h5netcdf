@@ -85,6 +85,8 @@ class Variable(object):
         return Attributes(self._h5ds.attrs)
 
     def __repr__(self):
+        if self._root._closed:
+            return '\n'.join(['%r' % type(self), '*closed*'])
         return '\n'.join(['%r' % type(self)] +
                          ['Dtype:      %s' % self.dtype] +
                          ['Dimensions: %r' % (self.dimensions,)] +
@@ -251,6 +253,8 @@ class Group(Mapping):
         return Attributes(self._h5group.attrs)
 
     def __repr__(self):
+        if self._root._closed:
+            return '\n'.join(['%r' % type(self), '*closed*'])
         return '\n'.join(['%r' % type(self)] +
                          ['Groups:'] + ['    %s' % g for g in self.groups] +
                          ['Variables:'] +
@@ -325,6 +329,8 @@ class Dataset(Group):
         self.close()
 
     def __repr__(self):
+        if self._root._closed:
+            return '\n'.join(['%r' % type(self), '*closed*'])
         return '\n'.join(['%r' % type(self)] +
                          ['Dimensions:'] +
                          ['    %s: %s' % (k, v)

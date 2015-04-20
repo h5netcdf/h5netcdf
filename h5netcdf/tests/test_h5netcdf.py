@@ -278,13 +278,19 @@ def test_repr(tmp_netcdf):
     assert 'h5netcdf.attrs.Attributes' in repr(ds.attrs)
     assert 'global' in repr(ds.attrs)
 
-    assert 'h5netcdf.core.Group' in repr(ds['subgroup'])
-    assert 'subvar' in repr(ds['subgroup'])
+    g = ds['subgroup']
+    assert 'h5netcdf.core.Group' in repr(g)
+    assert 'subvar' in repr(g)
 
-    assert 'h5netcdf.core.Variable' in repr(ds['foo'])
-    assert 'float' in repr(ds['foo'])
-    assert 'units' in repr(ds['foo'])
+    v = ds['foo']
+    assert 'h5netcdf.core.Variable' in repr(v)
+    assert 'float' in repr(v)
+    assert 'units' in repr(v)
     ds.close()
+
+    assert '*closed*' in repr(ds)
+    assert '*closed*' in repr(g)
+    assert '*closed*' in repr(v)
 
 
 def test_attrs_api(tmp_netcdf):
