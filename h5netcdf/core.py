@@ -84,13 +84,18 @@ class Variable(object):
     def attrs(self):
         return Attributes(self._h5ds.attrs)
 
+    _cls_name = 'h5netcdf.Variable'
+
     def __repr__(self):
         if self._root._closed:
-            return '\n'.join(['%r' % type(self), '*closed*'])
-        return '\n'.join(['%r' % type(self)] +
-                         ['Dtype:      %s' % self.dtype] +
-                         ['Dimensions: %r' % (self.dimensions,)] +
-                         ['Shape:      %r' % (self.shape,)] +
+            return '<Closed %s>' % self._cls_name
+        header = ('<%s %r: dimensions %s, shape %s, dtype %s>' %
+                  (self._cls_name, self.name, self.dimensions, self.shape,
+                   self.dtype))
+        return '\n'.join([header] +
+                         # ['Dtype:      %s' % self.dtype] +
+                         # ['Dimensions: %r' % (self.dimensions,)] +
+                         # ['Shape:      %r' % (self.shape,)] +
                          ['Attributes:'] +
                          ['    %s: %r' % (k, v)
                           for k, v in self.attrs.items()])
@@ -252,10 +257,14 @@ class Group(Mapping):
     def attrs(self):
         return Attributes(self._h5group.attrs)
 
+    _cls_name = 'h5netcdf.Group'
+
     def __repr__(self):
         if self._root._closed:
-            return '\n'.join(['%r' % type(self), '*closed*'])
-        return '\n'.join(['%r' % type(self)] +
+            return '<Closed %s>' % self._cls_name
+        header = ('<%s %r (%s members)>'
+                  % (self._cls_name, self.name, len(self)))
+        return '\n'.join([header] +
                          ['Groups:'] + ['    %s' % g for g in self.groups] +
                          ['Variables:'] +
                          ['    %s: %r %s' % (k, v.dimensions, v.dtype)
@@ -265,7 +274,7 @@ class Group(Mapping):
                           for k, v in self.attrs.items()])
 
 
-class Dataset(Group):
+class File(Group):
     def __init__(self, path, mode='a', **kwargs):
         self._file = h5py.File(path, mode, **kwargs)
         self._dim_sizes = {}
@@ -273,7 +282,15 @@ class Dataset(Group):
         self._mode = mode
         self._root = self
         self._closed = False
-        super(Dataset, self).__init__(self, self._file)
+        super(File, self).__init__(self, self._file)
+
+    @property
+    def mode(self):
+        return self._h5group.mode
+
+    @property
+    def filename(self):
+        return self._h5group.filename
 
     @property
     def parent(self):
@@ -328,10 +345,15 @@ class Dataset(Group):
     def __exit__(self, type, value, traceback):
         self.close()
 
+    _cls_name = 'h5netcdf.File'
+
     def __repr__(self):
-        if self._root._closed:
-            return '\n'.join(['%r' % type(self), '*closed*'])
-        return '\n'.join(['%r' % type(self)] +
+        if self._closed:
+            return '<Closed %s>' % self._cls_name
+        header = '<%s %r (mode %s)>' % (self._cls_name,
+                                        self.filename.split('/')[-1],
+                                        self.mode)
+        return '\n'.join([header] +
                          ['Dimensions:'] +
                          ['    %s: %s' % (k, v)
                           for k, v in self.dimensions.items()] +

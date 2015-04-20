@@ -77,7 +77,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
 
 
 def write_h5netcdf(tmp_netcdf):
-    ds = h5netcdf.Dataset(tmp_netcdf, 'w')
+    ds = h5netcdf.File(tmp_netcdf, 'w')
     ds.attrs['global'] = 42
     ds.attrs['other_attr'] = 'yes'
     ds.create_dimension('x', 4)
@@ -164,7 +164,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 
 def read_h5netcdf(tmp_netcdf, write_module):
-    ds = h5netcdf.Dataset(tmp_netcdf, 'r')
+    ds = h5netcdf.File(tmp_netcdf, 'r')
     assert ds.name == '/'
     assert list(ds.attrs) == ['global', 'other_attr']
     assert ds.attrs['global'] == 42
@@ -269,38 +269,38 @@ def test_write_legacyapi_read_h5netcdf(tmp_netcdf):
 
 def test_repr(tmp_netcdf):
     write_h5netcdf(tmp_netcdf)
-    ds = h5netcdf.Dataset(tmp_netcdf, 'r')
-    assert 'h5netcdf.core.Dataset' in repr(ds)
-    assert 'subgroup' in repr(ds)
-    assert 'foo' in repr(ds)
-    assert 'other_attr' in repr(ds)
+    f = h5netcdf.File(tmp_netcdf, 'r')
+    assert 'h5netcdf.File' in repr(f)
+    assert 'subgroup' in repr(f)
+    assert 'foo' in repr(f)
+    assert 'other_attr' in repr(f)
 
-    assert 'h5netcdf.attrs.Attributes' in repr(ds.attrs)
-    assert 'global' in repr(ds.attrs)
+    assert 'h5netcdf.attrs.Attributes' in repr(f.attrs)
+    assert 'global' in repr(f.attrs)
 
-    g = ds['subgroup']
-    assert 'h5netcdf.core.Group' in repr(g)
+    g = f['subgroup']
+    assert 'h5netcdf.Group' in repr(g)
     assert 'subvar' in repr(g)
 
-    v = ds['foo']
-    assert 'h5netcdf.core.Variable' in repr(v)
+    v = f['foo']
+    assert 'h5netcdf.Variable' in repr(v)
     assert 'float' in repr(v)
     assert 'units' in repr(v)
-    ds.close()
+    f.close()
 
-    assert '*closed*' in repr(ds)
-    assert '*closed*' in repr(g)
-    assert '*closed*' in repr(v)
+    assert 'Closed' in repr(f)
+    assert 'Closed' in repr(g)
+    assert 'Closed' in repr(v)
 
 
 def test_attrs_api(tmp_netcdf):
-    with h5netcdf.Dataset(tmp_netcdf) as ds:
+    with h5netcdf.File(tmp_netcdf) as ds:
         ds.attrs['conventions'] = 'CF'
         ds.create_dimension('x', 1)
         v = ds.create_variable('x', ('x',), 'i4')
         v.attrs.update({'units': 'meters', 'foo': 'bar'})
     assert ds._closed
-    with h5netcdf.Dataset(tmp_netcdf) as ds:
+    with h5netcdf.File(tmp_netcdf) as ds:
         assert len(ds.attrs) == 1
         assert dict(ds.attrs) == {'conventions': 'CF'}
         assert list(ds.attrs) == ['conventions']
@@ -319,14 +319,14 @@ def test_optional_netcdf4_attrs(tmp_netcdf):
         f['foo'].dims.create_scale(f['y'])
         f['foo'].dims[0].attach_scale(f['x'])
         f['foo'].dims[1].attach_scale(f['y'])
-    with h5netcdf.Dataset(tmp_netcdf, 'r') as ds:
+    with h5netcdf.File(tmp_netcdf, 'r') as ds:
         assert ds['foo'].dimensions == ('x', 'y')
         assert ds.dimensions == {'x': 5, 'y': 10}
         assert array_equal(ds['foo'], foo_data)
 
 
 def test_error_handling(tmp_netcdf):
-    with h5netcdf.Dataset(tmp_netcdf, 'w') as ds:
+    with h5netcdf.File(tmp_netcdf, 'w') as ds:
         with raises(NotImplementedError):
             ds.create_dimension('x', None)
         ds.create_dimension('x', 1)
@@ -345,13 +345,13 @@ def test_invalid_netcdf4(tmp_netcdf):
         f.create_dataset('foo', data=np.arange(5))
         # labeled dimensions but no dimension scales
         f['foo'].dims[0].label = 'x'
-    with h5netcdf.Dataset(tmp_netcdf, 'r') as ds:
+    with h5netcdf.File(tmp_netcdf, 'r') as ds:
         with raises(ValueError):
             ds.variables['foo'].dimensions
 
 
 def test_hierarchical_access_auto_create(tmp_netcdf):
-    ds = h5netcdf.Dataset(tmp_netcdf, 'w')
+    ds = h5netcdf.File(tmp_netcdf, 'w')
     ds.create_variable('/foo/bar', data=1)
     g = ds.create_group('foo/baz')
     g.create_variable('/foo/hello', data=2)
@@ -359,7 +359,7 @@ def test_hierarchical_access_auto_create(tmp_netcdf):
     assert set(ds['foo']) == set(['bar', 'baz', 'hello'])
     ds.close()
 
-    ds = h5netcdf.Dataset(tmp_netcdf, 'r')
+    ds = h5netcdf.File(tmp_netcdf, 'r')
     assert set(ds) == set(['foo'])
     assert set(ds['foo']) == set(['bar', 'baz', 'hello'])
     ds.close()

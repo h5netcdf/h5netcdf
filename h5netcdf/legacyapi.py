@@ -24,10 +24,11 @@ class HasAttributesMixin(object):
 
 
 class Variable(core.Variable, HasAttributesMixin):
-    pass
+    _cls_name = 'h5netcdf.legacyapi.Variable'
 
 
 class Group(core.Group, HasAttributesMixin):
+    _cls_name = 'h5netcdf.legacyapi.Group'
     _variable_cls = Variable
 
     @property
@@ -52,5 +53,6 @@ class Group(core.Group, HasAttributesMixin):
             chunks=chunksizes, fillvalue=fill_value, **kwds)
 
 
-class Dataset(core.Dataset, Group, HasAttributesMixin):
-    createDimension = core.Dataset.create_dimension
+class Dataset(core.File, Group, HasAttributesMixin):
+    _cls_name = 'h5netcdf.legacyapi.Dataset'
+    createDimension = core.File.create_dimension
