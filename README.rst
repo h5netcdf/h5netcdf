@@ -56,7 +56,7 @@ h5netcdf has two APIs, a new API and a legacy API.
 New API
 ~~~~~~~
 
-The new API supports direct hierarchical access of variables and groups. It's
+The new API supports direct hierarchical access of variables and groups. Its
 design is an adaptation of h5py to the netCDF data model. For example:
 
 .. code-block:: python
@@ -65,11 +65,15 @@ design is an adaptation of h5py to the netCDF data model. For example:
     import numpy as np
 
     with h5netcdf.File('mydata.nc', 'w') as f:
-        v = f.create_variable('/grouped/data', ('x',), data=np.arange(10))
+        f.dimensions = {'x': 5}
+        v = f.create_variable('hello', ('x',), float)
+        v[:] = np.ones(5)
+
+        v = f.create_variable('/grouped/data', ('y',), data=np.arange(10))
         v.attrs['foo'] = 'bar'
         print(f['/grouped/data'])
 
-**Warning: The design of the new API is *not yet stable*.** I only
+**Warning: The design of the new API is *not yet finished*.** I only
 recommended using it for experiments. Please share your feedback in `this
 GitHub issue`_.
 
@@ -91,11 +95,15 @@ The legacy API is designed for compatibility with netCDF4-python_. To use it, im
     import numpy as np
 
     with netCDF4.Dataset('mydata.nc', 'w') as ds:
-        ds.createDimension('x', 10)
+        ds.createDimension('x', 5)
+        v = ds.createVariable('hello', float, ('x',))
+        v[:] = np.ones(5)
+
         g = ds.createGroup('grouped')
-        g.createVariable('data', 'i8', ('x',))
+        g.createDimension('y', 10)
+        g.createVariable('data', 'i8', ('y',))
         v = g['data']
-        v[...] = np.arange(10)
+        v[:] = np.arange(10)
         v.foo = 'bar'
         print(ds.groups['grouped'].variables['data'])
 

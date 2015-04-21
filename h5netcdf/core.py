@@ -7,6 +7,7 @@ import numpy as np
 
 from .compat import ChainMap, OrderedDict
 from .attrs import Attributes
+from .dimensions import Dimensions
 from .utils import Frozen
 
 
@@ -150,7 +151,7 @@ class Group(Mapping):
     def name(self):
         return self._h5group.name
 
-    def create_dimension(self, name, size=None):
+    def _create_dimension(self, name, size=None):
         if name in self._dim_sizes.maps[0]:
             raise ValueError('dimension %r already exists' % name)
         if not size:
@@ -161,7 +162,18 @@ class Group(Mapping):
 
     @property
     def dimensions(self):
-        return Frozen(self._dim_sizes)
+        return Dimensions(self)
+
+    @dimensions.setter
+    def dimensions(self, value):
+        for k, v in self._dim_sizes.maps[0].items():
+            if k in value:
+                if v != value[k]:
+                    raise ValueError('cannot modify existing dimension %r' % k)
+            else:
+                raise ValueError('new dimensions do not include existing '
+                                 'dimension %r' % k)
+        self.dimensions.update(value)
 
     def _create_child_group(self, name):
         if name in self:
@@ -197,7 +209,7 @@ class Group(Mapping):
             data = np.asarray(data)
             for d, s in zip(dimensions, data.shape):
                 if d not in self.dimensions:
-                    self.create_dimension(d, s)
+                    self.dimensions[d] = s
 
         if (dtype if dtype is not None else data.dtype) == np.bool_:
             raise TypeError('netCDF4 does not implement a boolean dtype')

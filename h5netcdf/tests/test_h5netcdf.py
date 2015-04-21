@@ -84,9 +84,7 @@ def write_h5netcdf(tmp_netcdf):
     ds = h5netcdf.File(tmp_netcdf, 'w')
     ds.attrs['global'] = 42
     ds.attrs['other_attr'] = 'yes'
-    ds.create_dimension('x', 4)
-    ds.create_dimension('y', 5)
-    ds.create_dimension('z', 6)
+    ds.dimensions = {'x': 4, 'y': 5, 'z': 6}
 
     v = ds.create_variable('foo', ('x', 'y'), float)
     v[...] = 1
@@ -109,10 +107,10 @@ def write_h5netcdf(tmp_netcdf):
     with raises(AttributeError):
         v.attrs['_Netcdf4Dimid'] = -1
 
-    g.create_dimension('y', 10)
+    g.dimensions['y'] = 10
     g.create_variable('y_var', ('y',), float)
 
-    ds.create_dimension('mismatched_dim', 1)
+    ds.dimensions['mismatched_dim'] = 1
     ds.create_variable('mismatched_dim', dtype=int)
 
     ds.close()
@@ -295,6 +293,10 @@ def test_repr(tmp_netcdf):
     assert 'h5netcdf.attrs.Attributes' in repr(f.attrs)
     assert 'global' in repr(f.attrs)
 
+    d = f.dimensions
+    assert 'h5netcdf.Dimensions' in repr(d)
+    assert 'x=4' in repr(d)
+
     g = f['subgroup']
     assert 'h5netcdf.Group' in repr(g)
     assert 'subvar' in repr(g)
@@ -306,6 +308,7 @@ def test_repr(tmp_netcdf):
     f.close()
 
     assert 'Closed' in repr(f)
+    assert 'Closed' in repr(d)
     assert 'Closed' in repr(g)
     assert 'Closed' in repr(v)
 
@@ -313,7 +316,7 @@ def test_repr(tmp_netcdf):
 def test_attrs_api(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf) as ds:
         ds.attrs['conventions'] = 'CF'
-        ds.create_dimension('x', 1)
+        ds.dimensions['x'] = 1
         v = ds.create_variable('x', ('x',), 'i4')
         v.attrs.update({'units': 'meters', 'foo': 'bar'})
     assert ds._closed
@@ -345,10 +348,14 @@ def test_optional_netcdf4_attrs(tmp_netcdf):
 def test_error_handling(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, 'w') as ds:
         with raises(NotImplementedError):
-            ds.create_dimension('x', None)
-        ds.create_dimension('x', 1)
+            ds.dimensions['x'] = None
+        ds.dimensions['x'] = 1
         with raises(ValueError):
-            ds.create_dimension('x', 2)
+            ds.dimensions['x'] = 2
+        with raises(ValueError):
+            ds.dimensions = {'x': 2}
+        with raises(ValueError):
+            ds.dimensions = {'y': 3}
         ds.create_variable('x', ('x',), dtype=float)
         with raises(ValueError):
             ds.create_variable('x', ('x',), dtype=float)

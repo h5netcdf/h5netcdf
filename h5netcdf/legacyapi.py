@@ -36,7 +36,7 @@ class Group(core.Group, HasAttributesMixin):
         return Group
 
     createGroup = core.Group.create_group
-    createDimension = core.Group.create_dimension
+    createDimension = core.Group._create_dimension
 
     def createVariable(self, varname, datatype, dimensions=(), zlib=False,
                        complevel=4, shuffle=True, fletcher32=False,
