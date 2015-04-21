@@ -4,7 +4,6 @@ from collections import MutableMapping
 _hidden_attrs = frozenset(['REFERENCE_LIST', 'CLASS', 'DIMENSION_LIST', 'NAME',
                            '_Netcdf4Dimid', '_Netcdf4Coordinates',
                            '_nc3_strict'])
-_reserved_attrs = _hidden_attrs | frozenset(['_FillValue'])
 
 
 class Attributes(MutableMapping):
@@ -17,7 +16,7 @@ class Attributes(MutableMapping):
         return self._h5attrs[key]
 
     def __setitem__(self, key, value):
-        if key in _reserved_attrs:
+        if key in _hidden_attrs:
             raise AttributeError('cannot write attribute with reserved name %r'
                                  % key)
         self._h5attrs[key] = value

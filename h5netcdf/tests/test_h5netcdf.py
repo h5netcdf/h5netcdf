@@ -70,8 +70,6 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     g = ds.createGroup('subgroup')
     v = g.createVariable('subvar', np.int32, ('x',))
     v[...] = np.arange(4.0)
-    with raises(AttributeError):
-        v._FillValue = -1
 
     g.createDimension('y', 10)
     g.createVariable('y_var', float, ('y',))
@@ -109,7 +107,7 @@ def write_h5netcdf(tmp_netcdf):
     v = g.create_variable('subvar', ('x',), np.int32)
     v[...] = np.arange(4.0)
     with raises(AttributeError):
-        v.attrs['_FillValue'] = -1
+        v.attrs['_Netcdf4Dimid'] = -1
 
     g.create_dimension('y', 10)
     g.create_variable('y_var', ('y',), float)
