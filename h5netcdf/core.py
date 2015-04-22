@@ -15,7 +15,7 @@ def _reverse_dict(dict_):
     return dict(zip(dict_.values(), dict_.keys()))
 
 
-class Variable(object):
+class BaseVariable(object):
     def __init__(self, parent, h5ds, dimensions=None):
         self._parent = parent
         self._h5ds = h5ds
@@ -94,12 +94,31 @@ class Variable(object):
                   (self._cls_name, self.name, self.dimensions, self.shape,
                    self.dtype))
         return '\n'.join([header] +
-                         # ['Dtype:      %s' % self.dtype] +
-                         # ['Dimensions: %r' % (self.dimensions,)] +
-                         # ['Shape:      %r' % (self.shape,)] +
                          ['Attributes:'] +
                          ['    %s: %r' % (k, v)
                           for k, v in self.attrs.items()])
+
+
+class Variable(BaseVariable):
+    @property
+    def chunks(self):
+        return self._h5ds.chunks
+
+    @property
+    def compression(self):
+        return self._h5ds.compression
+
+    @property
+    def compression_opts(self):
+        return self._h5ds.compression_opts
+
+    @property
+    def fletcher32(self):
+        return self._h5ds.fletcher32
+
+    @property
+    def shuffle(self):
+        return self._h5ds.shuffle
 
 
 NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'

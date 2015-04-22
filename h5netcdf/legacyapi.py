@@ -23,8 +23,22 @@ class HasAttributesMixin(object):
             object.__setattr__(self, name, value)
 
 
-class Variable(core.Variable, HasAttributesMixin):
+class Variable(core.BaseVariable, HasAttributesMixin):
     _cls_name = 'h5netcdf.legacyapi.Variable'
+
+    def chunking(self):
+        chunks = self._h5ds.chunks
+        if chunks is None:
+            return 'contiguous'
+        else:
+            return chunks
+
+    def filters(self):
+        complevel = self._h5ds.compression_opts
+        return {'complevel': 0 if complevel is None else complevel,
+                'fletcher32': self._h5ds.fletcher32,
+                'shuffle': self._h5ds.shuffle,
+                'zlib': self._h5ds.compression == 'gzip'}
 
 
 class Group(core.Group, HasAttributesMixin):
@@ -46,7 +60,7 @@ class Group(core.Group, HasAttributesMixin):
             # only add compression related keyword arguments if relevant (h5py
             # chokes otherwise)
             kwds['compression'] = 'gzip'
-            kwds['compression_ops'] = complevel
+            kwds['compression_opts'] = complevel
             kwds['shuffle'] = shuffle
 
         return super(Group, self).create_variable(

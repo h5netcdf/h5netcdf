@@ -51,7 +51,8 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.createDimension('z', 6)
     ds.createDimension('string3', 3)
 
-    v = ds.createVariable('foo', float, ('x', 'y'))
+    v = ds.createVariable('foo', float, ('x', 'y'), chunksizes=(4, 5),
+                          zlib=True)
     v[...] = 1
     v.setncattr('units', 'meters')
 
@@ -86,7 +87,8 @@ def write_h5netcdf(tmp_netcdf):
     ds.attrs['other_attr'] = 'yes'
     ds.dimensions = {'x': 4, 'y': 5, 'z': 6}
 
-    v = ds.create_variable('foo', ('x', 'y'), float)
+    v = ds.create_variable('foo', ('x', 'y'), float, chunks=(4, 5),
+                           compression='gzip', shuffle=True)
     v[...] = 1
     v.attrs['units'] = 'meters'
 
@@ -136,6 +138,9 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.ncattrs() == ['units']
     if not PY2 and write_module is not netCDF4:
         assert v.getncattr('units') == 'meters'
+    assert tuple(v.chunking()) == (4, 5)
+    assert v.filters() == {'complevel': 4, 'fletcher32': False,
+                           'shuffle': True, 'zlib': True}
 
     v = ds.variables['y']
     assert array_equal(v, np.r_[np.arange(4), [-1]])
@@ -144,6 +149,9 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.ndim == 1
     assert v.ncattrs() == ['_FillValue']
     assert v.getncattr('_FillValue') == -1
+    assert v.chunking() == 'contiguous'
+    assert v.filters() == {'complevel': 0, 'fletcher32': False,
+                           'shuffle': False, 'zlib': False}
 
     v = ds.variables['z']
     assert array_equal(v, _char_array)
@@ -197,6 +205,11 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert list(v.attrs) == ['units']
     if not PY2 and write_module is not netCDF4:
         assert v.attrs['units'] == 'meters'
+    assert v.chunks == (4, 5)
+    assert v.compression == 'gzip'
+    assert v.compression_opts == 4
+    assert not v.fletcher32
+    assert v.shuffle
 
     v = ds['y']
     assert array_equal(v, np.r_[np.arange(4), [-1]])
@@ -205,6 +218,11 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v.ndim == 1
     assert list(v.attrs) == ['_FillValue']
     assert v.attrs['_FillValue'] == -1
+    assert v.chunks == None
+    assert v.compression == None
+    assert v.compression_opts == None
+    assert not v.fletcher32
+    assert not v.shuffle
 
     v = ds['z']
     assert array_equal(v, _char_array)
