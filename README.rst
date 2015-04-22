@@ -25,7 +25,7 @@ Why did I write h5netcdf? Well, here are a few reasons:
   netCDF4 is not actually that complicated.
 - We've seen occasional reports of better performance with h5py than
   netCDF4-python that I wanted to be able to verify. For `some workflows`_,
-  **h5netcdf has been reported to be almost 4x faster than netCDF4-python**.
+  h5netcdf has been reported to be almost **4x faster** than `netCDF4-python`_.
 - h5py seems to have thought through multi-threading pretty carefully, so this
   in particular seems like a case where things could make a difference. I've
   started to care about this because I recently hooked up a multi-threaded
