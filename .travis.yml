@@ -7,8 +7,15 @@ matrix:
   include:
   - python: 2.6
   - python: 2.7
+  - python: 2.7
+    env: H5PY_VERSION="=2.3"
   - python: 3.3
   - python: 3.4
+  - python: 2.7
+    env: H5PY_VERSION="=2.1"
+  allow_failures:
+  - python: 2.7
+    env: H5PY_VERSION="=2.1"
 
 before_install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -24,7 +31,7 @@ before_install:
   - conda info -a
 
 install:
-  - conda create --yes -n test_env python=$TRAVIS_PYTHON_VERSION pip pytest h5py cython netCDF4
+  - conda create --yes -n test_env python=$TRAVIS_PYTHON_VERSION pip pytest h5py$H5PY_VERSION cython netCDF4
   - source activate test_env
   - python setup.py install
 

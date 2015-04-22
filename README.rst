@@ -43,8 +43,9 @@ Why did I write h5netcdf? Well, here are a few reasons:
 Install
 -------
 
-Ensure you have h5py installed (I recommend using conda_). Then: ``pip
-install h5netcdf``
+Ensure you have a recent version of h5py installed (I recommend using conda_).
+At least version 2.1 is required (for dimension scales); versions 2.3 and newer
+have been verified to work. Then: ``pip install h5netcdf``
 
 .. _conda: http://conda.io/
 
