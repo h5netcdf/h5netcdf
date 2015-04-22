@@ -52,7 +52,14 @@ have been verified to work. Then: ``pip install h5netcdf``
 Usage
 -----
 
-h5netcdf has two APIs, a new API and a legacy API.
+h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
+reproduce most of the features of the netCDF interface, with the noteable
+exceptions of:
+
+- operations the rename or delete existing objects.
+- suport for writing unlimited dimensions.
+
+We simply haven't gotten around to implementing these features yet.
 
 New API
 ~~~~~~~
