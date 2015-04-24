@@ -24,8 +24,9 @@ Why did I write h5netcdf? Well, here are a few reasons:
 - To prove it could be done (it seemed like an obvious thing to do) and that
   netCDF4 is not actually that complicated.
 - We've seen occasional reports of better performance with h5py than
-  netCDF4-python that I wanted to be able to verify. For `some workflows`_,
-  h5netcdf has been reported to be almost **4x faster** than `netCDF4-python`_.
+  netCDF4-python that I wanted to be able to verify. For at least `one workflow`_,
+  h5netcdf was reported to be almost **4x faster** than `netCDF4-python`_. If
+  you give it a try, I would love to hear how it works for you!
 - h5py seems to have thought through multi-threading pretty carefully, so this
   in particular seems like a case where things could make a difference. I've
   started to care about this because I recently hooked up a multi-threaded
@@ -37,7 +38,7 @@ Why did I write h5netcdf? Well, here are a few reasons:
   gives us an easier way to identify the source of performance issues and
   bugs.
 
-.. _some workflows: https://github.com/Unidata/netcdf4-python/issues/390#issuecomment-93864839
+.. _one workflow: https://github.com/Unidata/netcdf4-python/issues/390#issuecomment-93864839
 .. _xray: http://github.com/xray/xray/
 
 Install
@@ -56,8 +57,8 @@ h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
 reproduce most of the features of the netCDF interface, with the noteable
 exceptions of:
 
-- operations the rename or delete existing objects.
-- suport for writing unlimited dimensions.
+- support for operations the rename or delete existing objects.
+- suport for creating unlimited dimensions.
 
 We simply haven't gotten around to implementing these features yet.
 
