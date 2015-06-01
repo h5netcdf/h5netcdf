@@ -138,7 +138,7 @@ exact match. Here is an incomplete list of functionality we don't include:
   appear to offer this feature.
 - h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
-  (e.g., `xray`_), which can implement their exact desired scaling behavior.
+  (e.g., xray_), which can implement their exact desired scaling behavior.
 
 .. _xray: http://xray.readthedocs.org
 
