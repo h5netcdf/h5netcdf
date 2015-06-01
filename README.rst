@@ -140,8 +140,6 @@ exact match. Here is an incomplete list of functionality we don't include:
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
   (e.g., xray_), which can implement their exact desired scaling behavior.
 
-.. _xray: http://xray.readthedocs.org
-
 License
 -------
 
