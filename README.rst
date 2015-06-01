@@ -129,6 +129,19 @@ The legacy API is designed for compatibility with netCDF4-python_. To use it, im
         v.foo = 'bar'
         print(ds.groups['grouped'].variables['data'])
 
+The legacy API is designed to be easy to try-out for netCDF4-python users, but it is not an
+exact match. Here is an incomplete list of functionality we don't include:
+
+- Utility functions ``chartostring``, ``num2date``, etc., that are not directly necessary
+  for writing netCDF files.
+- We don't support the ``endian`` argument to ``createVariable``. The h5py API does not
+  appear to offer this feature.
+- h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
+  the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
+  (e.g., `xray`_), which can implement their exact desired scaling behavior.
+
+.. _xray: http://xray.readthedocs.org
+
 License
 -------
 
