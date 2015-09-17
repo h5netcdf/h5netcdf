@@ -45,7 +45,7 @@ class Variable(core.BaseVariable, HasAttributesMixin):
     @property
     def dtype(self):
         dt = self._h5ds.dtype
-        if h5py.check_dtype(vlen=dt) is str:
+        if h5py.check_dtype(vlen=dt) is bytes:
             return str
         return dt
 
@@ -73,7 +73,7 @@ class Group(core.Group, HasAttributesMixin):
             shuffle = False
 
         if datatype is str:
-            datatype = h5py.special_dtype(vlen=str)
+            datatype = h5py.special_dtype(vlen=bytes)
 
         kwds = {}
         if zlib:
