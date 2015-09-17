@@ -97,6 +97,9 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.createDimension('mismatched_dim', 1)
     ds.createVariable('mismatched_dim', int, ())
 
+    v = ds.createVariable('var_len_str', str, ('x'))
+    v[0] = u'foo'
+
     ds.close()
 
 
@@ -136,6 +139,10 @@ def write_h5netcdf(tmp_netcdf):
     ds.dimensions['mismatched_dim'] = 1
     ds.create_variable('mismatched_dim', dtype=int)
 
+    dt = h5py.special_dtype(vlen=str)
+    v = ds.create_variable('var_len_str', ('x',), dtype=dt)
+    v[0] = u'foo'
+
     ds.close()
 
 
@@ -149,7 +156,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.other_attr == 'yes'
     assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
-    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar', 'mismatched_dim'])
+    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar',
+                                     'var_len_str', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
     assert ds.parent is None
 
@@ -204,6 +212,10 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.dimensions == ()
     assert v.ncattrs() == []
 
+    v = ds.variables['var_len_str']
+    assert v.dtype == str
+    assert v[0] == u'foo'
+
     v = ds.groups['subgroup'].variables['subvar']
     assert ds.groups['subgroup'].parent is ds
     assert array_equal(v, np.arange(4.0))
@@ -230,7 +242,8 @@ def read_h5netcdf(tmp_netcdf, write_module):
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs['other_attr'] == 'yes'
     assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
-    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar', 'mismatched_dim'])
+    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar',
+                                     'var_len_str', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
     assert ds.parent is None
 
@@ -287,6 +300,10 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v.ndim == 0
     assert v.dimensions == ()
     assert list(v.attrs) == []
+
+    v = ds['var_len_str']
+    assert h5py.check_dtype(vlen=v.dtype) == str
+    assert v[0] == u'foo'
 
     v = ds['/subgroup/subvar']
     assert v is ds['subgroup']['subvar']
