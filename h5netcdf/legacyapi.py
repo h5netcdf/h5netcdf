@@ -55,6 +55,12 @@ class Group(core.Group, HasAttributesMixin):
     def createVariable(self, varname, datatype, dimensions=(), zlib=False,
                        complevel=4, shuffle=True, fletcher32=False,
                        chunksizes=None, fill_value=None):
+        if len(dimensions) == 0:  # it's a scalar
+            # rip off chunk and filter options.
+            chunksizes = None
+            zlib = False
+            fletcher32 = False
+            shuffle = False
         kwds = {}
         if zlib:
             # only add compression related keyword arguments if relevant (h5py
