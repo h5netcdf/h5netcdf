@@ -253,12 +253,6 @@ class Group(Mapping):
 
     def create_variable(self, name, dimensions=(), dtype=None, data=None,
                         fillvalue=None, **kwargs):
-        if len(dimensions) == 0:  # it's a scalar
-            # rip off chunk and filter options
-            for key in ["chunks", "compression", "compression_opts", "shuffle", "fletcher32",
-                        "scaleoffset"]:
-                kwargs[key] = None
-
         if name.startswith('/'):
             return self._root.create_variable(name[1:], dimensions, dtype,
                                               data, fillvalue, **kwargs)

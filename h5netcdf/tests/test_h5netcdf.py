@@ -65,6 +65,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     v = ds.createVariable('scalar', np.float32, ())
     v[...] = 2.0
 
+    # test creating a scalar with compression option (with should be ignored)
     v = ds.createVariable('intscalar', np.int64, (), zlib=6, fill_value=None)
     v[...] = 2
 
@@ -103,7 +104,7 @@ def write_h5netcdf(tmp_netcdf):
 
     v = ds.create_variable('scalar', data=np.float32(2.0))
 
-    v = ds.create_variable('intscalar', data=np.int64(2), compression='gzip', fillvalue=None)
+    v = ds.create_variable('intscalar', data=np.int64(2))
 
     with raises(TypeError):
         ds.create_variable('boolean', data=True)

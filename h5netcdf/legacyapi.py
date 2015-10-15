@@ -56,7 +56,8 @@ class Group(core.Group, HasAttributesMixin):
                        complevel=4, shuffle=True, fletcher32=False,
                        chunksizes=None, fill_value=None):
         if len(dimensions) == 0:  # it's a scalar
-            # rip off chunk and filter options.
+            # rip off chunk and filter options for consistency with netCDF4-python
+
             chunksizes = None
             zlib = False
             fletcher32 = False
