@@ -9,3 +9,5 @@ For more details on the netCDF4 file format, see:
 https://www.unidata.ucar.edu/software/netcdf/docs/netcdf/NetCDF_002d4-Format.html
 """
 from .core import File, Group, Variable
+
+__version__ = '0.2.2'
