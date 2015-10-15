@@ -16,6 +16,7 @@ def _reverse_dict(dict_):
 
 
 class BaseVariable(object):
+
     def __init__(self, parent, h5ds, dimensions=None):
         self._parent = parent
         self._h5ds = h5ds
@@ -100,6 +101,7 @@ class BaseVariable(object):
 
 
 class Variable(BaseVariable):
+
     @property
     def chunks(self):
         return self._h5ds.chunks
@@ -251,6 +253,12 @@ class Group(Mapping):
 
     def create_variable(self, name, dimensions=(), dtype=None, data=None,
                         fillvalue=None, **kwargs):
+        if len(dimensions) == 0:  # it's a scalar
+            # rip off chunk and filter options
+            for key in ["chunks", "compression", "compression_opts", "shuffle", "fletcher32",
+                        "scaleoffset"]:
+                kwargs[key] = None
+
         if name.startswith('/'):
             return self._root.create_variable(name[1:], dimensions, dtype,
                                               data, fillvalue, **kwargs)
@@ -358,6 +366,7 @@ class Group(Mapping):
 
 
 class File(Group):
+
     def __init__(self, path, mode='a', **kwargs):
         self._h5file = h5py.File(path, mode, **kwargs)
         self._dim_sizes = ChainMap()
