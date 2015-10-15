@@ -16,6 +16,7 @@ def _reverse_dict(dict_):
 
 
 class BaseVariable(object):
+
     def __init__(self, parent, h5ds, dimensions=None):
         self._parent = parent
         self._h5ds = h5ds
@@ -100,6 +101,7 @@ class BaseVariable(object):
 
 
 class Variable(BaseVariable):
+
     @property
     def chunks(self):
         return self._h5ds.chunks
@@ -358,6 +360,7 @@ class Group(Mapping):
 
 
 class File(Group):
+
     def __init__(self, path, mode='a', **kwargs):
         self._h5file = h5py.File(path, mode, **kwargs)
         self._dim_sizes = ChainMap()

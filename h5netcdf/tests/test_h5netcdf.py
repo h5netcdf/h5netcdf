@@ -65,6 +65,10 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     v = ds.createVariable('scalar', np.float32, ())
     v[...] = 2.0
 
+    # test creating a scalar with compression option (with should be ignored)
+    v = ds.createVariable('intscalar', np.int64, (), zlib=6, fill_value=None)
+    v[...] = 2
+
     with raises(TypeError):
         ds.createVariable('boolean', np.bool_, ('x'))
 
@@ -100,6 +104,8 @@ def write_h5netcdf(tmp_netcdf):
 
     v = ds.create_variable('scalar', data=np.float32(2.0))
 
+    v = ds.create_variable('intscalar', data=np.int64(2))
+
     with raises(TypeError):
         ds.create_variable('boolean', data=True)
 
@@ -126,7 +132,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.other_attr == 'yes'
     assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
-    assert set(ds.variables) == set(['foo', 'y', 'z', 'scalar', 'mismatched_dim'])
+    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
     assert ds.parent is None
 
@@ -168,6 +174,13 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.dimensions == ()
     assert v.ncattrs() == []
 
+    v = ds.variables['intscalar']
+    assert array_equal(v, np.array(2))
+    assert v.dtype == 'int64'
+    assert v.ndim == 0
+    assert v.dimensions == ()
+    assert v.ncattrs() == []
+
     v = ds.groups['subgroup'].variables['subvar']
     assert ds.groups['subgroup'].parent is ds
     assert array_equal(v, np.arange(4.0))
@@ -192,7 +205,7 @@ def read_h5netcdf(tmp_netcdf, write_module):
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs['other_attr'] == 'yes'
     assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
-    assert set(ds.variables) == set(['foo', 'y', 'z', 'scalar', 'mismatched_dim'])
+    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
     assert ds.parent is None
 
@@ -235,6 +248,13 @@ def read_h5netcdf(tmp_netcdf, write_module):
     v = ds['scalar']
     assert array_equal(v, np.array(2.0))
     assert v.dtype == 'float32'
+    assert v.ndim == 0
+    assert v.dimensions == ()
+    assert list(v.attrs) == []
+
+    v = ds.variables['intscalar']
+    assert array_equal(v, np.array(2))
+    assert v.dtype == 'int64'
     assert v.ndim == 0
     assert v.dimensions == ()
     assert list(v.attrs) == []
