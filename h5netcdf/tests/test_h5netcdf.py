@@ -126,7 +126,9 @@ def write_h5netcdf(tmp_netcdf):
 
 def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     ds = read_module.Dataset(tmp_netcdf, 'r')
-    assert ds.ncattrs() == ['global', 'other_attr']
+    # ignore _NCProperties for now: https://github.com/shoyer/h5netcdf/issues/18
+    attr_names = [k for k in ds.ncattrs() if k != '_NCProperties']
+    assert attr_names == ['global', 'other_attr']
     assert ds.getncattr('global') == 42
     if not PY2 and write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
@@ -199,7 +201,9 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 def read_h5netcdf(tmp_netcdf, write_module):
     ds = h5netcdf.File(tmp_netcdf, 'r')
     assert ds.name == '/'
-    assert list(ds.attrs) == ['global', 'other_attr']
+    # ignore _NCProperties for now: https://github.com/shoyer/h5netcdf/issues/18
+    attr_names = [k for k in list(ds.attrs) if k != '_NCProperties']
+    assert attr_names == ['global', 'other_attr']
     assert ds.attrs['global'] == 42
     if not PY2 and write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
