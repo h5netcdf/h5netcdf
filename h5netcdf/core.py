@@ -142,7 +142,7 @@ class _LazyObjectLookup(Mapping):
         self._objects[name] = object
 
     def add(self, name):
-        self._objects[name]=None
+        self._objects[name] = None
 
     def __iter__(self):
         for name in self._objects:
