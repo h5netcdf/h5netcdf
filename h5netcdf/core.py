@@ -159,7 +159,7 @@ class _object_names(Mapping):
         elif key in self._loaded_objects:
             return self._loaded_objects[key]
         else:
-            self._loaded_objects[key] = self._object_cls(self._parent,key)
+            self._loaded_objects[key] = self._object_cls(self._parent, key)
             return self[key]
 
 class Group(Mapping):

@@ -62,10 +62,14 @@ exceptions of:
 
 We simply haven't gotten around to implementing these features yet.
 
+ChangeLog
+---------
+
 A new feature is the lazy opening of datasets. Unlike
 the netCDF interface where attributes for all variables and groups are read at
 the creation of the Dataset object, h5netcdf loads these attributes only
 when accessed.
+
 
 New API
 ~~~~~~~

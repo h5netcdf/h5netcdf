@@ -45,7 +45,7 @@ _string_array = np.array([['foobar0', 'foobar1', 'foobar3'],
                           ['foofoofoo', 'foofoobar', 'foobarbar']])
 
 def is_h5py_char_working(tmp_netcdf, name):
-    #https://github.com/Unidata/netcdf-c/issues/298
+    # https://github.com/Unidata/netcdf-c/issues/298
     with h5py.File(tmp_netcdf, 'r') as ds:
         v = ds[name]
         try:
