@@ -5,7 +5,7 @@ from collections import Mapping
 import h5py
 import numpy as np
 
-from .compat import ChainMap, OrderedDict
+from .compat import ChainMap
 from .attrs import Attributes
 from .dimensions import Dimensions
 from .utils import Frozen
