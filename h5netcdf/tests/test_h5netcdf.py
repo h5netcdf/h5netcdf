@@ -431,12 +431,15 @@ def test_hierarchical_access_auto_create(tmp_netcdf):
     ds.close()
 
 def test_reading_str_array_from_netcdf4(tmp_netcdf):
+    test_array=['foobar0','foobar1']
     with netCDF4.Dataset(tmp_netcdf,'w') as ds:
         ds.createDimension('foo',2)
         ds.createVariable('bar',str,('foo',))
-        ds.variables['bar'][0]='foobar0'
-        ds.variables['bar'][1]='foobar1'
+        for id, val in enumerate(test_array):
+            ds.variables['bar'][id]=val
 
     ds = h5netcdf.File(tmp_netcdf, 'r')
-    assert np.array_equal(ds.variables['bar'][:],['foobar0','foobar1'])
+
+    read_array=[ds.variables['bar'][id] for id in range(len(ds.variables['bar']))]
+    assert np.array_equal(read_array,test_array)
     ds.close()
