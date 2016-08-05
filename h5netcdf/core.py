@@ -414,7 +414,7 @@ class Group(Mapping):
 
 class File(Group):
 
-    def __init__(self, path, mode='a',lazy=False, **kwargs):
+    def __init__(self, path, mode='a',lazy=True, **kwargs):
         self._h5file = h5py.File(path, mode, **kwargs)
         self._dim_sizes = ChainMap()
         self._dim_order = ChainMap()
