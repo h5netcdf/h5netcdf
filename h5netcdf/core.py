@@ -204,8 +204,8 @@ class Group(Mapping):
 
     @property
     def _h5group(self):
-        #Always refer to the root file and store not h5py object
-        #subclasses:
+        # Always refer to the root file and store not h5py object
+        # subclasses:
         return self._root._h5file[self._h5path]
 
     @property
