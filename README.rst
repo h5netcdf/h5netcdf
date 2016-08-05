@@ -62,11 +62,10 @@ exceptions of:
 
 We simply haven't gotten around to implementing these features yet.
 
-A new feature, enabled by default, is the lazy opening of datasets. Unlike
+A new feature is the lazy opening of datasets. Unlike
 the netCDF interface where attributes for all variables and groups are read at
 the creation of the Dataset object, h5netcdf loads these attributes only
-when accessed. Passing `--lazy=False` to `h5netcdf.File` or `h5netcdf.legacyapi.Dataset`
-reverts to the netCDF interface behavior.
+when accessed.
 
 New API
 ~~~~~~~

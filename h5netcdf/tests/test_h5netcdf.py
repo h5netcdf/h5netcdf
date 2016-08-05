@@ -44,6 +44,19 @@ _char_array = string_to_char(np.array(['a', 'b', 'c', 'foo', 'bar', 'baz'],
 _string_array=np.array([['foobar0','foobar1','foobar3'],
                      ['foofoofoo','foofoobar','foobarbar']])
 
+def is_h5py_char_working(tmp_netcdf,name):
+    #https://github.com/Unidata/netcdf-c/issues/298
+    with h5py.File(tmp_netcdf, 'r') as ds:
+        v = ds[name]
+        try:
+            assert array_equal(v, _char_array)
+            return True
+        except OSError as e:
+            if e.args[0]=="Can't read data (No appropriate function for conversion path)":
+                return False
+            else:
+                raise
+
 def write_legacy_netcdf(tmp_netcdf, write_module):
     ds = write_module.Dataset(tmp_netcdf, 'w')
     ds.setncattr('global', 42)
@@ -165,19 +178,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     ds.close()
 
     #Check the behavior if h5py. Cannot expect h5netcdf to overcome these errors:
-    with h5py.File(tmp_netcdf, 'r') as ds:
-        v = ds['z']
-        try:
-            assert array_equal(v, _char_array)
-            check_chars=True
-        except OSError as e:
-            if e.args[0]=="Can't read data (No appropriate function for conversion path)":
-                check_chars=False
-            else:
-                raise
-
-    ds = read_module.Dataset(tmp_netcdf, 'r')
-    if check_chars:
+    if is_h5py_char_working(tmp_netcdf,'z'):
+        ds = read_module.Dataset(tmp_netcdf, 'r')
         v = ds.variables['z']
         assert array_equal(v, _char_array)
         assert v.dtype == 'S1'
@@ -185,6 +187,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
         assert v.dimensions == ('z', 'string3')
         assert v.ncattrs() == ['_FillValue']
         assert v.getncattr('_FillValue') == b'X'
+    else:
+        ds = read_module.Dataset(tmp_netcdf, 'r')
 
     v = ds.variables['scalar']
     assert array_equal(v, np.array(2.0))
@@ -259,25 +263,16 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert not v.shuffle
     ds.close()
 
-    with h5py.File(tmp_netcdf, 'r') as ds:
-        v = ds['z']
-        try:
-            assert array_equal(v, _char_array)
-            check_chars=True
-        except OSError as e:
-            if e.args[0]=="Can't read data (No appropriate function for conversion path)":
-                check_chars=False
-            else:
-                raise
-
-    ds = h5netcdf.File(tmp_netcdf, 'r')
-    if check_chars:
+    if is_h5py_char_working(tmp_netcdf,'z'):
+        ds = h5netcdf.File(tmp_netcdf, 'r')
         v = ds['z']
         assert v.dtype == 'S1'
         assert v.ndim == 2
         assert v.dimensions == ('z', 'string3')
         assert list(v.attrs) == ['_FillValue']
         assert v.attrs['_FillValue'] == b'X'
+    else:
+        ds = h5netcdf.File(tmp_netcdf, 'r')
 
     v = ds['scalar']
     assert array_equal(v, np.array(2.0))

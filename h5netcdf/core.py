@@ -132,7 +132,7 @@ class Variable(BaseVariable):
 
 NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
-class lazy_objects():
+class lazy_objects(Mapping):
     def __init__(self,object_cls):
         self._objects=OrderedDict()
         self._loaded_objects=dict()
@@ -142,9 +142,6 @@ class lazy_objects():
     def set(self,name,object):
         self._loaded_objects[name]=object
         self._objects[name]=name
-
-    def keys(self):
-        return self._objects.keys()
 
     def __iter__(self):
         for name in self._objects:
@@ -176,7 +173,6 @@ class Group(Mapping):
         self._parent = parent
         self._root = parent._root
         self._h5path='/'.join([parent.name.rstrip('/'),name.lstrip('/')])
-        self._lazy=parent._lazy
 
         if parent is not self:
             self._dim_sizes = parent._dim_sizes.new_child()
@@ -207,14 +203,6 @@ class Group(Mapping):
                     if k.startswith('_nc4_non_coord_'):
                         var_name = k[len('_nc4_non_coord_'):]
                     self._variables[var_name] = var_name
-        
-        if not self._lazy:
-            #If not lazy, load groups and variables before
-            #concluding the initalization
-            for name in self.groups:
-                self.groups[name]
-            for name in self.variables:
-                self.variables[name]
         self._initialized = True
 
     @property
@@ -255,7 +243,7 @@ class Group(Mapping):
         if name in self:
             raise ValueError('unable to create group %r (name already exists)'
                              % name)
-        h5group = self._h5group.create_group(name)
+        self._h5group.create_group(name)
         self._groups.set(name,self._group_cls(self,name))
         return self._groups[name]
 
@@ -295,7 +283,7 @@ class Group(Mapping):
         else:
             h5name = name
 
-        h5ds = self._h5group.create_dataset(h5name, shape, dtype=dtype,
+        self._h5group.create_dataset(h5name, shape, dtype=dtype,
                                             data=data, fillvalue=fillvalue,
                                             **kwargs)
 
@@ -417,14 +405,13 @@ class Group(Mapping):
 
 class File(Group):
 
-    def __init__(self, path, mode='a',lazy=True, **kwargs):
+    def __init__(self, path, mode='a', **kwargs):
         self._h5file = h5py.File(path, mode, **kwargs)
         self._dim_sizes = ChainMap()
         self._dim_order = ChainMap()
         self._mode = mode
         self._root = self
         self._h5path = '/'
-        self._lazy=lazy
         self._closed = False
         super(File, self).__init__(self, self._h5path)
 
