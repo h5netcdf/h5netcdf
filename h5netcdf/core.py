@@ -143,6 +143,9 @@ class lazy_objects():
         self._loaded_objects[name]=object
         self._objects[name]=name
 
+    def keys(self):
+        return self._objects.keys()
+
     def __iter__(self):
         for name in self._objects:
             yield name
