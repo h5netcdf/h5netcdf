@@ -17,11 +17,18 @@ def _reverse_dict(dict_):
 
 class BaseVariable(object):
 
-    def __init__(self, parent, h5ds, dimensions=None):
+    def __init__(self, parent, name, dimensions=None):
         self._parent = parent
-        self._h5ds = h5ds
+        self._root=parent._root
+        self._h5path='/'.join([parent.name.rstrip('/'),name.lstrip('/')])
         self._dimensions = dimensions
         self._initialized = True
+
+    @property
+    def _h5ds(self):
+        #Always refer to the root file and store not h5py object
+        #subclasses:
+        return self._root._h5file[self._h5path]
 
     @property
     def name(self):
@@ -125,6 +132,30 @@ class Variable(BaseVariable):
 
 NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
+class lazy_objects():
+    def __init__(self,group_cls):
+        self._objects=OrderedDict()
+        self._loaded_objects=dict()
+        self._group_cls=group_cls
+        return
+
+    def keys(self):
+        return self._objects.keys()
+
+    def __iter__(self):
+        for name in self._objects:
+            yield name
+
+    def __setitem__(self,key,value):
+        self._objects[key]=value
+        return
+
+    def __getitem__(self,key):
+        if key in self._loaded_objects.keys():
+            return self._loaded_objects[key]
+        else:
+            self._loaded_objects[key]=self._group_cls(self._objects[key])
+            return self[key] 
 
 class Group(Mapping):
     _variable_cls = Variable
@@ -133,20 +164,22 @@ class Group(Mapping):
     def _group_cls(self):
         return Group
 
-    def __init__(self, parent, h5group):
+    def __init__(self, parent, name):
         self._parent = parent
         self._root = parent._root
-        self._h5group = h5group
+        self._h5path='/'.join([parent.name.rstrip('/'),name.lstrip('/')])
+        self._lazy=parent._lazy
+
         if parent is not self:
             self._dim_sizes = parent._dim_sizes.new_child()
             self._dim_order = parent._dim_order.new_child()
 
-        self._variables = OrderedDict()
-        self._groups = OrderedDict()
+        self._variables = lazy_objects(lambda x:Variable(self,x))
+        self._groups = lazy_objects(lambda x:Group(self,x))
 
-        for k, v in h5group.items():
+        for k, v in self._h5group.items():
             if isinstance(v, h5py.Group):
-                self._groups[k] = self._group_cls(self, v)
+                self._groups[k] = k
             else:
                 if v.attrs.get('CLASS') == b'DIMENSION_SCALE':
                     dim_id = v.attrs.get('_Netcdf4Dimid')
@@ -162,11 +195,25 @@ class Group(Mapping):
                         dim_id = len(self._dim_order)
                     self._dim_order[k] = dim_id
                 if NOT_A_VARIABLE not in v.attrs.get('NAME', b''):
-                    name = k
+                    var_name = k
                     if k.startswith('_nc4_non_coord_'):
-                        name = k[len('_nc4_non_coord_'):]
-                    self._variables[name] = self._variable_cls(self, v)
+                        var_name = k[len('_nc4_non_coord_'):]
+                    self._variables[var_name] = var_name
+        
+        if not self._lazy:
+            #If not lazy, load groups and variables before
+            #concluding the initalization
+            for name in self.groups:
+                self.groups[name]
+            for name in self.variables:
+                self.variables[name]
         self._initialized = True
+
+    @property
+    def _h5group(self):
+        #Always refer to the root file and store not h5py object
+        #subclasses:
+        return self._root._h5file[self._h5path]
 
     @property
     def name(self):
@@ -201,9 +248,8 @@ class Group(Mapping):
             raise ValueError('unable to create group %r (name already exists)'
                              % name)
         h5group = self._h5group.create_group(name)
-        group = self._group_cls(self, h5group)
-        self._groups[name] = group
-        return group
+        self._groups[name] = h5group
+        return self._groups[name]
 
     def _require_child_group(self, name):
         try:
@@ -329,10 +375,12 @@ class Group(Mapping):
     @property
     def groups(self):
         return Frozen(self._groups)
+        #return self._groups
 
     @property
     def variables(self):
         return Frozen(self._variables)
+        #return self._variables
 
     @property
     def attrs(self):
@@ -361,22 +409,24 @@ class Group(Mapping):
 
 class File(Group):
 
-    def __init__(self, path, mode='a', **kwargs):
+    def __init__(self, path, mode='a',lazy=False, **kwargs):
         self._h5file = h5py.File(path, mode, **kwargs)
         self._dim_sizes = ChainMap()
         self._dim_order = ChainMap()
         self._mode = mode
         self._root = self
+        self._h5path = '/'
+        self._lazy=lazy
         self._closed = False
-        super(File, self).__init__(self, self._h5file)
+        super(File, self).__init__(self, self._h5path)
 
     @property
     def mode(self):
-        return self._h5group.mode
+        return self._h5file.mode
 
     @property
     def filename(self):
-        return self._h5group.filename
+        return self._h5file.filename
 
     @property
     def parent(self):
