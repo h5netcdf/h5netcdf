@@ -41,6 +41,21 @@ def array_equal(a, b):
 _char_array = string_to_char(np.array(['a', 'b', 'c', 'foo', 'bar', 'baz'],
                                       dtype='S'))
 
+_string_array = np.array([['foobar0', 'foobar1', 'foobar3'],
+                          ['foofoofoo', 'foofoobar', 'foobarbar']])
+
+def is_h5py_char_working(tmp_netcdf, name):
+    # https://github.com/Unidata/netcdf-c/issues/298
+    with h5py.File(tmp_netcdf, 'r') as ds:
+        v = ds[name]
+        try:
+            assert array_equal(v, _char_array)
+            return True
+        except OSError as e:
+            if e.args[0] == "Can't read data (No appropriate function for conversion path)":
+                return False
+            else:
+                raise
 
 def write_legacy_netcdf(tmp_netcdf, write_module):
     ds = write_module.Dataset(tmp_netcdf, 'w')
@@ -160,14 +175,20 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.chunking() == 'contiguous'
     assert v.filters() == {'complevel': 0, 'fletcher32': False,
                            'shuffle': False, 'zlib': False}
+    ds.close()
 
-    v = ds.variables['z']
-    assert array_equal(v, _char_array)
-    assert v.dtype == 'S1'
-    assert v.ndim == 2
-    assert v.dimensions == ('z', 'string3')
-    assert v.ncattrs() == ['_FillValue']
-    assert v.getncattr('_FillValue') == b'X'
+    #Check the behavior if h5py. Cannot expect h5netcdf to overcome these errors:
+    if is_h5py_char_working(tmp_netcdf, 'z'):
+        ds = read_module.Dataset(tmp_netcdf, 'r')
+        v = ds.variables['z']
+        assert array_equal(v, _char_array)
+        assert v.dtype == 'S1'
+        assert v.ndim == 2
+        assert v.dimensions == ('z', 'string3')
+        assert v.ncattrs() == ['_FillValue']
+        assert v.getncattr('_FillValue') == b'X'
+    else:
+        ds = read_module.Dataset(tmp_netcdf, 'r')
 
     v = ds.variables['scalar']
     assert array_equal(v, np.array(2.0))
@@ -240,14 +261,18 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v.compression_opts == None
     assert not v.fletcher32
     assert not v.shuffle
+    ds.close()
 
-    v = ds['z']
-    assert array_equal(v, _char_array)
-    assert v.dtype == 'S1'
-    assert v.ndim == 2
-    assert v.dimensions == ('z', 'string3')
-    assert list(v.attrs) == ['_FillValue']
-    assert v.attrs['_FillValue'] == b'X'
+    if is_h5py_char_working(tmp_netcdf, 'z'):
+        ds = h5netcdf.File(tmp_netcdf, 'r')
+        v = ds['z']
+        assert v.dtype == 'S1'
+        assert v.ndim == 2
+        assert v.dimensions == ('z', 'string3')
+        assert list(v.attrs) == ['_FillValue']
+        assert v.attrs['_FillValue'] == b'X'
+    else:
+        ds = h5netcdf.File(tmp_netcdf, 'r')
 
     v = ds['scalar']
     assert array_equal(v, np.array(2.0))
@@ -428,4 +453,18 @@ def test_hierarchical_access_auto_create(tmp_netcdf):
     ds = h5netcdf.File(tmp_netcdf, 'r')
     assert set(ds) == set(['foo'])
     assert set(ds['foo']) == set(['bar', 'baz', 'hello'])
+    ds.close()
+
+def test_reading_str_array_from_netCDF4(tmp_netcdf):
+    #This tests reading string variables created by netCDF4
+    with netCDF4.Dataset(tmp_netcdf, 'w') as ds:
+        ds.createDimension('foo1', _string_array.shape[0])
+        ds.createDimension('foo2', _string_array.shape[1])
+        ds.createVariable('bar', str, ('foo1', 'foo2'))
+        ds.variables['bar'][:] = _string_array
+
+    ds = h5netcdf.File(tmp_netcdf, 'r')
+
+    v = ds.variables['bar']
+    assert array_equal(v, _string_array)
     ds.close()
