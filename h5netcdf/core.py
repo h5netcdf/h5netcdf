@@ -152,7 +152,7 @@ class _LazyObjectLookup(Mapping):
         return len(self._objects)
 
     def __getitem__(self, key):
-        if self._obecjts[key] != None:
+        if self._objects[key] != None:
             return self._objects[key]
         else:
             self._objects[key] = self._object_cls(self._parent, key)
