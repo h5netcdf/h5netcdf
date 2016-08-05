@@ -133,14 +133,15 @@ class Variable(BaseVariable):
 NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
 class lazy_objects():
-    def __init__(self,group_cls):
+    def __init__(self,object_cls):
         self._objects=OrderedDict()
         self._loaded_objects=dict()
-        self._group_cls=group_cls
+        self._object_cls=object_cls
         return
 
-    def keys(self):
-        return self._objects.keys()
+    def set(self,name,object):
+        self._loaded_objects[name]=object
+        self._objects[name]=name
 
     def __iter__(self):
         for name in self._objects:
@@ -154,10 +155,11 @@ class lazy_objects():
         if key in self._loaded_objects.keys():
             return self._loaded_objects[key]
         else:
-            self._loaded_objects[key]=self._group_cls(self._objects[key])
+            self._loaded_objects[key]=self._object_cls(self._objects[key])
             return self[key] 
 
 class Group(Mapping):
+
     _variable_cls = Variable
 
     @property
@@ -174,8 +176,8 @@ class Group(Mapping):
             self._dim_sizes = parent._dim_sizes.new_child()
             self._dim_order = parent._dim_order.new_child()
 
-        self._variables = lazy_objects(lambda x:Variable(self,x))
-        self._groups = lazy_objects(lambda x:Group(self,x))
+        self._variables = lazy_objects(lambda x:self._variable_cls(self,x))
+        self._groups = lazy_objects(lambda x:self._group_cls(self,x))
 
         for k, v in self._h5group.items():
             if isinstance(v, h5py.Group):
@@ -248,7 +250,7 @@ class Group(Mapping):
             raise ValueError('unable to create group %r (name already exists)'
                              % name)
         h5group = self._h5group.create_group(name)
-        self._groups[name] = h5group
+        self._groups.set(name,h5group)
         return self._groups[name]
 
     def _require_child_group(self, name):
@@ -290,7 +292,9 @@ class Group(Mapping):
         h5ds = self._h5group.create_dataset(h5name, shape, dtype=dtype,
                                             data=data, fillvalue=fillvalue,
                                             **kwargs)
-        variable = self._variable_cls(self, h5ds, dimensions)
+
+        self._variables.set(h5name,self._variable_cls(self, h5name, dimensions))
+
         if fillvalue is not None:
             value = variable.dtype.type(fillvalue)
             variable.attrs._h5attrs['_FillValue'] = value
@@ -375,12 +379,10 @@ class Group(Mapping):
     @property
     def groups(self):
         return Frozen(self._groups)
-        #return self._groups
 
     @property
     def variables(self):
         return Frozen(self._variables)
-        #return self._variables
 
     @property
     def attrs(self):
