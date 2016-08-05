@@ -15,12 +15,15 @@ def _reverse_dict(dict_):
     return dict(zip(dict_.values(), dict_.keys()))
 
 
+def _join_h5paths(parent_path, child_path):
+    return '/'.join([parent_path.rstrip('/'), child_path.lstrip('/')])
+
 class BaseVariable(object):
 
     def __init__(self, parent, name, dimensions=None):
         self._parent = parent
         self._root = parent._root
-        self._h5path = '/'.join([parent.name.rstrip('/'), name.lstrip('/')])
+        self._h5path = _join_h5paths(parent.name, name)
         self._dimensions = dimensions
         self._initialized = True
 
@@ -169,7 +172,7 @@ class Group(Mapping):
     def __init__(self, parent, name):
         self._parent = parent
         self._root = parent._root
-        self._h5path = '/'.join([parent.name.rstrip('/'), name.lstrip('/')])
+        self._h5path = _join_h5paths(parent.name, name)
 
         if parent is not self:
             self._dim_sizes = parent._dim_sizes.new_child()
