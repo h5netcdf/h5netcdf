@@ -154,7 +154,7 @@ class lazy_objects(Mapping):
 
     def __getitem__(self, key):
         if not key in self._objects:
-            raise KeyError('Object {0} is not avaialble.'.format(key))
+            raise KeyError(key)
         elif key in self._loaded_objects.keys():
             return self._loaded_objects[key]
         else:
