@@ -138,8 +138,8 @@ class _LazyObjectLookup(Mapping):
         self._object_cls = object_cls
         self._objects = OrderedDict()
 
-    def __setitem__(self, name, object):
-        self._objects[name] = object
+    def __setitem__(self, name, obj):
+        self._objects[name] = obj
 
     def add(self, name):
         self._objects[name] = None
@@ -152,7 +152,7 @@ class _LazyObjectLookup(Mapping):
         return len(self._objects)
 
     def __getitem__(self, key):
-        if self._objects[key] != None:
+        if self._objects[key] is not None:
             return self._objects[key]
         else:
             self._objects[key] = self._object_cls(self._parent, key)
