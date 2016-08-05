@@ -147,6 +147,9 @@ class lazy_objects():
         for name in self._objects:
             yield name
 
+    def __len__(self):
+        return len(self._objects)
+
     def __setitem__(self,key,value):
         self._objects[key]=value
         return
