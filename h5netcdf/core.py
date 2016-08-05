@@ -138,7 +138,7 @@ class lazy_objects(Mapping):
         self._loaded_objects = dict()
         self._object_cls = object_cls
 
-    def set(self, name, object):
+    def __setitem__(self, name, object):
         self._objects.append(name)
         self._loaded_objects[name] = object
 
@@ -244,7 +244,7 @@ class Group(Mapping):
             raise ValueError('unable to create group %r (name already exists)'
                              % name)
         self._h5group.create_group(name)
-        self._groups.set(name, self._group_cls(self, name))
+        self._groups[name] = self._group_cls(self, name)
         return self._groups[name]
 
     def _require_child_group(self, name):
@@ -287,7 +287,7 @@ class Group(Mapping):
                                      data=data, fillvalue=fillvalue,
                                      **kwargs)
 
-        self._variables.set(h5name, self._variable_cls(self, h5name, dimensions))
+        self._variables[h5name] = self._variable_cls(self, h5name, dimensions)
         variable = self._variables[h5name]
 
         if fillvalue is not None:
