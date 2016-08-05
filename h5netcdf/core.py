@@ -140,10 +140,11 @@ class lazy_objects(Mapping):
         return
 
     def set(self, name, object):
-        self._loaded_objects[name] = object
         self._objects.append(name)
+        self._loaded_objects[name] = object
+        return
 
-    def add(self, name)
+    def add(self, name):
         self._objects.append(name)
         return
 
@@ -155,7 +156,9 @@ class lazy_objects(Mapping):
         return len(self._objects)
 
     def __getitem__(self, key):
-        if key in self._loaded_objects.keys():
+        if not key in self._objects:
+            raise KeyError('Object {0} is not avaialble.'.format(key))
+        elif key in self._loaded_objects.keys():
             return self._loaded_objects[key]
         else:
             self._loaded_objects[key] = self._object_cls(key)
