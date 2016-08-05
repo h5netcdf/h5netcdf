@@ -250,12 +250,12 @@ class Group(Mapping):
             raise ValueError('unable to create group %r (name already exists)'
                              % name)
         h5group = self._h5group.create_group(name)
-        self._groups.set(name,h5group)
+        self._groups.set(name,self._group_cls(self,name))
         return self._groups[name]
 
     def _require_child_group(self, name):
         try:
-            return self.groups[name]
+            return self._groups[name]
         except KeyError:
             return self._create_child_group(name)
 
