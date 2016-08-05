@@ -5,7 +5,7 @@ from collections import Mapping
 import h5py
 import numpy as np
 
-from .compat import ChainMap
+from .compat import ChainMap, OrderedDict
 from .attrs import Attributes
 from .dimensions import Dimensions
 from .utils import Frozen
@@ -26,8 +26,8 @@ class BaseVariable(object):
 
     @property
     def _h5ds(self):
-        #Always refer to the root file and store not h5py object
-        #subclasses:
+        # Always refer to the root file and store not h5py object
+        # subclasses:
         return self._root._h5file[self._h5path]
 
     @property
@@ -136,15 +136,13 @@ class _LazyObjectLookup(Mapping):
     def __init__(self, parent, object_cls):
         self._parent = parent
         self._object_cls = object_cls
-        self._objects = set()
-        self._loaded_objects = dict()
+        self._objects = OrderedDict()
 
     def __setitem__(self, name, object):
-        self._objects.add(name)
-        self._loaded_objects[name] = object
+        self._objects[name] = object
 
     def add(self, name):
-        self._objects.add(name)
+        self._objects[name]=None
 
     def __iter__(self):
         for name in self._objects:
@@ -154,13 +152,11 @@ class _LazyObjectLookup(Mapping):
         return len(self._objects)
 
     def __getitem__(self, key):
-        if not key in self._objects:
-            raise KeyError(key)
-        elif key in self._loaded_objects:
-            return self._loaded_objects[key]
+        if self._obecjts[key] != None:
+            return self._objects[key]
         else:
-            self._loaded_objects[key] = self._object_cls(self._parent, key)
-            return self[key]
+            self._objects[key] = self._object_cls(self._parent, key)
+            return self._objects[key]
 
 class Group(Mapping):
 
