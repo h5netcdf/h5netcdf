@@ -137,16 +137,13 @@ class lazy_objects(Mapping):
         self._objects = list()
         self._loaded_objects = dict()
         self._object_cls = object_cls
-        return
 
     def set(self, name, object):
         self._objects.append(name)
         self._loaded_objects[name] = object
-        return
 
     def add(self, name):
         self._objects.append(name)
-        return
 
     def __iter__(self):
         for name in self._objects:
