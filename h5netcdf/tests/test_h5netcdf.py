@@ -41,10 +41,10 @@ def array_equal(a, b):
 _char_array = string_to_char(np.array(['a', 'b', 'c', 'foo', 'bar', 'baz'],
                                       dtype='S'))
 
-_string_array=np.array([['foobar0','foobar1','foobar3'],
-                     ['foofoofoo','foofoobar','foobarbar']])
+_string_array = np.array([['foobar0', 'foobar1', 'foobar3'],
+                          ['foofoofoo', 'foofoobar', 'foobarbar']])
 
-def is_h5py_char_working(tmp_netcdf,name):
+def is_h5py_char_working(tmp_netcdf, name):
     #https://github.com/Unidata/netcdf-c/issues/298
     with h5py.File(tmp_netcdf, 'r') as ds:
         v = ds[name]
@@ -52,7 +52,7 @@ def is_h5py_char_working(tmp_netcdf,name):
             assert array_equal(v, _char_array)
             return True
         except OSError as e:
-            if e.args[0]=="Can't read data (No appropriate function for conversion path)":
+            if e.args[0] == "Can't read data (No appropriate function for conversion path)":
                 return False
             else:
                 raise
@@ -178,7 +178,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     ds.close()
 
     #Check the behavior if h5py. Cannot expect h5netcdf to overcome these errors:
-    if is_h5py_char_working(tmp_netcdf,'z'):
+    if is_h5py_char_working(tmp_netcdf, 'z'):
         ds = read_module.Dataset(tmp_netcdf, 'r')
         v = ds.variables['z']
         assert array_equal(v, _char_array)
@@ -263,7 +263,7 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert not v.shuffle
     ds.close()
 
-    if is_h5py_char_working(tmp_netcdf,'z'):
+    if is_h5py_char_working(tmp_netcdf, 'z'):
         ds = h5netcdf.File(tmp_netcdf, 'r')
         v = ds['z']
         assert v.dtype == 'S1'
@@ -457,14 +457,14 @@ def test_hierarchical_access_auto_create(tmp_netcdf):
 
 def test_reading_str_array_from_netCDF4(tmp_netcdf):
     #This tests reading string variables created by netCDF4
-    with netCDF4.Dataset(tmp_netcdf,'w') as ds:
-        ds.createDimension('foo1',_string_array.shape[0])
-        ds.createDimension('foo2',_string_array.shape[1])
-        ds.createVariable('bar',str,('foo1','foo2'))
-        ds.variables['bar'][:]=_string_array
+    with netCDF4.Dataset(tmp_netcdf, 'w') as ds:
+        ds.createDimension('foo1', _string_array.shape[0])
+        ds.createDimension('foo2', _string_array.shape[1])
+        ds.createVariable('bar', str, ('foo1', 'foo2'))
+        ds.variables['bar'][:] = _string_array
 
     ds = h5netcdf.File(tmp_netcdf, 'r')
 
-    v=ds.variables['bar']
-    assert array_equal(v,_string_array)
+    v = ds.variables['bar']
+    assert array_equal(v, _string_array)
     ds.close()

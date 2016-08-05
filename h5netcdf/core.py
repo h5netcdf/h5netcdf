@@ -19,8 +19,8 @@ class BaseVariable(object):
 
     def __init__(self, parent, name, dimensions=None):
         self._parent = parent
-        self._root=parent._root
-        self._h5path='/'.join([parent.name.rstrip('/'),name.lstrip('/')])
+        self._root = parent._root
+        self._h5path = '/'.join([parent.name.rstrip('/'), name.lstrip('/')])
         self._dimensions = dimensions
         self._initialized = True
 
@@ -133,15 +133,19 @@ class Variable(BaseVariable):
 NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
 class lazy_objects(Mapping):
-    def __init__(self,object_cls):
-        self._objects=OrderedDict()
-        self._loaded_objects=dict()
-        self._object_cls=object_cls
+    def __init__(self, object_cls):
+        self._objects = list()
+        self._loaded_objects = dict()
+        self._object_cls = object_cls
         return
 
-    def set(self,name,object):
-        self._loaded_objects[name]=object
-        self._objects[name]=name
+    def set(self, name, object):
+        self._loaded_objects[name] = object
+        self._objects.append(name)
+
+    def add(self, name)
+        self._objects.append(name)
+        return
 
     def __iter__(self):
         for name in self._objects:
@@ -150,16 +154,12 @@ class lazy_objects(Mapping):
     def __len__(self):
         return len(self._objects)
 
-    def __setitem__(self,key,value):
-        self._objects[key]=value
-        return
-
-    def __getitem__(self,key):
+    def __getitem__(self, key):
         if key in self._loaded_objects.keys():
             return self._loaded_objects[key]
         else:
-            self._loaded_objects[key]=self._object_cls(self._objects[key])
-            return self[key] 
+            self._loaded_objects[key] = self._object_cls(key)
+            return self[key]
 
 class Group(Mapping):
 
@@ -172,18 +172,18 @@ class Group(Mapping):
     def __init__(self, parent, name):
         self._parent = parent
         self._root = parent._root
-        self._h5path='/'.join([parent.name.rstrip('/'),name.lstrip('/')])
+        self._h5path = '/'.join([parent.name.rstrip('/'), name.lstrip('/')])
 
         if parent is not self:
             self._dim_sizes = parent._dim_sizes.new_child()
             self._dim_order = parent._dim_order.new_child()
 
-        self._variables = lazy_objects(lambda x:self._variable_cls(self,x))
-        self._groups = lazy_objects(lambda x:self._group_cls(self,x))
+        self._variables = lazy_objects(lambda x: self._variable_cls(self, x))
+        self._groups = lazy_objects(lambda x: self._group_cls(self, x))
 
         for k, v in self._h5group.items():
             if isinstance(v, h5py.Group):
-                self._groups[k] = k
+                self._groups.add(k)
             else:
                 if v.attrs.get('CLASS') == b'DIMENSION_SCALE':
                     dim_id = v.attrs.get('_Netcdf4Dimid')
@@ -202,7 +202,7 @@ class Group(Mapping):
                     var_name = k
                     if k.startswith('_nc4_non_coord_'):
                         var_name = k[len('_nc4_non_coord_'):]
-                    self._variables[var_name] = var_name
+                    self._variables.add(var_name)
         self._initialized = True
 
     @property
@@ -244,7 +244,7 @@ class Group(Mapping):
             raise ValueError('unable to create group %r (name already exists)'
                              % name)
         self._h5group.create_group(name)
-        self._groups.set(name,self._group_cls(self,name))
+        self._groups.set(name, self._group_cls(self, name))
         return self._groups[name]
 
     def _require_child_group(self, name):
@@ -284,11 +284,11 @@ class Group(Mapping):
             h5name = name
 
         self._h5group.create_dataset(h5name, shape, dtype=dtype,
-                                            data=data, fillvalue=fillvalue,
-                                            **kwargs)
+                                     data=data, fillvalue=fillvalue,
+                                     **kwargs)
 
-        self._variables.set(h5name,self._variable_cls(self, h5name, dimensions))
-        variable=self._variables[h5name]
+        self._variables.set(h5name, self._variable_cls(self, h5name, dimensions))
+        variable = self._variables[h5name]
 
         if fillvalue is not None:
             value = variable.dtype.type(fillvalue)
