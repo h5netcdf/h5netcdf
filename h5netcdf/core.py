@@ -134,7 +134,7 @@ NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
 class lazy_objects(Mapping):
     def __init__(self, object_cls):
-        self._objects = list()
+        self._objects = set()
         self._loaded_objects = dict()
         self._object_cls = object_cls
 
