@@ -294,7 +294,7 @@ class Group(Mapping):
                                             **kwargs)
 
         self._variables.set(h5name,self._variable_cls(self, h5name, dimensions))
-        variable=self._variables[name]
+        variable=self._variables[h5name]
 
         if fillvalue is not None:
             value = variable.dtype.type(fillvalue)
