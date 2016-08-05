@@ -294,11 +294,11 @@ class Group(Mapping):
                                             **kwargs)
 
         self._variables.set(h5name,self._variable_cls(self, h5name, dimensions))
+        variable=self._variables[name]
 
         if fillvalue is not None:
             value = variable.dtype.type(fillvalue)
             variable.attrs._h5attrs['_FillValue'] = value
-        self._variables[name] = variable
         return variable
 
     def create_variable(self, name, dimensions=(), dtype=None, data=None,
