@@ -132,7 +132,7 @@ class Variable(BaseVariable):
 
 NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
-class _object_names(Mapping):
+class _LazyObjectLookup(Mapping):
     def __init__(self, parent, object_cls):
         self._parent = parent
         self._object_cls = object_cls
@@ -179,8 +179,8 @@ class Group(Mapping):
             self._dim_sizes = parent._dim_sizes.new_child()
             self._dim_order = parent._dim_order.new_child()
 
-        self._variables = _object_names(self, self._variable_cls)
-        self._groups = _object_names(self, self._group_cls)
+        self._variables = _LazyObjectLookup(self, self._variable_cls)
+        self._groups = _LazyObjectLookup(self, self._group_cls)
 
         for k, v in self._h5group.items():
             if isinstance(v, h5py.Group):
