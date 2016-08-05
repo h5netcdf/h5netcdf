@@ -43,7 +43,7 @@ _char_array = string_to_char(np.array(['a', 'b', 'c', 'foo', 'bar', 'baz'],
 
 
 def write_legacy_netcdf(tmp_netcdf, write_module):
-    ds = write_module.Dataset(tmp_netcdf, 'w')
+    ds = write_module.Dataset(tmp_netcdf, 'w',lazy=True)
     ds.setncattr('global', 42)
     ds.other_attr = 'yes'
     ds.createDimension('x', 4)
@@ -86,7 +86,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
 
 
 def write_h5netcdf(tmp_netcdf):
-    ds = h5netcdf.File(tmp_netcdf, 'w')
+    ds = h5netcdf.File(tmp_netcdf, 'w',lazy=True)
     ds.attrs['global'] = 42
     ds.attrs['other_attr'] = 'yes'
     ds.dimensions = {'x': 4, 'y': 5, 'z': 6}
@@ -125,7 +125,7 @@ def write_h5netcdf(tmp_netcdf):
 
 
 def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
-    ds = read_module.Dataset(tmp_netcdf, 'r')
+    ds = read_module.Dataset(tmp_netcdf, 'r',lazy=True)
     # ignore _NCProperties for now: https://github.com/shoyer/h5netcdf/issues/18
     attr_names = [k for k in ds.ncattrs() if k != '_NCProperties']
     assert attr_names == ['global', 'other_attr']
@@ -199,7 +199,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 
 def read_h5netcdf(tmp_netcdf, write_module):
-    ds = h5netcdf.File(tmp_netcdf, 'r')
+    ds = h5netcdf.File(tmp_netcdf, 'r',lazy=True)
     assert ds.name == '/'
     # ignore _NCProperties for now: https://github.com/shoyer/h5netcdf/issues/18
     attr_names = [k for k in list(ds.attrs) if k != '_NCProperties']
@@ -326,7 +326,7 @@ def test_write_legacyapi_read_h5netcdf(tmp_netcdf):
 
 def test_repr(tmp_netcdf):
     write_h5netcdf(tmp_netcdf)
-    f = h5netcdf.File(tmp_netcdf, 'r')
+    f = h5netcdf.File(tmp_netcdf, 'r',lazy=True)
     assert 'h5netcdf.File' in repr(f)
     assert 'subgroup' in repr(f)
     assert 'foo' in repr(f)
@@ -356,13 +356,13 @@ def test_repr(tmp_netcdf):
 
 
 def test_attrs_api(tmp_netcdf):
-    with h5netcdf.File(tmp_netcdf) as ds:
+    with h5netcdf.File(tmp_netcdf,lazy=True) as ds:
         ds.attrs['conventions'] = 'CF'
         ds.dimensions['x'] = 1
         v = ds.create_variable('x', ('x',), 'i4')
         v.attrs.update({'units': 'meters', 'foo': 'bar'})
     assert ds._closed
-    with h5netcdf.File(tmp_netcdf) as ds:
+    with h5netcdf.File(tmp_netcdf,lazy=True) as ds:
         assert len(ds.attrs) == 1
         assert dict(ds.attrs) == {'conventions': 'CF'}
         assert list(ds.attrs) == ['conventions']
@@ -372,7 +372,7 @@ def test_attrs_api(tmp_netcdf):
 
 
 def test_optional_netcdf4_attrs(tmp_netcdf):
-    with h5py.File(tmp_netcdf) as f:
+    with h5py.File(tmp_netcdf,lazy=True) as f:
         foo_data = np.arange(50).reshape(5, 10)
         f.create_dataset('foo', data=foo_data)
         f.create_dataset('x', data=np.arange(5))
@@ -381,14 +381,14 @@ def test_optional_netcdf4_attrs(tmp_netcdf):
         f['foo'].dims.create_scale(f['y'])
         f['foo'].dims[0].attach_scale(f['x'])
         f['foo'].dims[1].attach_scale(f['y'])
-    with h5netcdf.File(tmp_netcdf, 'r') as ds:
+    with h5netcdf.File(tmp_netcdf, 'r',lazy=True) as ds:
         assert ds['foo'].dimensions == ('x', 'y')
         assert ds.dimensions == {'x': 5, 'y': 10}
         assert array_equal(ds['foo'], foo_data)
 
 
 def test_error_handling(tmp_netcdf):
-    with h5netcdf.File(tmp_netcdf, 'w') as ds:
+    with h5netcdf.File(tmp_netcdf, 'w',lazy=True) as ds:
         with raises(NotImplementedError):
             ds.dimensions['x'] = None
         ds.dimensions['x'] = 1
@@ -407,17 +407,17 @@ def test_error_handling(tmp_netcdf):
 
 
 def test_invalid_netcdf4(tmp_netcdf):
-    with h5py.File(tmp_netcdf) as f:
+    with h5py.File(tmp_netcdf,lazy=True) as f:
         f.create_dataset('foo', data=np.arange(5))
         # labeled dimensions but no dimension scales
         f['foo'].dims[0].label = 'x'
-    with h5netcdf.File(tmp_netcdf, 'r') as ds:
+    with h5netcdf.File(tmp_netcdf, 'r',lazy=True) as ds:
         with raises(ValueError):
             ds.variables['foo'].dimensions
 
 
 def test_hierarchical_access_auto_create(tmp_netcdf):
-    ds = h5netcdf.File(tmp_netcdf, 'w')
+    ds = h5netcdf.File(tmp_netcdf, 'w',lazy=True)
     ds.create_variable('/foo/bar', data=1)
     g = ds.create_group('foo/baz')
     g.create_variable('/foo/hello', data=2)
@@ -425,7 +425,7 @@ def test_hierarchical_access_auto_create(tmp_netcdf):
     assert set(ds['foo']) == set(['bar', 'baz', 'hello'])
     ds.close()
 
-    ds = h5netcdf.File(tmp_netcdf, 'r')
+    ds = h5netcdf.File(tmp_netcdf, 'r',lazy=True)
     assert set(ds) == set(['foo'])
     assert set(ds['foo']) == set(['bar', 'baz', 'hello'])
     ds.close()
