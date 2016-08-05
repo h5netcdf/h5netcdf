@@ -140,11 +140,11 @@ class _object_names(Mapping):
         self._loaded_objects = dict()
 
     def __setitem__(self, name, object):
-        self._objects.append(name)
+        self._objects.add(name)
         self._loaded_objects[name] = object
 
     def add(self, name):
-        self._objects.append(name)
+        self._objects.add(name)
 
     def __iter__(self):
         for name in self._objects:
