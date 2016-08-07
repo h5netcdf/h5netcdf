@@ -493,5 +493,4 @@ def test_failed_read_open_and_clean_delete(tmp_netcdf):
     obj_list = gc.get_objects()
     for obj in obj_list:
         if isinstance(obj,h5netcdf.File):
-            print(dir(obj))
             obj.close()
