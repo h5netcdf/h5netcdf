@@ -141,4 +141,4 @@ License
 
 `3-clause BSD`_
 
-.. _3-clause BSD: https://github.com/shoyer/h5netcdf/blob/master/LICENSE.txt
+.. _3-clause BSD: https://github.com/shoyer/h5netcdf/blob/master/LICENSE
