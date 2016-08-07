@@ -406,13 +406,12 @@ class Group(Mapping):
 class File(Group):
 
     def __init__(self, path, mode='a', **kwargs):
+        self._closed = True
         try:
             self._h5file = h5py.File(path, mode, **kwargs)
-        except:
-            self._closed = True
-            raise
-        finally:
             self._closed = False
+        except:
+            raise
         self._dim_sizes = ChainMap()
         self._dim_order = ChainMap()
         self._mode = mode

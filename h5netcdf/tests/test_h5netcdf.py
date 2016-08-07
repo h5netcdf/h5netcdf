@@ -469,10 +469,21 @@ def test_reading_str_array_from_netCDF4(tmp_netcdf):
     assert array_equal(v, _string_array)
     ds.close()
 
-def test_failed_read_open_and_clean_delete(tmp_netcdf):
+def _silent_remove(tmp_netcdf):
+    # http://stackoverflow.com/a/10840586
+    import os
     try:
-        ds = h5netcdf.File(tmp_netcdf, 'r')
-    except IOError:
+        os.remove(tmp_netcdf)
+    except OSError:
         pass
 
-    del ds
+def test_failed_read_open_and_clean_delete(tmp_netcdf):
+    # A file that does not exist but is opened for
+    # reading should only raise an IOError and 
+    # no AttributeError Exception garbage collection.
+    try:
+        _silent_remove(tmp_netcdf)
+        with h5netcdf.File(tmp_netcdf, 'r') as ds:
+            pass
+    except IOError:
+        pass
