@@ -486,7 +486,8 @@ def test_nc_properties(tmp_netcdf):
         pass
     with h5py.File(tmp_netcdf, 'r') as f:
         assert 'h5netcdf' in f.attrs['_NCProperties']
-        
+
+
 def _silent_remove(tmp_netcdf):
     # http://stackoverflow.com/a/10840586
     import os
@@ -497,7 +498,7 @@ def _silent_remove(tmp_netcdf):
 
 def test_failed_read_open_and_clean_delete(tmp_netcdf):
     # A file that does not exist but is opened for
-    # reading should only raise an IOError and 
+    # reading should only raise an IOError and
     # no AttributeError at garbage collection.
     try:
         _silent_remove(tmp_netcdf)
@@ -510,6 +511,6 @@ def test_failed_read_open_and_clean_delete(tmp_netcdf):
     import gc
     obj_list = gc.get_objects()
     for obj in obj_list:
-        if ('__class__' in dir(obj) and 
-            isinstance(obj, h5netcdf.File)):
+        if ('__class__' in dir(obj) and
+                isinstance(obj, h5netcdf.File)):
             obj.close()
