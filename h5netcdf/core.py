@@ -21,8 +21,10 @@ def _reverse_dict(dict_):
 def _join_h5paths(parent_path, child_path):
     return '/'.join([parent_path.rstrip('/'), child_path.lstrip('/')])
 
+
 _NC_PROPERTIES = (u'version=1|h5netcdfversion=%s|hdf5libversion=%s'
                   % (__version__, h5py.version.hdf5_version))
+
 
 class BaseVariable(object):
 
@@ -166,6 +168,7 @@ class _LazyObjectLookup(Mapping):
         else:
             self._objects[key] = self._object_cls(self._parent, key)
             return self._objects[key]
+
 
 class Group(Mapping):
 
