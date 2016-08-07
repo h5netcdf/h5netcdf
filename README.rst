@@ -135,6 +135,7 @@ Version 0.3.0:
   files with a large number of groups and/or variables.
 - Support for writing arrays of variable length unicode strings with `dtype=str`
   via the legacy API.
+- h5netcdf now writes the _NCProperties attribute for identifying netCDF4 files.
 
 License
 -------
