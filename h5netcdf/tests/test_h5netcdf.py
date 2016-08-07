@@ -511,6 +511,9 @@ def test_failed_read_open_and_clean_delete(tmp_netcdf):
     import gc
     obj_list = gc.get_objects()
     for obj in obj_list:
-        if ('__class__' in dir(obj) and
-                isinstance(obj, h5netcdf.File)):
+        try:
+            is_h5netcdf_File = isinstance(obj, h5netcdf.File)
+        except AttributeError as e:
+            is_h5netcdf_File = False
+        if is_h5netcdf_File:
             obj.close()
