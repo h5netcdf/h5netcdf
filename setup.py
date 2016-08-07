@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 
 CLASSIFIERS = [
-    'Development Status :: 3 - Alpha',
+    'Development Status :: 4 - Beta',
     'License :: OSI Approved :: BSD License',
     'Operating System :: OS Independent',
     'Intended Audience :: Science/Research',
