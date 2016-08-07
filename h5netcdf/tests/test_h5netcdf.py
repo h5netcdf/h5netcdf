@@ -468,3 +468,11 @@ def test_reading_str_array_from_netCDF4(tmp_netcdf):
     v = ds.variables['bar']
     assert array_equal(v, _string_array)
     ds.close()
+
+def test_failed_read_open_and_clean_delete(tmp_netcdf):
+    try:
+        ds = h5netcdf.File(tmp_netcdf, 'r')
+    except IOError:
+        pass
+
+    del ds
