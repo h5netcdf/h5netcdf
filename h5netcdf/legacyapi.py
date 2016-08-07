@@ -1,4 +1,7 @@
+import h5py
+
 from . import core
+from .compat import unicode
 
 
 class HasAttributesMixin(object):
@@ -40,6 +43,13 @@ class Variable(core.BaseVariable, HasAttributesMixin):
                 'shuffle': self._h5ds.shuffle,
                 'zlib': self._h5ds.compression == 'gzip'}
 
+    @property
+    def dtype(self):
+        dt = self._h5ds.dtype
+        if h5py.check_dtype(vlen=dt) is unicode:
+            return str
+        return dt
+
 
 class Group(core.Group, HasAttributesMixin):
     _cls_name = 'h5netcdf.legacyapi.Group'
@@ -62,6 +72,10 @@ class Group(core.Group, HasAttributesMixin):
             zlib = False
             fletcher32 = False
             shuffle = False
+
+        if datatype is str:
+            datatype = h5py.special_dtype(vlen=unicode)
+
         kwds = {}
         if zlib:
             # only add compression related keyword arguments if relevant (h5py
