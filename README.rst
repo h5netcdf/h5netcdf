@@ -62,15 +62,6 @@ exceptions of:
 
 We simply haven't gotten around to implementing these features yet.
 
-ChangeLog
----------
-
-A new feature is the lazy opening of datasets. Unlike
-the netCDF interface where attributes for all variables and groups are read at
-the creation of the Dataset object, h5netcdf loads these attributes only
-when accessed.
-
-
 New API
 ~~~~~~~
 
@@ -148,6 +139,16 @@ exact match. Here is an incomplete list of functionality we don't include:
 - h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
   (e.g., xray_), which can implement their exact desired scaling behavior.
+
+Change Log
+----------
+
+Version 0.3.0:
+
+- Datasets are now loaded lazily. This should increase performance when opening
+  files with a large number of groups and/or variables.
+- Support for writing arrays of variable length unicode strings with `dtype=str`
+  via the legacy API.
 
 License
 -------
