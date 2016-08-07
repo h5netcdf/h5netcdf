@@ -3,7 +3,7 @@ from collections import MutableMapping
 
 _hidden_attrs = frozenset(['REFERENCE_LIST', 'CLASS', 'DIMENSION_LIST', 'NAME',
                            '_Netcdf4Dimid', '_Netcdf4Coordinates',
-                           '_nc3_strict'])
+                           '_nc3_strict', '_NCProperties'])
 
 
 class Attributes(MutableMapping):

@@ -1,5 +1,13 @@
 import sys
 
+PY2 = sys.version_info[0] < 3
+
+if PY2:
+    unicode = unicode
+else:
+    unicode = str
+
+
 try:
     from collections import OrderedDict
 except ImportError:
@@ -10,3 +18,4 @@ if sys.version_info < (3, 4):
     from ._chainmap import ChainMap
 else:
     from collections import ChainMap
+

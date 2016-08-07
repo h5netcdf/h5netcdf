@@ -9,44 +9,35 @@ h5netcdf
 A Python interface for the netCDF4_ file-format that reads and writes HDF5
 files API directly via h5py_, without relying on the Unidata netCDF library.
 
-.. _netCDF4: https://www.unidata.ucar.edu/software/netcdf/docs/netcdf/NetCDF_002d4-Format.html
+.. _netCDF4: http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
 .. _h5py: http://www.h5py.org/
 
-**This is an experimental project.** It currently passes basic tests for
-reading and writing netCDF4 files with Python, but it has not been tested for
-compatibility with other netCDF4 interfaces.
+Why h5netcdf?
+-------------
 
-Motivations
------------
-
-Why did I write h5netcdf? Well, here are a few reasons:
-
-- To prove it could be done (it seemed like an obvious thing to do) and that
-  netCDF4 is not actually that complicated.
 - We've seen occasional reports of better performance with h5py than
-  netCDF4-python that I wanted to be able to verify. For at least `one workflow`_,
-  h5netcdf was reported to be almost **4x faster** than `netCDF4-python`_. If
-  you give it a try, I would love to hear how it works for you!
-- h5py seems to have thought through multi-threading pretty carefully, so this
-  in particular seems like a case where things could make a difference. I've
-  started to care about this because I recently hooked up a multi-threaded
-  backend to xray_.
-- It's one less massive binary dependency (netCDF C). Anecdotally, HDF5 users
-  seem to be unexcited about switching to netCDF -- hopefully this will
-  convince them that they are really the same thing!
+  netCDF4-python, though in many cases performance is identical. For
+  `one workflow`_, h5netcdf was reported to be almost **4x faster** than
+  `netCDF4-python`_.
+- It has one less massive binary dependency (netCDF C). If you already have h5py
+  installed, reading netCDF4 with h5netcdf may be much easier than installing
+  netCDF4-Python.
+- Anecdotally, HDF5 users seem to be unexcited about switching to netCDF --
+  hopefully this will convince them that the netCDF4 is actually quite sane!
 - Finally, side-stepping the netCDF C library (and Cython bindings to it)
   gives us an easier way to identify the source of performance issues and
   bugs.
 
 .. _one workflow: https://github.com/Unidata/netcdf4-python/issues/390#issuecomment-93864839
-.. _xray: http://github.com/xray/xray/
+.. _xarray: http://github.com/pydata/xarray/
 
 Install
 -------
 
 Ensure you have a recent version of h5py installed (I recommend using conda_).
 At least version 2.1 is required (for dimension scales); versions 2.3 and newer
-have been verified to work. Then: ``pip install h5netcdf``
+have been verified to work, though some tests only pass on h5py 2.6. Then:
+``pip install h5netcdf``
 
 .. _conda: http://conda.io/
 
@@ -60,7 +51,8 @@ exceptions of:
 - support for operations the rename or delete existing objects.
 - suport for creating unlimited dimensions.
 
-We simply haven't gotten around to implementing these features yet.
+We simply haven't gotten around to implementing these features yet. Patches
+would be very welcome.
 
 ChangeLog
 ---------
@@ -104,12 +96,6 @@ design is an adaptation of h5py to the netCDF data model. For example:
         # keys like h5py
         print(f['/grouped/data'])
 
-**Warning: The design of the new API is *not yet finished*.** I only
-recommended using it for experiments. Please share your feedback in `this
-GitHub issue`_.
-
-.. _this GitHub issue: https://github.com/shoyer/h5netcdf/issues/6
-
 Legacy API
 ~~~~~~~~~~
 
@@ -147,11 +133,22 @@ exact match. Here is an incomplete list of functionality we don't include:
   appear to offer this feature.
 - h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
-  (e.g., xray_), which can implement their exact desired scaling behavior.
+  (e.g., xarray_), which can implement their exact desired scaling behavior.
+
+Change Log
+----------
+
+Version 0.3.0:
+
+- Datasets are now loaded lazily. This should increase performance when opening
+  files with a large number of groups and/or variables.
+- Support for writing arrays of variable length unicode strings with `dtype=str`
+  via the legacy API.
+- h5netcdf now writes the _NCProperties attribute for identifying netCDF4 files.
 
 License
 -------
 
 `3-clause BSD`_
 
-.. _3-clause BSD: https://github.com/shoyer/h5netcdf/blob/master/LICENSE.txt
+.. _3-clause BSD: https://github.com/shoyer/h5netcdf/blob/master/LICENSE

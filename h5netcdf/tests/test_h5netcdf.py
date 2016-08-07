@@ -2,10 +2,9 @@ import netCDF4
 import numpy as np
 import sys
 
-PY2 = sys.version_info[0] < 3
-
 import h5netcdf
 from h5netcdf import legacyapi
+from h5netcdf.compat import PY2, unicode
 import h5py
 import pytest
 
@@ -51,7 +50,7 @@ def is_h5py_char_working(tmp_netcdf, name):
         try:
             assert array_equal(v, _char_array)
             return True
-        except OSError as e:
+        except Exception as e:
             if e.args[0] == "Can't read data (No appropriate function for conversion path)":
                 return False
             else:
@@ -97,6 +96,9 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.createDimension('mismatched_dim', 1)
     ds.createVariable('mismatched_dim', int, ())
 
+    v = ds.createVariable('var_len_str', str, ('x'))
+    v[0] = u'foo'
+
     ds.close()
 
 
@@ -136,20 +138,23 @@ def write_h5netcdf(tmp_netcdf):
     ds.dimensions['mismatched_dim'] = 1
     ds.create_variable('mismatched_dim', dtype=int)
 
+    dt = h5py.special_dtype(vlen=unicode)
+    v = ds.create_variable('var_len_str', ('x',), dtype=dt)
+    v[0] = u'foo'
+
     ds.close()
 
 
 def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     ds = read_module.Dataset(tmp_netcdf, 'r')
-    # ignore _NCProperties for now: https://github.com/shoyer/h5netcdf/issues/18
-    attr_names = [k for k in ds.ncattrs() if k != '_NCProperties']
-    assert attr_names == ['global', 'other_attr']
+    assert ds.ncattrs() == ['global', 'other_attr']
     assert ds.getncattr('global') == 42
     if not PY2 and write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.other_attr == 'yes'
     assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
-    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar', 'mismatched_dim'])
+    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar',
+                                     'var_len_str', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
     assert ds.parent is None
 
@@ -204,6 +209,10 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.dimensions == ()
     assert v.ncattrs() == []
 
+    v = ds.variables['var_len_str']
+    assert v.dtype == str
+    assert v[0] == u'foo'
+
     v = ds.groups['subgroup'].variables['subvar']
     assert ds.groups['subgroup'].parent is ds
     assert array_equal(v, np.arange(4.0))
@@ -222,15 +231,14 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 def read_h5netcdf(tmp_netcdf, write_module):
     ds = h5netcdf.File(tmp_netcdf, 'r')
     assert ds.name == '/'
-    # ignore _NCProperties for now: https://github.com/shoyer/h5netcdf/issues/18
-    attr_names = [k for k in list(ds.attrs) if k != '_NCProperties']
-    assert attr_names == ['global', 'other_attr']
+    assert list(ds.attrs) == ['global', 'other_attr']
     assert ds.attrs['global'] == 42
     if not PY2 and write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs['other_attr'] == 'yes'
     assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
-    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar', 'mismatched_dim'])
+    assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar',
+                                     'var_len_str', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
     assert ds.parent is None
 
@@ -287,6 +295,10 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v.ndim == 0
     assert v.dimensions == ()
     assert list(v.attrs) == []
+
+    v = ds['var_len_str']
+    assert h5py.check_dtype(vlen=v.dtype) == unicode
+    assert v[0] == u'foo'
 
     v = ds['/subgroup/subvar']
     assert v is ds['subgroup']['subvar']
@@ -456,7 +468,7 @@ def test_hierarchical_access_auto_create(tmp_netcdf):
     ds.close()
 
 def test_reading_str_array_from_netCDF4(tmp_netcdf):
-    #This tests reading string variables created by netCDF4
+    # This tests reading string variables created by netCDF4
     with netCDF4.Dataset(tmp_netcdf, 'w') as ds:
         ds.createDimension('foo1', _string_array.shape[0])
         ds.createDimension('foo2', _string_array.shape[1])
@@ -469,6 +481,12 @@ def test_reading_str_array_from_netCDF4(tmp_netcdf):
     assert array_equal(v, _string_array)
     ds.close()
 
+def test_nc_properties(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf, 'w') as ds:
+        pass
+    with h5py.File(tmp_netcdf, 'r') as f:
+        assert 'h5netcdf' in f.attrs['_NCProperties']
+        
 def _silent_remove(tmp_netcdf):
     # http://stackoverflow.com/a/10840586
     import os

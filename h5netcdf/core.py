@@ -1,5 +1,5 @@
 # For details on how netCDF4 builds on HDF5:
-# https://www.unidata.ucar.edu/software/netcdf/docs/netcdf/NetCDF_002d4-Format.html
+# http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
 from collections import Mapping
 
 import h5py
@@ -11,12 +11,18 @@ from .dimensions import Dimensions
 from .utils import Frozen
 
 
+__version__ = '0.3.0'
+
+
 def _reverse_dict(dict_):
     return dict(zip(dict_.values(), dict_.keys()))
 
 
 def _join_h5paths(parent_path, child_path):
     return '/'.join([parent_path.rstrip('/'), child_path.lstrip('/')])
+
+_NC_PROPERTIES = (u'version=1|h5netcdfversion=%s|hdf5libversion=%s'
+                  % (__version__, h5py.version.hdf5_version))
 
 class BaseVariable(object):
 
@@ -435,6 +441,7 @@ class File(Group):
         if 'r' not in self._mode:
             self._create_dim_scales()
             self._attach_dim_scales()
+            self.attrs._h5attrs['_NCProperties'] = _NC_PROPERTIES
     sync = flush
 
     def close(self):
