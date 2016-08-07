@@ -2,10 +2,9 @@ import netCDF4
 import numpy as np
 import sys
 
-PY2 = sys.version_info[0] < 3
-
 import h5netcdf
 from h5netcdf import legacyapi
+from h5netcdf.compat import PY2, unicode
 import h5py
 import pytest
 
@@ -51,7 +50,7 @@ def is_h5py_char_working(tmp_netcdf, name):
         try:
             assert array_equal(v, _char_array)
             return True
-        except OSError as e:
+        except Exception as e:
             if e.args[0] == "Can't read data (No appropriate function for conversion path)":
                 return False
             else:
@@ -98,7 +97,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.createVariable('mismatched_dim', int, ())
 
     v = ds.createVariable('var_len_str', str, ('x'))
-    v[0] = b'foo'
+    v[0] = u'foo'
 
     ds.close()
 
@@ -139,9 +138,9 @@ def write_h5netcdf(tmp_netcdf):
     ds.dimensions['mismatched_dim'] = 1
     ds.create_variable('mismatched_dim', dtype=int)
 
-    dt = h5py.special_dtype(vlen=bytes)
+    dt = h5py.special_dtype(vlen=unicode)
     v = ds.create_variable('var_len_str', ('x',), dtype=dt)
-    v[0] = b'foo'
+    v[0] = u'foo'
 
     ds.close()
 
@@ -214,11 +213,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
     v = ds.variables['var_len_str']
     assert v.dtype == str
-    if not PY2 and read_module is not netCDF4:
-        # skip for now: https://github.com/Unidata/netcdf4-python/issues/459
-        # the data is really stored as ASCII; decoding it automagically as
-        # unicode (like netCDF4-Python) is madness
-        assert v[0] == b'foo'
+    assert v[0] == u'foo'
 
     v = ds.groups['subgroup'].variables['subvar']
     assert ds.groups['subgroup'].parent is ds
@@ -306,8 +301,8 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert list(v.attrs) == []
 
     v = ds['var_len_str']
-    assert h5py.check_dtype(vlen=v.dtype) == bytes
-    assert v[0] == b'foo'
+    assert h5py.check_dtype(vlen=v.dtype) == unicode
+    assert v[0] == u'foo'
 
     v = ds['/subgroup/subvar']
     assert v is ds['subgroup']['subvar']
