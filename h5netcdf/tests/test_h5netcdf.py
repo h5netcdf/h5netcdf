@@ -480,10 +480,18 @@ def _silent_remove(tmp_netcdf):
 def test_failed_read_open_and_clean_delete(tmp_netcdf):
     # A file that does not exist but is opened for
     # reading should only raise an IOError and 
-    # no AttributeError Exception garbage collection.
+    # no AttributeError at garbage collection.
     try:
         _silent_remove(tmp_netcdf)
         with h5netcdf.File(tmp_netcdf, 'r') as ds:
             pass
     except IOError:
         pass
+
+    # Look at garbage collection:
+    import gc
+    obj_list = gc.get_objects()
+    for obj in obj_list:
+        if isinstance(obj,h5netcdf.File):
+            print(dir(obj))
+            obj.close()
