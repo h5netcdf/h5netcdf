@@ -1,6 +1,7 @@
 import netCDF4
 import numpy as np
 import sys
+import gc
 
 import h5netcdf
 from h5netcdf import legacyapi
@@ -487,28 +488,21 @@ def test_nc_properties(tmp_netcdf):
     with h5py.File(tmp_netcdf, 'r') as f:
         assert 'h5netcdf' in f.attrs['_NCProperties']
 
-
-def _silent_remove(tmp_netcdf):
-    # http://stackoverflow.com/a/10840586
-    import os
-    try:
-        os.remove(tmp_netcdf)
-    except OSError:
-        pass
-
-def test_failed_read_open_and_clean_delete(tmp_netcdf):
+def test_failed_read_open_and_clean_delete(tmpdir):
     # A file that does not exist but is opened for
     # reading should only raise an IOError and
     # no AttributeError at garbage collection.
+    path = str(tmpdir.join('this_file_does_not_exist.nc'))
     try:
-        _silent_remove(tmp_netcdf)
-        with h5netcdf.File(tmp_netcdf, 'r') as ds:
+        with h5netcdf.File(path, 'r') as ds:
             pass
     except IOError:
         pass
 
     # Look at garbage collection:
-    import gc
+    # A simple gc.collect() does not raise an exception.
+    # Must seek the File object and imitate its del command
+    # by forcing it to close.
     obj_list = gc.get_objects()
     for obj in obj_list:
         try:
