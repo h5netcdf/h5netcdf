@@ -1,6 +1,7 @@
 import netCDF4
 import numpy as np
 import sys
+import gc
 
 import h5netcdf
 from h5netcdf import legacyapi
@@ -467,7 +468,6 @@ def test_hierarchical_access_auto_create(tmp_netcdf):
     assert set(ds['foo']) == set(['bar', 'baz', 'hello'])
     ds.close()
 
-
 def test_reading_str_array_from_netCDF4(tmp_netcdf):
     # This tests reading string variables created by netCDF4
     with netCDF4.Dataset(tmp_netcdf, 'w') as ds:
@@ -482,9 +482,32 @@ def test_reading_str_array_from_netCDF4(tmp_netcdf):
     assert array_equal(v, _string_array)
     ds.close()
 
-
 def test_nc_properties(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, 'w') as ds:
         pass
     with h5py.File(tmp_netcdf, 'r') as f:
         assert 'h5netcdf' in f.attrs['_NCProperties']
+
+def test_failed_read_open_and_clean_delete(tmpdir):
+    # A file that does not exist but is opened for
+    # reading should only raise an IOError and
+    # no AttributeError at garbage collection.
+    path = str(tmpdir.join('this_file_does_not_exist.nc'))
+    try:
+        with h5netcdf.File(path, 'r') as ds:
+            pass
+    except IOError:
+        pass
+
+    # Look at garbage collection:
+    # A simple gc.collect() does not raise an exception.
+    # Must seek the File object and imitate its del command
+    # by forcing it to close.
+    obj_list = gc.get_objects()
+    for obj in obj_list:
+        try:
+            is_h5netcdf_File = isinstance(obj, h5netcdf.File)
+        except AttributeError as e:
+            is_h5netcdf_File = False
+        if is_h5netcdf_File:
+            obj.close()

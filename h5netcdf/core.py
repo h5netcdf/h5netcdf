@@ -415,13 +415,18 @@ class Group(Mapping):
 class File(Group):
 
     def __init__(self, path, mode='a', **kwargs):
-        self._h5file = h5py.File(path, mode, **kwargs)
+        try:
+            self._h5file = h5py.File(path, mode, **kwargs)
+        except Exception:
+            self._closed = True
+            raise
+        else:
+            self._closed = False
         self._dim_sizes = ChainMap()
         self._dim_order = ChainMap()
         self._mode = mode
         self._root = self
         self._h5path = '/'
-        self._closed = False
         super(File, self).__init__(self, self._h5path)
 
     @property
