@@ -379,6 +379,10 @@ class Group(Mapping):
     def parent(self):
         return self._parent
 
+    def flush(self):
+        self._root.flush()
+    sync = flush
+
     @property
     def groups(self):
         return Frozen(self._groups)

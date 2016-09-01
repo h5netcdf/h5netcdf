@@ -135,9 +135,11 @@ def write_h5netcdf(tmp_netcdf):
 
     g.dimensions['y'] = 10
     g.create_variable('y_var', ('y',), float)
+    g.flush()
 
     ds.dimensions['mismatched_dim'] = 1
     ds.create_variable('mismatched_dim', dtype=int)
+    ds.flush()
 
     dt = h5py.special_dtype(vlen=unicode)
     v = ds.create_variable('var_len_str', ('x',), dtype=dt)
