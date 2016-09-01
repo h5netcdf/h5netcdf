@@ -64,6 +64,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.createDimension('x', 4)
     ds.createDimension('y', 5)
     ds.createDimension('z', 6)
+    ds.createDimension('empty', 0)
     ds.createDimension('string3', 3)
 
     v = ds.createVariable('foo', float, ('x', 'y'), chunksizes=(4, 5),
@@ -107,7 +108,7 @@ def write_h5netcdf(tmp_netcdf):
     ds = h5netcdf.File(tmp_netcdf, 'w')
     ds.attrs['global'] = 42
     ds.attrs['other_attr'] = 'yes'
-    ds.dimensions = {'x': 4, 'y': 5, 'z': 6}
+    ds.dimensions = {'x': 4, 'y': 5, 'z': 6, 'empty': 0}
 
     v = ds.create_variable('foo', ('x', 'y'), float, chunks=(4, 5),
                            compression='gzip', shuffle=True)
@@ -155,7 +156,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     if not PY2 and write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.other_attr == 'yes'
-    assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
+    assert set(ds.dimensions) == set(['x', 'y', 'z', 'empty', 'string3',
+                                      'mismatched_dim'])
     assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar',
                                      'var_len_str', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
@@ -239,7 +241,7 @@ def read_h5netcdf(tmp_netcdf, write_module):
     if not PY2 and write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs['other_attr'] == 'yes'
-    assert set(ds.dimensions) == set(['x', 'y', 'z', 'string3', 'mismatched_dim'])
+    assert set(ds.dimensions) == set(['x', 'y', 'z', 'empty', 'string3', 'mismatched_dim'])
     assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar',
                                      'var_len_str', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])

@@ -227,7 +227,7 @@ class Group(Mapping):
     def _create_dimension(self, name, size=None):
         if name in self._dim_sizes.maps[0]:
             raise ValueError('dimension %r already exists' % name)
-        if not size:
+        if size is None:
             raise NotImplementedError('h5netcdf does not yet support '
                                       'unlimited dimensions')
         self._dim_sizes[name] = size
