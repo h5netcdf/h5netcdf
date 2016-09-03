@@ -11,7 +11,7 @@ from .dimensions import Dimensions
 from .utils import Frozen
 
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 
 def _reverse_dict(dict_):

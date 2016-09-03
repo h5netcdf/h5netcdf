@@ -129,6 +129,12 @@ exact match. Here is an incomplete list of functionality we don't include:
 Change Log
 ----------
 
+Version 0.3.1:
+
+- Fix garbage collection issue.
+- Add missing ``.flush()`` method for groups.
+- Allow creating dimensions of size 0.
+
 Version 0.3.0:
 
 - Datasets are now loaded lazily. This should increase performance when opening
