@@ -85,7 +85,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     v = ds.createVariable('intscalar', np.int64, (), zlib=6, fill_value=None)
     v[...] = 2
 
-    with raises(TypeError):
+    with raises((h5netcdf.CompatibilityError, TypeError)):
         ds.createVariable('boolean', np.bool_, ('x'))
 
     g = ds.createGroup('subgroup')
@@ -125,7 +125,7 @@ def write_h5netcdf(tmp_netcdf):
 
     v = ds.create_variable('intscalar', data=np.int64(2))
 
-    with raises(TypeError):
+    with raises((h5netcdf.CompatibilityError, TypeError)):
         ds.create_variable('boolean', data=True)
 
     g = ds.create_group('subgroup')
@@ -486,8 +486,8 @@ def test_reading_str_array_from_netCDF4(tmp_netcdf):
     assert array_equal(v, _string_array)
     ds.close()
 
-def test_nc_properties(tmp_netcdf):
-    with h5netcdf.File(tmp_netcdf, 'w') as ds:
+def test_nc_properties_new(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf, 'w'):
         pass
     with h5py.File(tmp_netcdf, 'r') as f:
         assert 'h5netcdf' in f.attrs['_NCProperties']
@@ -515,3 +515,56 @@ def test_failed_read_open_and_clean_delete(tmpdir):
             is_h5netcdf_File = False
         if is_h5netcdf_File:
             obj.close()
+
+def test_invalid_netcdf_warns(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf, 'w') as f:
+        with pytest.warns(FutureWarning):
+            f.create_variable('complex', data=1j)
+        with pytest.warns(FutureWarning):
+            f.attrs['complex_attr'] = 1j
+        with pytest.warns(FutureWarning):
+            f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
+                              compression='lzf')
+        with pytest.warns(FutureWarning):
+            f.create_variable('scaleoffset', data=[1], dimensions=('x',),
+                              scaleoffset=0)
+    with h5py.File(tmp_netcdf) as f:
+        assert '_NCProperties' not in f.attrs
+
+def test_invalid_netcdf_error(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf, 'w', invalid_netcdf=False) as f:
+        with pytest.raises(h5netcdf.CompatibilityError):
+            f.create_variable('complex', data=1j)
+        with pytest.raises(h5netcdf.CompatibilityError):
+            f.attrs['complex_attr'] = 1j
+        with pytest.raises(h5netcdf.CompatibilityError):
+            f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
+                              compression='lzf')
+        with pytest.raises(h5netcdf.CompatibilityError):
+            f.create_variable('scaleoffset', data=[1], dimensions=('x',),
+                              scaleoffset=0)
+
+def test_invalid_netcdf_okay(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf, 'w', invalid_netcdf=True) as f:
+        f.create_variable('complex', data=1j)
+        f.attrs['complex_attr'] = 1j
+        f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
+                          compression='lzf')
+        f.create_variable('scaleoffset', data=[1], dimensions=('x',),
+                          scaleoffset=0)
+    with h5netcdf.File(tmp_netcdf) as f:
+        assert f['complex'][...] == 1j
+        assert f.attrs['complex_attr'] == 1j
+        np.testing.assert_equal(f['lzf_compressed'][:], [1])
+        np.testing.assert_equal(f['scaleoffset'][:], [1])
+    with h5py.File(tmp_netcdf) as f:
+        assert '_NCProperties' not in f.attrs
+
+def test_invalid_then_valid_no_ncproperties(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf, invalid_netcdf=True):
+        pass
+    with h5netcdf.File(tmp_netcdf):
+        pass
+    with h5py.File(tmp_netcdf) as f:
+        # still not a valid netcdf file
+        assert '_NCProperties' not in f.attrs

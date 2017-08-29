@@ -45,11 +45,11 @@ Usage
 -----
 
 h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
-reproduce most of the features of the netCDF interface, with the noteable
+reproduce most of the features of the netCDF interface, with the notable
 exceptions of:
 
 - support for operations the rename or delete existing objects.
-- suport for creating unlimited dimensions.
+- support for creating unlimited dimensions.
 
 We simply haven't gotten around to implementing these features yet. Patches
 would be very welcome.
@@ -120,22 +120,64 @@ exact match. Here is an incomplete list of functionality we don't include:
 
 - Utility functions ``chartostring``, ``num2date``, etc., that are not directly necessary
   for writing netCDF files.
-- We don't support the ``endian`` argument to ``createVariable``. The h5py API does not
-  appear to offer this feature.
+- We don't support the ``endian`` argument to ``createVariable`` yet (see `GitHub issue`_).
 - h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
   (e.g., xarray_), which can implement their exact desired scaling behavior.
 
+.. _GitHub issue: https://github.com/shoyer/h5netcdf/issues/15
+
+Invalid netCDF files
+~~~~~~~~~~~~~~~~~~~~
+
+h5py implements some features that do not (yet) result in valid netCDF files:
+
+- Data types:
+    - Booleans
+    - Complex values
+    - Non-string variable length types
+    - Enum types
+    - Reference types
+- Compression algorithms:
+    - Algorithms other than gzip
+    - Scale-offset filters
+
+By default, h5netcdf does not allow writing files using any of these features,
+as files with such features are not readable by other netCDF tools.
+(For backwards compatibility, this is currently only a warning, but in h5netcdf
+v0.5 we will raise ``h5netcdf.CompatibilityError``. Use ``invalid_netcdf=False``
+to switch to the new behavior.)
+
+However, these are still valid HDF5 files. If you don't care about netCDF
+compatibility, you can use these features by setting ``invalid_netcdf=True``
+when creating a file:
+
+.. code-block:: python
+
+  # avoid the .nc extension for non-netcdf files
+  f = h5netcdf.File('mydata.h5', invalid_netcdf=True)
+  ...
+
+  # works with the legacy API, too, though compression options are not exposed
+  ds = h5netcdf.legacyapi.Dataset('mydata.h5', invalid_netcdf=True)
+  ...
+
 Change Log
 ----------
 
-Version 0.3.1:
+Version 0.4 (Aug 29, 2017):
+
+- Add ``invalid_netcdf`` argument. Warnings are now issued by default when
+  writing an invalid NetCDF file. See the "Invalid netCDF files" section of the
+  README for full details.
+
+Version 0.3.1 (Sep 2, 2016):
 
 - Fix garbage collection issue.
 - Add missing ``.flush()`` method for groups.
 - Allow creating dimensions of size 0.
 
-Version 0.3.0:
+Version 0.3.0 (Aug 7, 2016):
 
 - Datasets are now loaded lazily. This should increase performance when opening
   files with a large number of groups and/or variables.

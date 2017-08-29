@@ -1,17 +1,26 @@
 # For details on how netCDF4 builds on HDF5:
 # http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
 from collections import Mapping
+import functools
+import os.path
+import warnings
 
 import h5py
 import numpy as np
 
-from .compat import ChainMap, OrderedDict
+from .compat import ChainMap, OrderedDict, unicode
 from .attrs import Attributes
 from .dimensions import Dimensions
 from .utils import Frozen
 
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
+
+
+_NC_PROPERTIES = (u'version=1|h5netcdfversion=%s|hdf5libversion=%s'
+                  % (__version__, h5py.version.hdf5_version))
+
+NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
 
 def _reverse_dict(dict_):
@@ -22,8 +31,22 @@ def _join_h5paths(parent_path, child_path):
     return '/'.join([parent_path.rstrip('/'), child_path.lstrip('/')])
 
 
-_NC_PROPERTIES = (u'version=1|h5netcdfversion=%s|hdf5libversion=%s'
-                  % (__version__, h5py.version.hdf5_version))
+class CompatibilityError(Exception):
+    """Raised when using features that are not part of the NetCDF4 API."""
+
+
+def _invalid_netcdf_feature(feature, allow, file):
+    if allow is None:
+        msg = ('{} are supported by h5py, but not part of the NetCDF API. '
+               'You are writing an HDF5 file that is not a valid NetCDF file! '
+               'In the future, this will be an error, unless you set '
+               'invalid_netcdf=True.'.format(feature))
+        warnings.warn(msg, FutureWarning)
+        file._write_ncproperties = False
+    elif not allow:
+        msg = ('{} are not a supported NetCDF feature, and are not allowed by '
+               'h5netcdf unless invalid_netcdf=True.'.format(feature))
+        raise CompatibilityError(msg)
 
 
 class BaseVariable(object):
@@ -102,7 +125,8 @@ class BaseVariable(object):
 
     @property
     def attrs(self):
-        return Attributes(self._h5ds.attrs)
+        return Attributes(self._h5ds.attrs,
+                          self._root._check_valid_netcdf_dtype)
 
     _cls_name = 'h5netcdf.Variable'
 
@@ -140,8 +164,6 @@ class Variable(BaseVariable):
     def shuffle(self):
         return self._h5ds.shuffle
 
-
-NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
 class _LazyObjectLookup(Mapping):
     def __init__(self, parent, object_cls):
@@ -283,8 +305,27 @@ class Group(Mapping):
                 if d not in self.dimensions:
                     self.dimensions[d] = s
 
-        if (dtype if dtype is not None else data.dtype) == np.bool_:
-            raise TypeError('netCDF4 does not implement a boolean dtype')
+        if dtype is None:
+            dtype = data.dtype
+
+        if dtype == np.bool_:
+            # never warn since h5netcdf has always errored here
+            _invalid_netcdf_feature('boolean dtypes',
+                                    allow=bool(self._root.invalid_netcdf),
+                                    file=self._root)
+        else:
+            self._root._check_valid_netcdf_dtype(dtype)
+
+        compression = kwargs.get('compression')
+        if compression not in {None, 'gzip'}:
+            _invalid_netcdf_feature('{} compression'.format(compression),
+                                    allow=self._root.invalid_netcdf,
+                                    file=self._root)
+
+        if 'scaleoffset' in kwargs:
+            _invalid_netcdf_feature('scale-offset filters',
+                                    allow=self._root.invalid_netcdf,
+                                    file=self._root)
 
         shape = tuple(self.dimensions[d] for d in dimensions)
         if name in self.dimensions and name not in dimensions:
@@ -393,7 +434,8 @@ class Group(Mapping):
 
     @property
     def attrs(self):
-        return Attributes(self._h5group.attrs)
+        return Attributes(self._h5group.attrs,
+                          self._root._check_valid_netcdf_dtype)
 
     _cls_name = 'h5netcdf.Group'
 
@@ -418,7 +460,8 @@ class Group(Mapping):
 
 class File(Group):
 
-    def __init__(self, path, mode='a', **kwargs):
+    def __init__(self, path, mode='a', invalid_netcdf=None, **kwargs):
+        self._preexisting_file = os.path.exists(path)
         try:
             self._h5file = h5py.File(path, mode, **kwargs)
         except Exception:
@@ -431,7 +474,32 @@ class File(Group):
         self._mode = mode
         self._root = self
         self._h5path = '/'
+        self.invalid_netcdf = invalid_netcdf
+        # If invalid_netcdf is None, we'll disable writing _NCProperties only
+        # if we actually use invalid NetCDF features.
+        self._write_ncproperties = (invalid_netcdf is not True)
         super(File, self).__init__(self, self._h5path)
+
+    def _check_valid_netcdf_dtype(self, dtype):
+        dtype = np.dtype(dtype)
+
+        if dtype == bool:
+            description = 'boolean'
+        elif dtype == complex:
+            description = 'complex'
+        elif h5py.check_dtype(enum=dtype) is not None:
+            description = 'enum'
+        elif h5py.check_dtype(ref=dtype) is not None:
+            description = 'reference'
+        elif h5py.check_dtype(vlen=dtype) not in {None, unicode, bytes}:
+            description = 'non-string variable length'
+        else:
+            description = None
+
+        if description is not None:
+            _invalid_netcdf_feature('{} dtypes'.format(description),
+                                    allow=self.invalid_netcdf,
+                                    file=self)
 
     @property
     def mode(self):
@@ -449,7 +517,8 @@ class File(Group):
         if 'r' not in self._mode:
             self._create_dim_scales()
             self._attach_dim_scales()
-            self.attrs._h5attrs['_NCProperties'] = _NC_PROPERTIES
+            if not self._preexisting_file and self._write_ncproperties:
+                self.attrs._h5attrs['_NCProperties'] = _NC_PROPERTIES
     sync = flush
 
     def close(self):
