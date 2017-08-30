@@ -165,7 +165,7 @@ when creating a file:
 Change Log
 ----------
 
-Version 0.4 (Aug 29, 2017):
+Version 0.4 (Aug 30, 2017):
 
 - Add ``invalid_netcdf`` argument. Warnings are now issued by default when
   writing an invalid NetCDF file. See the "Invalid netCDF files" section of the
@@ -181,9 +181,10 @@ Version 0.3.0 (Aug 7, 2016):
 
 - Datasets are now loaded lazily. This should increase performance when opening
   files with a large number of groups and/or variables.
-- Support for writing arrays of variable length unicode strings with `dtype=str`
-  via the legacy API.
-- h5netcdf now writes the _NCProperties attribute for identifying netCDF4 files.
+- Support for writing arrays of variable length unicode strings with
+  ``dtype=str`` via the legacy API.
+- h5netcdf now writes the ``_NCProperties`` attribute for identifying netCDF4
+  files.
 
 License
 -------
