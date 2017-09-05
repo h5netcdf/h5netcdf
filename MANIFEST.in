@@ -1,2 +1,2 @@
 include LICENSE
-recursive-include *.py
+recursive-include h5netcdf/tests *.py
