@@ -14,7 +14,7 @@ from .dimensions import Dimensions
 from .utils import Frozen
 
 
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 
 _NC_PROPERTIES = (u'version=1|h5netcdfversion=%s|hdf5libversion=%s'

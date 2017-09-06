@@ -165,6 +165,10 @@ when creating a file:
 Change Log
 ----------
 
+Version 0.4.1 (Sep 6, 2017):
+
+- Include tests in source distribution on pypi.
+
 Version 0.4 (Aug 30, 2017):
 
 - Add ``invalid_netcdf`` argument. Warnings are now issued by default when
