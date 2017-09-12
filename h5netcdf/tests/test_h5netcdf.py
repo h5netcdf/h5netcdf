@@ -156,6 +156,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     if not PY2 and write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.other_attr == 'yes'
+    with pytest.raises(AttributeError):
+        ds.does_not_exist
     assert set(ds.dimensions) == set(['x', 'y', 'z', 'empty', 'string3',
                                       'mismatched_dim'])
     assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar',

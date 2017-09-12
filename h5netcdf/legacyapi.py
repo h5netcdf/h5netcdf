@@ -17,7 +17,11 @@ class HasAttributesMixin(object):
         return list(self.attrs)
 
     def __getattr__(self, name):
-        return self.attrs[name]
+        try:
+            return self.attrs[name]
+        except KeyError:
+            raise AttributeError('NetCDF: attribute {} not found'
+                                 .format(type(self).__name__, name))
 
     def __setattr__(self, name, value):
         if self._initialized and name not in self.__dict__:

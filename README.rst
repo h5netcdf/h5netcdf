@@ -165,6 +165,12 @@ when creating a file:
 Change Log
 ----------
 
+Version 0.4.2 (Sep 12, 2017):
+
+- Raise ``AttributeError`` rather than ``KeyError`` when attributes are not
+  found using the legacy API. This fixes an issue that prevented writing to
+  h5netcdf with dask.
+
 Version 0.4.1 (Sep 6, 2017):
 
 - Include tests in source distribution on pypi.
