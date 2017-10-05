@@ -434,8 +434,6 @@ def test_optional_netcdf4_attrs(tmp_netcdf):
 
 def test_error_handling(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, 'w') as ds:
-        with raises(NotImplementedError):
-            ds.dimensions['x'] = None
         ds.dimensions['x'] = 1
         with raises(ValueError):
             ds.dimensions['x'] = 2
@@ -571,3 +569,41 @@ def test_invalid_then_valid_no_ncproperties(tmp_netcdf):
     with h5py.File(tmp_netcdf) as f:
         # still not a valid netcdf file
         assert '_NCProperties' not in f.attrs
+
+def test_creating_an_unlimited_dimension(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf) as f:
+        f.dimensions['x'] = None
+
+    # Close and read again to also test correct parsing of unlimited
+    # dimensions.
+    with h5netcdf.File(tmp_netcdf) as f:
+        assert f.dimensions['x'] is None
+        assert f._h5file['x'].maxshape == (None,)
+        assert f._h5file['x'].shape == (0,)
+
+def test_writing_to_an_unlimited_dimension(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf) as f:
+        # Two dimension, only one is unlimited.
+        f.dimensions['x'] = None
+        f.dimensions['y'] = 3
+
+        # With data.
+        f.create_variable('dummy', data=np.array([[1, 2, 3]]),
+                          dimensions=('x', 'y'))
+        np.testing.assert_allclose(f.variables['dummy'], [[1, 2, 3]])
+
+        # Without data.
+        f.create_variable('dummy2', dimensions=('x', 'y'), dtype=np.int64)
+        assert f.variables['dummy2'].shape == (0, 3)
+
+        # We have to manually resize before.
+        # Set the whole array.
+        f.variables['dummy2'].resize((1, 3))
+        f.variables['dummy2'][:] = [[1, 2, 3]]
+        np.testing.assert_allclose(f.variables['dummy2'], [[1, 2, 3]])
+
+        # With an ellipsis
+        f.variables['dummy2'].resize((2, 3))
+        f.variables['dummy2'][...] = [[1, 2, 3], [4, 5, 6]]
+        np.testing.assert_allclose(f.variables['dummy2'],
+                                   [[1, 2, 3], [4, 5, 6]])

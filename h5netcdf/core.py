@@ -1,7 +1,6 @@
 # For details on how netCDF4 builds on HDF5:
 # http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
 from collections import Mapping
-import functools
 import os.path
 import warnings
 
@@ -123,6 +122,21 @@ class BaseVariable(object):
     def __setitem__(self, key, value):
         self._h5ds[key] = value
 
+    def resize(self, size, axis=None):
+        """
+        Change the shape of a dataset.
+
+        This is just a thin wrapper around h5py's ``Dataset.resize()`` method.
+
+        ``size`` may be a tuple giving the new dataset shape, or an integer
+        giving the new length of the specified axis.
+
+        Datasets may be resized only up to ``Dataset.maxshape``. In netCDF
+        semantics this means that it can only be resized along unlimited
+        dimensions.
+        """
+        self._h5ds.resize(size=size, axis=axis)
+
     @property
     def attrs(self):
         return Attributes(self._h5ds.attrs,
@@ -224,7 +238,11 @@ class Group(Mapping):
                         size = v.shape[list(coord_ids).index(dim_id)]
                     else:
                         assert len(v.shape) == 1
-                        size = v.size
+                        # Unlimited dimensions are represented as None.
+                        if v.maxshape == (None,):
+                            size = None
+                        else:
+                            size = v.size
                     self._dim_sizes[k] = size
                     if dim_id is None:
                         dim_id = len(self._dim_order)
@@ -249,9 +267,7 @@ class Group(Mapping):
     def _create_dimension(self, name, size=None):
         if name in self._dim_sizes.maps[0]:
             raise ValueError('dimension %r already exists' % name)
-        if size is None:
-            raise NotImplementedError('h5netcdf does not yet support '
-                                      'unlimited dimensions')
+
         self._dim_sizes[name] = size
         self._dim_order[name] = len(self._dim_order)
 
@@ -338,6 +354,18 @@ class Group(Mapping):
         else:
             h5name = name
 
+        # None in the shape indicates unlimited dimensions. Set the maxshape
+        # to the shape in that case and replace all None's with zero for the
+        # actual shape. Or if there is data replace by the actual data size.
+        # This will allow resizing the data sets later if required.
+        if None in shape:
+            kwargs['maxshape'] = shape
+            if data is None:
+                shape = tuple(_i if _i is not None else 0 for _i in shape)
+            else:
+                shape = tuple(_j if _j is not None else data.shape[_i]
+                              for _i, _j in enumerate(shape))
+
         self._h5group.create_dataset(h5name, shape, dtype=dtype,
                                      data=data, fillvalue=fillvalue,
                                      **kwargs)
@@ -391,7 +419,13 @@ class Group(Mapping):
         for dim in sorted(dim_order, key=lambda d: dim_order[d]):
             if dim not in self._h5group:
                 size = self.dimensions[dim]
-                self._h5group.create_dataset(dim, (size,), 'S1')
+                if size is None:
+                    size = 0
+                    kwargs = {"maxshape": (None, )}
+                else:
+                    kwargs = {}
+                self._h5group.create_dataset(
+                    name=dim, shape=(size,), dtype='S1', **kwargs)
 
             h5ds = self._h5group[dim]
             h5ds.attrs['_Netcdf4Dimid'] = dim_order[dim]

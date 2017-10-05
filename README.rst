@@ -49,7 +49,10 @@ reproduce most of the features of the netCDF interface, with the notable
 exceptions of:
 
 - support for operations the rename or delete existing objects.
-- support for creating unlimited dimensions.
+- The legacy interface currently does not support resizing unlimited
+  dimensions. Variables can be manually resized in the new API with
+  ``f.variables["NAME"].resize()`` which is just a thin wrapper around
+  ``h5py``'s ``DataSet.resize()`` method.
 
 We simply haven't gotten around to implementing these features yet. Patches
 would be very welcome.
