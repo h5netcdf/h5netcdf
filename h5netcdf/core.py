@@ -500,15 +500,17 @@ class Group(Mapping):
         self._dim_order[dimension] = len(self._dim_order)
 
         for var in self.variables.values():
-            try:
-                idx = var.dimensions.index(dimension)
-            except ValueError:
-                continue
-            var._h5ds.resize(size, axis=idx)
+            new_shape = list(var.shape)
+            for _i, d in enumerate(var.dimensions):
+                if d == dimension:
+                    new_shape[_i] = size
+            new_shape = tuple(new_shape)
+            if new_shape != var.shape:
+                var._h5ds.resize(new_shape)
 
         # Recurse as dimensions are visible to this group and all child groups.
-        for i in self.groups:
-            i.resize(dimension, size)
+        for i in self.groups.values():
+            i.resize_dimension(dimension, size)
 
 
 class File(Group):

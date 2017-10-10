@@ -648,14 +648,21 @@ def test_writing_to_an_unlimited_dimension(tmp_netcdf):
         f.create_variable('dummy1', dimensions=('x', 'y'), dtype=np.int64)
         f.create_variable('dummy2', dimensions=('x', 'y'), dtype=np.int64)
         f.create_variable('dummy3', dimensions=('x', 'y'), dtype=np.int64)
+        g = f.create_group('test')
+        g.create_variable('dummy4', dimensions=('y', 'x', 'x'), dtype=np.int64)
+        g.create_variable('dummy5', dimensions=('y', 'y'), dtype=np.int64)
 
         assert f.variables['dummy1'].shape == (0, 3)
         assert f.variables['dummy2'].shape == (0, 3)
         assert f.variables['dummy3'].shape == (0, 3)
+        assert g.variables['dummy4'].shape == (3, 0, 0)
+        assert g.variables['dummy5'].shape == (3, 3)
         f.resize_dimension("x", 2)
         assert f.variables['dummy1'].shape == (2, 3)
         assert f.variables['dummy2'].shape == (2, 3)
         assert f.variables['dummy3'].shape == (2, 3)
+        assert g.variables['dummy4'].shape == (3, 2, 2)
+        assert g.variables['dummy5'].shape == (3, 3)
 
         f.variables['dummy2'][:] = [[1, 2, 3], [5, 6, 7]]
         np.testing.assert_allclose(f.variables['dummy2'],
