@@ -122,21 +122,6 @@ class BaseVariable(object):
     def __setitem__(self, key, value):
         self._h5ds[key] = value
 
-    def resize(self, size, axis=None):
-        """
-        Change the shape of a dataset.
-
-        This is just a thin wrapper around h5py's ``Dataset.resize()`` method.
-
-        ``size`` may be a tuple giving the new dataset shape, or an integer
-        giving the new length of the specified axis.
-
-        Datasets may be resized only up to ``Dataset.maxshape``. In netCDF
-        semantics this means that it can only be resized along unlimited
-        dimensions.
-        """
-        self._h5ds.resize(size=size, axis=axis)
-
     @property
     def attrs(self):
         return Attributes(self._h5ds.attrs,
@@ -221,6 +206,7 @@ class Group(Mapping):
 
         if parent is not self:
             self._dim_sizes = parent._dim_sizes.new_child()
+            self._current_dim_sizes = parent._current_dim_sizes.new_child()
             self._dim_order = parent._dim_order.new_child()
 
         self._variables = _LazyObjectLookup(self, self._variable_cls)
@@ -236,14 +222,18 @@ class Group(Mapping):
                         assert dim_id is not None
                         coord_ids = v.attrs['_Netcdf4Coordinates']
                         size = v.shape[list(coord_ids).index(dim_id)]
+                        current_size = size
                     else:
                         assert len(v.shape) == 1
                         # Unlimited dimensions are represented as None.
                         if v.maxshape == (None,):
                             size = None
+                            current_size = v.size
                         else:
                             size = v.size
+                            current_size = v.size
                     self._dim_sizes[k] = size
+                    self._current_dim_sizes[k] = current_size
                     if dim_id is None:
                         dim_id = len(self._dim_order)
                     self._dim_order[k] = dim_id
@@ -269,6 +259,7 @@ class Group(Mapping):
             raise ValueError('dimension %r already exists' % name)
 
         self._dim_sizes[name] = size
+        self._current_dim_sizes[name] = 0 if size is None else size
         self._dim_order[name] = len(self._dim_order)
 
     @property
@@ -348,23 +339,18 @@ class Group(Mapping):
                                     file=self._root,
                                     stacklevel=stacklevel)
 
-        shape = tuple(self.dimensions[d] for d in dimensions)
         if name in self.dimensions and name not in dimensions:
             h5name = '_nc4_non_coord_' + name
         else:
             h5name = name
 
-        # None in the shape indicates unlimited dimensions. Set the maxshape
-        # to the shape in that case and replace all None's with zero for the
-        # actual shape. Or if there is data replace by the actual data size.
-        # This will allow resizing the data sets later if required.
-        if None in shape:
-            kwargs['maxshape'] = shape
-            if data is None:
-                shape = tuple(i if i is not None else 0 for i in shape)
-            else:
-                shape = tuple(j if j is not None else i
-                              for i, j in zip(data.shape, shape))
+        shape = tuple(self._current_dim_sizes[d] for d in dimensions)
+        maxshape = tuple(self._dim_sizes[d] for d in dimensions)
+
+        # If it is passed directly it will change the default compression
+        # settings.
+        if shape != maxshape:
+            kwargs["maxshape"] = maxshape
 
         self._h5group.create_dataset(h5name, shape, dtype=dtype,
                                      data=data, fillvalue=fillvalue,
@@ -434,6 +420,10 @@ class Group(Mapping):
                 dims = self._variables[dim].dimensions
                 coord_ids = np.array([dim_order[d] for d in dims], 'int32')
                 h5ds.attrs['_Netcdf4Coordinates'] = coord_ids
+            # Might have to be resized if it already exists.
+            elif h5ds.maxshape == (None, ) and \
+                    self._current_dim_sizes[dim] != h5ds.shape[0]:
+                h5ds.resize((self._current_dim_sizes[dim],))
 
             scale_name = dim if dim in self.variables else NOT_A_VARIABLE
             h5ds.dims.create_scale(h5ds, scale_name)
@@ -496,6 +486,30 @@ class Group(Mapping):
                   % (self._cls_name, self.name, len(self)))
         return '\n'.join([header] + self._repr_body())
 
+    def resize_dimension(self, dimension, size):
+        """
+        Resize a dimension to a certain size.
+
+        This will pad with zeros where necessary.
+        """
+        if self.dimensions[dimension] is not None:
+            raise ValueError("Only unlimited dimensions can be resized.")
+
+        # Resize the dimension.
+        self._current_dim_sizes[dimension] = size
+        self._dim_order[dimension] = len(self._dim_order)
+
+        for var in self.variables.values():
+            try:
+                idx = var.dimensions.index(dimension)
+            except ValueError:
+                continue
+            var._h5ds.resize(size, axis=idx)
+
+        # Recurse as dimensions are visible to this group and all child groups.
+        for i in self.groups:
+            i.resize(dimension, size)
+
 
 class File(Group):
 
@@ -508,8 +522,14 @@ class File(Group):
             raise
         else:
             self._closed = False
+
+        # Three maps to keep track of dimensions in terms of size (might be
+        # unlimited), current size (identical to size for limited dimensions),
+        # and their position.
         self._dim_sizes = ChainMap()
+        self._current_dim_sizes = ChainMap()
         self._dim_order = ChainMap()
+
         self._mode = mode
         self._root = self
         self._h5path = '/'
