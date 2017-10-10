@@ -361,10 +361,10 @@ class Group(Mapping):
         if None in shape:
             kwargs['maxshape'] = shape
             if data is None:
-                shape = tuple(_i if _i is not None else 0 for _i in shape)
+                shape = tuple(i if i is not None else 0 for i in shape)
             else:
-                shape = tuple(_j if _j is not None else data.shape[_i]
-                              for _i, _j in enumerate(shape))
+                shape = tuple(j if j is not None else i
+                              for i, j in zip(data.shape, shape))
 
         self._h5group.create_dataset(h5name, shape, dtype=dtype,
                                      data=data, fillvalue=fillvalue,

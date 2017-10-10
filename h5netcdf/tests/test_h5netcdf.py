@@ -583,7 +583,7 @@ def test_creating_an_unlimited_dimension(tmp_netcdf):
 
 def test_writing_to_an_unlimited_dimension(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf) as f:
-        # Two dimension, only one is unlimited.
+        # Two dimensions, only one is unlimited.
         f.dimensions['x'] = None
         f.dimensions['y'] = 3
 
