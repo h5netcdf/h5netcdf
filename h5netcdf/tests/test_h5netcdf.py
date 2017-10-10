@@ -391,6 +391,12 @@ def test_repr(tmp_netcdf):
     assert 'h5netcdf.Variable' in repr(v)
     assert 'float' in repr(v)
     assert 'units' in repr(v)
+
+    f.dimensions['temp'] = None
+    assert 'temp: Unlimited (current: 0)' in repr(f)
+    f.resize_dimension('temp', 5)
+    assert 'temp: Unlimited (current: 5)' in repr(f)
+
     f.close()
 
     assert 'Closed' in repr(f)

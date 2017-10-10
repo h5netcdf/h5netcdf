@@ -469,15 +469,19 @@ class Group(Mapping):
     _cls_name = 'h5netcdf.Group'
 
     def _repr_body(self):
-        return (['Dimensions:'] +
-                ['    %s: %s' % (k, v) for k, v in self.dimensions.items()] +
-                ['Groups:'] +
-                ['    %s' % g for g in self.groups] +
-                ['Variables:'] +
-                ['    %s: %r %s' % (k, v.dimensions, v.dtype)
-                 for k, v in self.variables.items()] +
-                ['Attributes:'] +
-                ['    %s: %r' % (k, v) for k, v in self.attrs.items()])
+        return (
+            ['Dimensions:'] +
+            ['    %s: %s' % (k, ("Unlimited (current: %s)" %
+                                 self._current_dim_sizes[k])
+                             if v is None else v)
+             for k, v in self.dimensions.items()] +
+            ['Groups:'] +
+            ['    %s' % g for g in self.groups] +
+            ['Variables:'] +
+            ['    %s: %r %s' % (k, v.dimensions, v.dtype)
+             for k, v in self.variables.items()] +
+            ['Attributes:'] +
+            ['    %s: %r' % (k, v) for k, v in self.attrs.items()])
 
     def __repr__(self):
         if self._root._closed:
