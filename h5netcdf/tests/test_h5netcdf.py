@@ -677,3 +677,63 @@ def test_writing_to_an_unlimited_dimension(tmp_netcdf):
         f.variables['dummy3'][...] = [[1, 2, 3], [5, 6, 7]]
         np.testing.assert_allclose(f.variables['dummy3'],
                                    [[1, 2, 3], [5, 6, 7]])
+
+def test_c_api_can_read_unlimited_dimensions(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf) as f:
+        # Two dimensions, only one is unlimited.
+        f.dimensions['x'] = None
+        f.dimensions['y'] = 3
+        f.dimensions['z'] = None
+        f.create_variable('dummy1', dimensions=('x', 'y'), dtype=np.int64)
+        f.create_variable('dummy2', dimensions=('y', 'x', 'x'), dtype=np.int64)
+        g = f.create_group('test')
+        g.create_variable('dummy3', dimensions=('y', 'y'), dtype=np.int64)
+        g.create_variable('dummy4', dimensions=('z', 'z'), dtype=np.int64)
+        f.resize_dimension('x', 2)
+
+    with netCDF4.Dataset(tmp_netcdf) as f:
+        assert f.dimensions['x'].size == 2
+        assert f.dimensions['x'].isunlimited() is True
+        assert f.dimensions['y'].size == 3
+        assert f.dimensions['y'].isunlimited() is False
+        assert f.dimensions['z'].size == 0
+        assert f.dimensions['z'].isunlimited() is True
+
+        assert f.variables['dummy1'].shape == (2, 3)
+        assert f.variables['dummy2'].shape == (3, 2, 2)
+        g = f.groups["test"]
+        assert g.variables['dummy3'].shape == (3, 3)
+        assert g.variables['dummy4'].shape == (0, 0)
+
+def test_reading_unlimited_dimensions_created_with_c_api(tmp_netcdf):
+    with netCDF4.Dataset(tmp_netcdf, "w") as f:
+        f.createDimension('x', None)
+        f.createDimension('y', 3)
+        f.createDimension('z', None)
+
+        dummy1 = f.createVariable('dummy1', float, ('x', 'y'))
+        f.createVariable('dummy2', float, ('y', 'x', 'x'))
+        g = f.createGroup('test')
+        g.createVariable('dummy3', float, ('y', 'y'))
+        g.createVariable('dummy4', float, ('z', 'z'))
+
+        # Assign something to trigger a resize.
+        dummy1[:] = [[1, 2, 3], [4, 5, 6]]
+
+    with h5netcdf.File(tmp_netcdf) as f:
+        assert f.dimensions['x'] is None
+        assert f.dimensions['y'] == 3
+        assert f.dimensions['z'] is None
+
+        # This is parsed correctly due to h5netcdf's init trickery.
+        assert f._current_dim_sizes['x'] == 2
+        assert f._current_dim_sizes['y'] == 3
+        assert f._current_dim_sizes['z'] == 0
+
+        # But the actual data-set and arrays are not correct.
+        assert f['dummy1'].shape == (2, 3)
+        # XXX: This array has some data with dimension x - netcdf does not
+        # appear to keep dimensions consistent.
+        assert f['dummy2'].shape == (3, 0, 0)
+        f.groups['test']['dummy3'].shape == (3, 3)
+        f.groups['test']['dummy4'].shape == (0, 0)

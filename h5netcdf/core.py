@@ -232,6 +232,7 @@ class Group(Mapping):
                         else:
                             size = v.size
                             current_size = v.size
+
                     self._dim_sizes[k] = size
                     self._current_dim_sizes[k] = current_size
                     if dim_id is None:
@@ -242,6 +243,29 @@ class Group(Mapping):
                     if k.startswith('_nc4_non_coord_'):
                         var_name = k[len('_nc4_non_coord_'):]
                     self._variables.add(var_name)
+
+        # One last pass to get the current sizes.
+        #
+        # I'm not entirely sure how the netcdf C api determines the current
+        # size - should probably be looked into.
+        def _get_all_variables(g):
+            var = list(g.variables.values())
+            for _g in g.groups.values():
+                var.extend(_get_all_variables(_g))
+            return var
+
+        all_vars = _get_all_variables(self)
+
+        for d in self.dimensions:
+            if self.dimensions[d] is not None:
+                continue
+            max_size = self._current_dim_sizes[d]
+            for var in all_vars:
+                for i, name in enumerate(var.dimensions):
+                    if name == d:
+                        max_size = max(var.shape[i], max_size)
+            self._current_dim_sizes[d] = max_size
+
         self._initialized = True
 
     @property
