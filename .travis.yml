@@ -29,7 +29,7 @@ before_install:
   - conda info -a
 
 install:
-  - conda create --yes -n test_env python=$TRAVIS_PYTHON_VERSION pip pytest h5py$H5PY_VERSION cython netCDF4
+  - conda create -c conda-forge --yes -n test_env python=$TRAVIS_PYTHON_VERSION pip pytest h5py$H5PY_VERSION cython netCDF4
   - source activate test_env
   - python setup.py install
 
