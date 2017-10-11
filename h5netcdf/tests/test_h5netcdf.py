@@ -584,7 +584,8 @@ def test_creating_and_resizing_unlimited_dimensions(tmp_netcdf):
 
         with pytest.raises(ValueError) as e:
             f.resize_dimension('y', 20)
-        assert e.value.args[0] == "Only unlimited dimensions can be resized."
+        assert e.value.args[0] == (
+            "Dimension 'y' is not unlimited and thus cannot be resized.")
 
     # Assert some behavior observed by using the C netCDF bindings.
     with h5py.File(tmp_netcdf) as f:
@@ -680,7 +681,7 @@ def test_writing_to_an_unlimited_dimension(tmp_netcdf):
 
 def test_c_api_can_read_unlimited_dimensions(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf) as f:
-        # Two dimensions, only one is unlimited.
+        # Three dimensions, only one is limited.
         f.dimensions['x'] = None
         f.dimensions['y'] = 3
         f.dimensions['z'] = None

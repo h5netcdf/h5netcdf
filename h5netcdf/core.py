@@ -226,12 +226,8 @@ class Group(Mapping):
                     else:
                         assert len(v.shape) == 1
                         # Unlimited dimensions are represented as None.
-                        if v.maxshape == (None,):
-                            size = None
-                            current_size = v.size
-                        else:
-                            size = v.size
-                            current_size = v.size
+                        size = None if v.maxshape == (None,) else v.size
+                        current_size = v.size
 
                     self._dim_sizes[k] = size
                     self._current_dim_sizes[k] = current_size
@@ -428,12 +424,10 @@ class Group(Mapping):
         dim_order = self._dim_order.maps[0]
         for dim in sorted(dim_order, key=lambda d: dim_order[d]):
             if dim not in self._h5group:
-                size = self.dimensions[dim]
-                if size is None:
-                    size = 0
-                    kwargs = {"maxshape": (None, )}
-                else:
-                    kwargs = {}
+                size = self._current_dim_sizes[dim]
+                kwargs = {}
+                if self._dim_sizes[dim] is None:
+                    kwargs["maxshape"] = (None,)
                 self._h5group.create_dataset(
                     name=dim, shape=(size,), dtype='S1', **kwargs)
 
@@ -444,10 +438,6 @@ class Group(Mapping):
                 dims = self._variables[dim].dimensions
                 coord_ids = np.array([dim_order[d] for d in dims], 'int32')
                 h5ds.attrs['_Netcdf4Coordinates'] = coord_ids
-            # Might have to be resized if it already exists.
-            elif h5ds.maxshape == (None, ) and \
-                    self._current_dim_sizes[dim] != h5ds.shape[0]:
-                h5ds.resize((self._current_dim_sizes[dim],))
 
             scale_name = dim if dim in self.variables else NOT_A_VARIABLE
             h5ds.dims.create_scale(h5ds, scale_name)
@@ -495,10 +485,9 @@ class Group(Mapping):
     def _repr_body(self):
         return (
             ['Dimensions:'] +
-            ['    %s: %s' % (k, ("Unlimited (current: %s)" %
-                                 self._current_dim_sizes[k])
-                             if v is None else v)
-             for k, v in self.dimensions.items()] +
+            ['    %s: %s' % (
+             k, ("Unlimited (current: %s)" % self._current_dim_sizes[k])
+             if v is None else v) for k, v in self.dimensions.items()] +
             ['Groups:'] +
             ['    %s' % g for g in self.groups] +
             ['Variables:'] +
@@ -521,17 +510,17 @@ class Group(Mapping):
         This will pad with zeros where necessary.
         """
         if self.dimensions[dimension] is not None:
-            raise ValueError("Only unlimited dimensions can be resized.")
+            raise ValueError("Dimension '%s' is not unlimited and thus "
+                             "cannot be resized." % dimension)
 
         # Resize the dimension.
         self._current_dim_sizes[dimension] = size
-        self._dim_order[dimension] = len(self._dim_order)
 
         for var in self.variables.values():
             new_shape = list(var.shape)
-            for _i, d in enumerate(var.dimensions):
+            for i, d in enumerate(var.dimensions):
                 if d == dimension:
-                    new_shape[_i] = size
+                    new_shape[i] = size
             new_shape = tuple(new_shape)
             if new_shape != var.shape:
                 var._h5ds.resize(new_shape)
