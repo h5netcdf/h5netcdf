@@ -1,5 +1,6 @@
 import netCDF4
 import numpy as np
+import re
 import sys
 import gc
 
@@ -52,7 +53,7 @@ def is_h5py_char_working(tmp_netcdf, name):
             assert array_equal(v, _char_array)
             return True
         except Exception as e:
-            if e.args[0] == "Can't read data (No appropriate function for conversion path)":
+            if re.match("^Can't read data", e.args[0]):
                 return False
             else:
                 raise

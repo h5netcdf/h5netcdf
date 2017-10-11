@@ -165,6 +165,10 @@ when creating a file:
 Change Log
 ----------
 
+Version 0.4.3 (Oct 10, 2017):
+
+- Fix test suite failure with recent versions of netCDF4-Python.
+
 Version 0.4.2 (Sep 12, 2017):
 
 - Raise ``AttributeError`` rather than ``KeyError`` when attributes are not
