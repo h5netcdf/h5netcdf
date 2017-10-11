@@ -240,24 +240,41 @@ class Group(Mapping):
                         var_name = k[len('_nc4_non_coord_'):]
                     self._variables.add(var_name)
 
-        # One last pass to get the current sizes.
+        # One last pass to get the current sizes. This is necessary as h5netcdf
+        # needs to now the current size of each unlimited dimension.
         #
         # I'm not entirely sure how the netcdf C api determines the current
         # size - should probably be looked into.
-        def _get_all_variables(g):
-            var = list(g.variables.values())
-            for _g in g.groups.values():
-                var.extend(_get_all_variables(_g))
-            return var
-
-        all_vars = _get_all_variables(self)
+        def _find_dim(h5group, dim):
+            if dim not in h5group:
+                # Might happen if the dimension has not been created yet.
+                if h5group.name == "/":
+                    return None
+                return _find_dim(h5group.parent, dim)
+            return h5group[dim]
 
         for d in self.dimensions:
             if self.dimensions[d] is not None:
                 continue
+            dim = _find_dim(self._h5group, d)
+            if not dim:
+                continue
+
+            # Assume the reference list at each dimension is set correctly.
+            if "REFERENCE_LIST" not in dim.attrs:
+                continue
+            root = self._h5group["/"]
+
             max_size = self._current_dim_sizes[d]
-            for var in all_vars:
-                for i, name in enumerate(var.dimensions):
+            for r in dim.attrs["REFERENCE_LIST"]:
+                # This might be pretty fragile with invalid files.
+                try:
+                    var = root[r[0]]
+                except:  # pragma: no cover
+                    continue
+
+                for i in range(len(var.dims)):
+                    name = var.dims[i][0].name.strip("/")
                     if name == d:
                         max_size = max(var.shape[i], max_size)
             self._current_dim_sizes[d] = max_size
