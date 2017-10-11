@@ -50,9 +50,9 @@ exceptions of:
 
 - support for operations the rename or delete existing objects.
 - The legacy interface currently does not support resizing unlimited
-  dimensions. Variables can be manually resized in the new API with
-  ``f.variables["NAME"].resize()`` which is just a thin wrapper around
-  ``h5py``'s ``DataSet.resize()`` method.
+  dimensions. Dimensions can be manually resized in the new API with
+  ``Group.resize(dimension, size)`` which will resize the dimension axes and
+  all dependent variables.
 
 We simply haven't gotten around to implementing these features yet. Patches
 would be very welcome.
