@@ -215,7 +215,7 @@ class Group(Mapping):
         # Flag used to determine if the current size of the unlimited
         # dimensions must be detected manually at the end of the
         # initialization.
-        _current_size_set = False
+        has_existing_unlimited_dims = False
 
         for k, v in self._h5group.items():
             if isinstance(v, h5py.Group):
@@ -236,7 +236,7 @@ class Group(Mapping):
 
                     self._dim_sizes[k] = size
                     self._current_dim_sizes[k] = current_size
-                    _current_size_set = True
+                    has_existing_unlimited_dims = True
                     if dim_id is None:
                         dim_id = len(self._dim_order)
                     self._dim_order[k] = dim_id
@@ -246,7 +246,7 @@ class Group(Mapping):
                         var_name = k[len('_nc4_non_coord_'):]
                     self._variables.add(var_name)
 
-        if _current_size_set is True:
+        if has_existing_unlimited_dims is True:
             self._determine_current_dimension_sizes()
 
         self._initialized = True
