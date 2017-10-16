@@ -239,12 +239,14 @@ class Group(Mapping):
                     if k.startswith('_nc4_non_coord_'):
                         var_name = k[len('_nc4_non_coord_'):]
                     self._variables.add(var_name)
+        self._determine_current_dimension_sizes()
+        self._initialized = True
 
-        # One last pass to get the current sizes. This is necessary as h5netcdf
-        # needs to know the current size of each unlimited dimension.
-        #
-        # I'm not entirely sure how the netcdf C api determines the current
-        # size - should probably be looked into.
+    def _determine_current_dimension_sizes(self):
+        """
+        Helper function to determine the current size of all unlimited
+        dimensions.
+        """
         def _find_dim(h5group, dim):
             if dim not in h5group:
                 # Might happen if the dimension has not been created yet.
@@ -266,20 +268,16 @@ class Group(Mapping):
             root = self._h5group["/"]
 
             max_size = self._current_dim_sizes[d]
-            for r in dim.attrs["REFERENCE_LIST"]:
-                # This might be pretty fragile with invalid files.
-                try:
-                    var = root[r[0]]
-                except:  # pragma: no cover
-                    continue
+            for ref, _ in dim.attrs["REFERENCE_LIST"]:
+                var = root[ref]
 
-                for i in range(len(var.dims)):
-                    name = var.dims[i][0].name.strip("/")
+                for i, var_d in enumerate(var.dims):
+                    # First value in a dimension is the actual dimension scale
+                    # which we'll use to extract the name.
+                    name = var_d[0].name.strip("/")
                     if name == d:
                         max_size = max(var.shape[i], max_size)
             self._current_dim_sizes[d] = max_size
-
-        self._initialized = True
 
     @property
     def _h5group(self):
@@ -524,7 +522,8 @@ class Group(Mapping):
         """
         Resize a dimension to a certain size.
 
-        This will pad with zeros where necessary.
+        It will pad with the underlying HDF5 data sets' fill values (usually
+        zero) where necessary.
         """
         if self.dimensions[dimension] is not None:
             raise ValueError("Dimension '%s' is not unlimited and thus "
