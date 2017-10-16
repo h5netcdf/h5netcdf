@@ -241,7 +241,7 @@ class Group(Mapping):
                     self._variables.add(var_name)
 
         # One last pass to get the current sizes. This is necessary as h5netcdf
-        # needs to now the current size of each unlimited dimension.
+        # needs to know the current size of each unlimited dimension.
         #
         # I'm not entirely sure how the netcdf C api determines the current
         # size - should probably be looked into.

@@ -646,10 +646,9 @@ def test_writing_to_an_unlimited_dimension(tmp_netcdf):
 
         # Cannot create it without first resizing it.
         with pytest.raises(ValueError) as e:
-                f.create_variable('dummy1', data=np.array([[1, 2, 3]]),
-                                  dimensions=('x', 'y'))
-                assert e.value.args[0] == \
-                    "Shape tuple is incompatible with data"
+            f.create_variable('dummy1', data=np.array([[1, 2, 3]]),
+                              dimensions=('x', 'y'))
+            assert e.value.args[0] == "Shape tuple is incompatible with data"
 
         # Without data.
         f.create_variable('dummy1', dimensions=('x', 'y'), dtype=np.int64)

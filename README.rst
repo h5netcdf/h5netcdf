@@ -49,8 +49,8 @@ reproduce most of the features of the netCDF interface, with the notable
 exceptions of:
 
 - support for operations the rename or delete existing objects.
-- The legacy interface currently does not support resizing unlimited
-  dimensions. Dimensions can be manually resized in the new API with
+- The legacy interface currently does not support resizing unlimited dimensions
+  with array indexing. Dimensions can be manually resized with
   ``Group.resize(dimension, size)`` which will resize the dimension axes and
   all dependent variables.
 
