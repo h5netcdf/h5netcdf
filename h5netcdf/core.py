@@ -212,6 +212,11 @@ class Group(Mapping):
         self._variables = _LazyObjectLookup(self, self._variable_cls)
         self._groups = _LazyObjectLookup(self, self._group_cls)
 
+        # Flag used to determine if the current size of the unlimited
+        # dimensions must be detected manually at the end of the
+        # initialization.
+        _current_size_set = False
+
         for k, v in self._h5group.items():
             if isinstance(v, h5py.Group):
                 self._groups.add(k)
@@ -231,6 +236,7 @@ class Group(Mapping):
 
                     self._dim_sizes[k] = size
                     self._current_dim_sizes[k] = current_size
+                    _current_size_set = True
                     if dim_id is None:
                         dim_id = len(self._dim_order)
                     self._dim_order[k] = dim_id
@@ -239,19 +245,19 @@ class Group(Mapping):
                     if k.startswith('_nc4_non_coord_'):
                         var_name = k[len('_nc4_non_coord_'):]
                     self._variables.add(var_name)
-        self._determine_current_dimension_sizes()
+
+        if _current_size_set is True:
+            self._determine_current_dimension_sizes()
+
         self._initialized = True
 
     def _determine_current_dimension_sizes(self):
         """
-        Helper function to determine the current size of all unlimited
+        Helper method to determine the current size of all unlimited
         dimensions.
         """
         def _find_dim(h5group, dim):
             if dim not in h5group:
-                # Might happen if the dimension has not been created yet.
-                if h5group.name == "/":
-                    return None
                 return _find_dim(h5group.parent, dim)
             return h5group[dim]
 
@@ -259,12 +265,18 @@ class Group(Mapping):
             if self.dimensions[d] is not None:
                 continue
             dim = _find_dim(self._h5group, d)
-            if not dim:
-                continue
 
-            # Assume the reference list at each dimension is set correctly.
             if "REFERENCE_LIST" not in dim.attrs:
-                continue
+                if dim.shape == (0,):
+                    # NetCDF does not create the REFERENCE_LIST attribute if
+                    # an unlimited dimension is of zero length. In this case it
+                    # is safe to skip this dimension.
+                    continue
+                else:  # pragma: no cover
+                    raise ValueError(
+                        "Each dimension with an actual length must have a "
+                        "'REFERENCE_LIST' attribute.")
+
             root = self._h5group["/"]
 
             max_size = self._current_dim_sizes[d]
