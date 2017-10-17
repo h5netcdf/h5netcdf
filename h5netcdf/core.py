@@ -1,7 +1,6 @@
 # For details on how netCDF4 builds on HDF5:
 # http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
 from collections import Mapping
-import functools
 import os.path
 import warnings
 
@@ -29,6 +28,12 @@ def _reverse_dict(dict_):
 
 def _join_h5paths(parent_path, child_path):
     return '/'.join([parent_path.rstrip('/'), child_path.lstrip('/')])
+
+
+def _name_from_dimension(dim):
+    # First value in a dimension is the actual dimension scale
+    # which we'll use to extract the name.
+    return dim[0].name.split('/')[-1]
 
 
 class CompatibilityError(Exception):
@@ -89,7 +94,7 @@ class BaseVariable(object):
                 raise ValueError('variable %r has no dimension scale '
                                  'associated with axis %s'
                                  % (self.name, axis))
-            name = dim[0].name.split('/')[-1]
+            name = _name_from_dimension(dim)
             dims.append(name)
         return tuple(dims)
 
@@ -207,6 +212,7 @@ class Group(Mapping):
 
         if parent is not self:
             self._dim_sizes = parent._dim_sizes.new_child()
+            self._current_dim_sizes = parent._current_dim_sizes.new_child()
             self._dim_order = parent._dim_order.new_child()
 
         self._variables = _LazyObjectLookup(self, self._variable_cls)
@@ -222,10 +228,20 @@ class Group(Mapping):
                         assert dim_id is not None
                         coord_ids = v.attrs['_Netcdf4Coordinates']
                         size = v.shape[list(coord_ids).index(dim_id)]
+                        current_size = size
                     else:
                         assert len(v.shape) == 1
-                        size = v.size
+                        # Unlimited dimensions are represented as None.
+                        size = None if v.maxshape == (None,) else v.size
+                        current_size = v.size
+
                     self._dim_sizes[k] = size
+                    # Figure out the current size of a dimension, which for
+                    # unlimited dimensions requires looking at the actual
+                    # variables.
+                    self._current_dim_sizes[k] = \
+                        self._determine_current_dimension_size(k, current_size)
+
                     if dim_id is None:
                         dim_id = len(self._dim_order)
                     self._dim_order[k] = dim_id
@@ -234,7 +250,45 @@ class Group(Mapping):
                     if k.startswith('_nc4_non_coord_'):
                         var_name = k[len('_nc4_non_coord_'):]
                     self._variables.add(var_name)
+
         self._initialized = True
+
+    def _determine_current_dimension_size(self, dim_name, max_size):
+        """
+        Helper method to determine the current size of a dimension.
+        """
+        # Limited dimension.
+        if self.dimensions[dim_name] is not None:
+            return max_size
+
+        def _find_dim(h5group, dim):
+            if dim not in h5group:
+                return _find_dim(h5group.parent, dim)
+            return h5group[dim]
+
+        dim_variable = _find_dim(self._h5group, dim_name)
+
+        if "REFERENCE_LIST" not in dim_variable.attrs:
+            if dim_variable.shape == (0,):
+                # NetCDF does not create the REFERENCE_LIST attribute if
+                # an unlimited dimension is of zero length. In this case it
+                # is safe to skip this dimension.
+                return max_size
+            else:  # pragma: no cover
+                raise ValueError(
+                    "Each dimension with an actual length must have a "
+                    "'REFERENCE_LIST' attribute.")
+
+        root = self._h5group["/"]
+
+        for ref, _ in dim_variable.attrs["REFERENCE_LIST"]:
+            var = root[ref]
+
+            for i, var_d in enumerate(var.dims):
+                name = _name_from_dimension(var_d)
+                if name == dim_name:
+                    max_size = max(var.shape[i], max_size)
+        return max_size
 
     @property
     def _h5group(self):
@@ -249,10 +303,9 @@ class Group(Mapping):
     def _create_dimension(self, name, size=None):
         if name in self._dim_sizes.maps[0]:
             raise ValueError('dimension %r already exists' % name)
-        if size is None:
-            raise NotImplementedError('h5netcdf does not yet support '
-                                      'unlimited dimensions')
+
         self._dim_sizes[name] = size
+        self._current_dim_sizes[name] = 0 if size is None else size
         self._dim_order[name] = len(self._dim_order)
 
     @property
@@ -332,11 +385,18 @@ class Group(Mapping):
                                     file=self._root,
                                     stacklevel=stacklevel)
 
-        shape = tuple(self.dimensions[d] for d in dimensions)
         if name in self.dimensions and name not in dimensions:
             h5name = '_nc4_non_coord_' + name
         else:
             h5name = name
+
+        shape = tuple(self._current_dim_sizes[d] for d in dimensions)
+        maxshape = tuple(self._dim_sizes[d] for d in dimensions)
+
+        # If it is passed directly it will change the default compression
+        # settings.
+        if shape != maxshape:
+            kwargs["maxshape"] = maxshape
 
         self._h5group.create_dataset(h5name, shape, dtype=dtype,
                                      data=data, fillvalue=fillvalue,
@@ -390,8 +450,12 @@ class Group(Mapping):
         dim_order = self._dim_order.maps[0]
         for dim in sorted(dim_order, key=lambda d: dim_order[d]):
             if dim not in self._h5group:
-                size = self.dimensions[dim]
-                self._h5group.create_dataset(dim, (size,), 'S1')
+                size = self._current_dim_sizes[dim]
+                kwargs = {}
+                if self._dim_sizes[dim] is None:
+                    kwargs["maxshape"] = (None,)
+                self._h5group.create_dataset(
+                    name=dim, shape=(size,), dtype='S1', **kwargs)
 
             h5ds = self._h5group[dim]
             h5ds.attrs['_Netcdf4Dimid'] = dim_order[dim]
@@ -445,15 +509,18 @@ class Group(Mapping):
     _cls_name = 'h5netcdf.Group'
 
     def _repr_body(self):
-        return (['Dimensions:'] +
-                ['    %s: %s' % (k, v) for k, v in self.dimensions.items()] +
-                ['Groups:'] +
-                ['    %s' % g for g in self.groups] +
-                ['Variables:'] +
-                ['    %s: %r %s' % (k, v.dimensions, v.dtype)
-                 for k, v in self.variables.items()] +
-                ['Attributes:'] +
-                ['    %s: %r' % (k, v) for k, v in self.attrs.items()])
+        return (
+            ['Dimensions:'] +
+            ['    %s: %s' % (
+             k, ("Unlimited (current: %s)" % self._current_dim_sizes[k])
+             if v is None else v) for k, v in self.dimensions.items()] +
+            ['Groups:'] +
+            ['    %s' % g for g in self.groups] +
+            ['Variables:'] +
+            ['    %s: %r %s' % (k, v.dimensions, v.dtype)
+             for k, v in self.variables.items()] +
+            ['Attributes:'] +
+            ['    %s: %r' % (k, v) for k, v in self.attrs.items()])
 
     def __repr__(self):
         if self._root._closed:
@@ -461,6 +528,33 @@ class Group(Mapping):
         header = ('<%s %r (%s members)>'
                   % (self._cls_name, self.name, len(self)))
         return '\n'.join([header] + self._repr_body())
+
+    def resize_dimension(self, dimension, size):
+        """
+        Resize a dimension to a certain size.
+
+        It will pad with the underlying HDF5 data sets' fill values (usually
+        zero) where necessary.
+        """
+        if self.dimensions[dimension] is not None:
+            raise ValueError("Dimension '%s' is not unlimited and thus "
+                             "cannot be resized." % dimension)
+
+        # Resize the dimension.
+        self._current_dim_sizes[dimension] = size
+
+        for var in self.variables.values():
+            new_shape = list(var.shape)
+            for i, d in enumerate(var.dimensions):
+                if d == dimension:
+                    new_shape[i] = size
+            new_shape = tuple(new_shape)
+            if new_shape != var.shape:
+                var._h5ds.resize(new_shape)
+
+        # Recurse as dimensions are visible to this group and all child groups.
+        for i in self.groups.values():
+            i.resize_dimension(dimension, size)
 
 
 class File(Group):
@@ -474,8 +568,14 @@ class File(Group):
             raise
         else:
             self._closed = False
+
+        # Three maps to keep track of dimensions in terms of size (might be
+        # unlimited), current size (identical to size for limited dimensions),
+        # and their position.
         self._dim_sizes = ChainMap()
+        self._current_dim_sizes = ChainMap()
         self._dim_order = ChainMap()
+
         self._mode = mode
         self._root = self
         self._h5path = '/'

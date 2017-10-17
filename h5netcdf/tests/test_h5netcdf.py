@@ -1,8 +1,7 @@
 import netCDF4
 import numpy as np
-import re
-import sys
 import gc
+import re
 
 import h5netcdf
 from h5netcdf import legacyapi
@@ -10,7 +9,7 @@ from h5netcdf.compat import PY2, unicode
 import h5py
 import pytest
 
-from pytest import fixture, raises
+from pytest import raises
 
 
 @pytest.fixture
@@ -392,6 +391,12 @@ def test_repr(tmp_netcdf):
     assert 'h5netcdf.Variable' in repr(v)
     assert 'float' in repr(v)
     assert 'units' in repr(v)
+
+    f.dimensions['temp'] = None
+    assert 'temp: Unlimited (current: 0)' in repr(f)
+    f.resize_dimension('temp', 5)
+    assert 'temp: Unlimited (current: 5)' in repr(f)
+
     f.close()
 
     assert 'Closed' in repr(f)
@@ -434,8 +439,6 @@ def test_optional_netcdf4_attrs(tmp_netcdf):
 
 def test_error_handling(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, 'w') as ds:
-        with raises(NotImplementedError):
-            ds.dimensions['x'] = None
         ds.dimensions['x'] = 1
         with raises(ValueError):
             ds.dimensions['x'] = 2
@@ -571,3 +574,166 @@ def test_invalid_then_valid_no_ncproperties(tmp_netcdf):
     with h5py.File(tmp_netcdf) as f:
         # still not a valid netcdf file
         assert '_NCProperties' not in f.attrs
+
+def test_creating_and_resizing_unlimited_dimensions(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf) as f:
+        f.dimensions['x'] = None
+        f.dimensions['y'] = 15
+        f.dimensions['z'] = None
+        f.resize_dimension('z', 20)
+
+        with pytest.raises(ValueError) as e:
+            f.resize_dimension('y', 20)
+        assert e.value.args[0] == (
+            "Dimension 'y' is not unlimited and thus cannot be resized.")
+
+    # Assert some behavior observed by using the C netCDF bindings.
+    with h5py.File(tmp_netcdf) as f:
+        assert f["x"].shape == (0,)
+        assert f["x"].maxshape == (None,)
+        assert f["y"].shape == (15,)
+        assert f["y"].maxshape == (15,)
+        assert f["z"].shape == (20,)
+        assert f["z"].maxshape == (None,)
+
+def test_creating_variables_with_unlimited_dimensions(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf) as f:
+        f.dimensions['x'] = None
+        f.dimensions['y'] = 2
+
+        # Creating a variable without data will initialize an array with zero
+        # length.
+        f.create_variable('dummy', dimensions=('x', 'y'), dtype=np.int64)
+        assert f.variables["dummy"].shape == (0, 2)
+        assert f.variables["dummy"]._h5ds.maxshape == (None, 2)
+
+        # Trying to create a variable while the current size of the dimension
+        # is still zero will fail.
+        with pytest.raises(ValueError) as e:
+            f.create_variable('dummy2', data=np.array([[1, 2], [3, 4]]),
+                              dimensions=('x', 'y'))
+        assert e.value.args[0] == "Shape tuple is incompatible with data"
+
+        # Resize data.
+        assert f.variables["dummy"].shape == (0, 2)
+        f.resize_dimension('x', 3)
+        # This will also force a resize of the existing variables and it will
+        # be padded with zeros..
+        np.testing.assert_allclose(f.variables["dummy"], np.zeros((3, 2)))
+
+        # Creating another variable with no data will now also take the shape
+        # of the current dimensions.
+        f.create_variable('dummy3', dimensions=('x', 'y'), dtype=np.int64)
+        assert f.variables["dummy3"].shape == (3, 2)
+        assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
+
+    # Close and read again to also test correct parsing of unlimited
+    # dimensions.
+    with h5netcdf.File(tmp_netcdf) as f:
+        assert f.dimensions['x'] is None
+        assert f._h5file['x'].maxshape == (None,)
+        assert f._h5file['x'].shape == (3,)
+
+        assert f.dimensions['y'] == 2
+        assert f._h5file['y'].maxshape == (2,)
+        assert f._h5file['y'].shape == (2,)
+
+def test_writing_to_an_unlimited_dimension(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf) as f:
+        # Two dimensions, only one is unlimited.
+        f.dimensions['x'] = None
+        f.dimensions['y'] = 3
+
+        # Cannot create it without first resizing it.
+        with pytest.raises(ValueError) as e:
+            f.create_variable('dummy1', data=np.array([[1, 2, 3]]),
+                              dimensions=('x', 'y'))
+            assert e.value.args[0] == "Shape tuple is incompatible with data"
+
+        # Without data.
+        f.create_variable('dummy1', dimensions=('x', 'y'), dtype=np.int64)
+        f.create_variable('dummy2', dimensions=('x', 'y'), dtype=np.int64)
+        f.create_variable('dummy3', dimensions=('x', 'y'), dtype=np.int64)
+        g = f.create_group('test')
+        g.create_variable('dummy4', dimensions=('y', 'x', 'x'), dtype=np.int64)
+        g.create_variable('dummy5', dimensions=('y', 'y'), dtype=np.int64)
+
+        assert f.variables['dummy1'].shape == (0, 3)
+        assert f.variables['dummy2'].shape == (0, 3)
+        assert f.variables['dummy3'].shape == (0, 3)
+        assert g.variables['dummy4'].shape == (3, 0, 0)
+        assert g.variables['dummy5'].shape == (3, 3)
+        f.resize_dimension("x", 2)
+        assert f.variables['dummy1'].shape == (2, 3)
+        assert f.variables['dummy2'].shape == (2, 3)
+        assert f.variables['dummy3'].shape == (2, 3)
+        assert g.variables['dummy4'].shape == (3, 2, 2)
+        assert g.variables['dummy5'].shape == (3, 3)
+
+        f.variables['dummy2'][:] = [[1, 2, 3], [5, 6, 7]]
+        np.testing.assert_allclose(f.variables['dummy2'],
+                                   [[1, 2, 3], [5, 6, 7]])
+
+        f.variables['dummy3'][...] = [[1, 2, 3], [5, 6, 7]]
+        np.testing.assert_allclose(f.variables['dummy3'],
+                                   [[1, 2, 3], [5, 6, 7]])
+
+def test_c_api_can_read_unlimited_dimensions(tmp_netcdf):
+    with h5netcdf.File(tmp_netcdf) as f:
+        # Three dimensions, only one is limited.
+        f.dimensions['x'] = None
+        f.dimensions['y'] = 3
+        f.dimensions['z'] = None
+        f.create_variable('dummy1', dimensions=('x', 'y'), dtype=np.int64)
+        f.create_variable('dummy2', dimensions=('y', 'x', 'x'), dtype=np.int64)
+        g = f.create_group('test')
+        g.create_variable('dummy3', dimensions=('y', 'y'), dtype=np.int64)
+        g.create_variable('dummy4', dimensions=('z', 'z'), dtype=np.int64)
+        f.resize_dimension('x', 2)
+
+    with netCDF4.Dataset(tmp_netcdf) as f:
+        assert f.dimensions['x'].size == 2
+        assert f.dimensions['x'].isunlimited() is True
+        assert f.dimensions['y'].size == 3
+        assert f.dimensions['y'].isunlimited() is False
+        assert f.dimensions['z'].size == 0
+        assert f.dimensions['z'].isunlimited() is True
+
+        assert f.variables['dummy1'].shape == (2, 3)
+        assert f.variables['dummy2'].shape == (3, 2, 2)
+        g = f.groups["test"]
+        assert g.variables['dummy3'].shape == (3, 3)
+        assert g.variables['dummy4'].shape == (0, 0)
+
+def test_reading_unlimited_dimensions_created_with_c_api(tmp_netcdf):
+    with netCDF4.Dataset(tmp_netcdf, "w") as f:
+        f.createDimension('x', None)
+        f.createDimension('y', 3)
+        f.createDimension('z', None)
+
+        dummy1 = f.createVariable('dummy1', float, ('x', 'y'))
+        f.createVariable('dummy2', float, ('y', 'x', 'x'))
+        g = f.createGroup('test')
+        g.createVariable('dummy3', float, ('y', 'y'))
+        g.createVariable('dummy4', float, ('z', 'z'))
+
+        # Assign something to trigger a resize.
+        dummy1[:] = [[1, 2, 3], [4, 5, 6]]
+
+    with h5netcdf.File(tmp_netcdf) as f:
+        assert f.dimensions['x'] is None
+        assert f.dimensions['y'] == 3
+        assert f.dimensions['z'] is None
+
+        # This is parsed correctly due to h5netcdf's init trickery.
+        assert f._current_dim_sizes['x'] == 2
+        assert f._current_dim_sizes['y'] == 3
+        assert f._current_dim_sizes['z'] == 0
+
+        # But the actual data-set and arrays are not correct.
+        assert f['dummy1'].shape == (2, 3)
+        # XXX: This array has some data with dimension x - netcdf does not
+        # appear to keep dimensions consistent.
+        assert f['dummy2'].shape == (3, 0, 0)
+        f.groups['test']['dummy3'].shape == (3, 3)
+        f.groups['test']['dummy4'].shape == (0, 0)
