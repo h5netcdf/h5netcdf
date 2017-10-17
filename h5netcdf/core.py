@@ -30,6 +30,12 @@ def _join_h5paths(parent_path, child_path):
     return '/'.join([parent_path.rstrip('/'), child_path.lstrip('/')])
 
 
+def _name_from_dimension(dim):
+    # First value in a dimension is the actual dimension scale
+    # which we'll use to extract the name.
+    return dim[0].name.split('/')[-1]
+
+
 class CompatibilityError(Exception):
     """Raised when using features that are not part of the NetCDF4 API."""
 
@@ -88,7 +94,7 @@ class BaseVariable(object):
                 raise ValueError('variable %r has no dimension scale '
                                  'associated with axis %s'
                                  % (self.name, axis))
-            name = dim[0].name.split('/')[-1]
+            name = _name_from_dimension(dim)
             dims.append(name)
         return tuple(dims)
 
@@ -284,9 +290,7 @@ class Group(Mapping):
                 var = root[ref]
 
                 for i, var_d in enumerate(var.dims):
-                    # First value in a dimension is the actual dimension scale
-                    # which we'll use to extract the name.
-                    name = var_d[0].name.strip("/")
+                    name = _name_from_dimension(var_d)
                     if name == d:
                         max_size = max(var.shape[i], max_size)
             self._current_dim_sizes[d] = max_size
