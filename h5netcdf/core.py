@@ -267,13 +267,13 @@ class Group(Mapping):
                 return _find_dim(h5group.parent, dim)
             return h5group[dim]
 
-        for d in self.dimensions:
-            if self.dimensions[d] is not None:
+        for dim_name in self.dimensions:
+            if self.dimensions[dim_name] is not None:
                 continue
-            dim = _find_dim(self._h5group, d)
+            dim_variable = _find_dim(self._h5group, dim_name)
 
-            if "REFERENCE_LIST" not in dim.attrs:
-                if dim.shape == (0,):
+            if "REFERENCE_LIST" not in dim_variable.attrs:
+                if dim_variable.shape == (0,):
                     # NetCDF does not create the REFERENCE_LIST attribute if
                     # an unlimited dimension is of zero length. In this case it
                     # is safe to skip this dimension.
@@ -285,15 +285,15 @@ class Group(Mapping):
 
             root = self._h5group["/"]
 
-            max_size = self._current_dim_sizes[d]
-            for ref, _ in dim.attrs["REFERENCE_LIST"]:
+            max_size = self._current_dim_sizes[dim_name]
+            for ref, _ in dim_variable.attrs["REFERENCE_LIST"]:
                 var = root[ref]
 
                 for i, var_d in enumerate(var.dims):
                     name = _name_from_dimension(var_d)
-                    if name == d:
+                    if name == dim_name:
                         max_size = max(var.shape[i], max_size)
-            self._current_dim_sizes[d] = max_size
+            self._current_dim_sizes[dim_name] = max_size
 
     @property
     def _h5group(self):
