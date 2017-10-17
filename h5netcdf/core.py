@@ -218,11 +218,6 @@ class Group(Mapping):
         self._variables = _LazyObjectLookup(self, self._variable_cls)
         self._groups = _LazyObjectLookup(self, self._group_cls)
 
-        # Flag used to determine if the current size of the unlimited
-        # dimensions must be detected manually at the end of the
-        # initialization.
-        has_existing_unlimited_dims = False
-
         for k, v in self._h5group.items():
             if isinstance(v, h5py.Group):
                 self._groups.add(k)
@@ -241,8 +236,12 @@ class Group(Mapping):
                         current_size = v.size
 
                     self._dim_sizes[k] = size
-                    self._current_dim_sizes[k] = current_size
-                    has_existing_unlimited_dims = True
+                    # Figure out the current size of a dimension, which for
+                    # unlimited dimensions requires looking at the actual
+                    # variables.
+                    self._current_dim_sizes[k] = \
+                        self._determine_current_dimension_size(k, current_size)
+
                     if dim_id is None:
                         dim_id = len(self._dim_order)
                     self._dim_order[k] = dim_id
@@ -252,48 +251,44 @@ class Group(Mapping):
                         var_name = k[len('_nc4_non_coord_'):]
                     self._variables.add(var_name)
 
-        if has_existing_unlimited_dims is True:
-            self._determine_current_dimension_sizes()
-
         self._initialized = True
 
-    def _determine_current_dimension_sizes(self):
+    def _determine_current_dimension_size(self, dim_name, max_size):
         """
-        Helper method to determine the current size of all unlimited
-        dimensions.
+        Helper method to determine the current size of a dimension.
         """
+        # Limited dimension.
+        if self.dimensions[dim_name] is not None:
+            return max_size
+
         def _find_dim(h5group, dim):
             if dim not in h5group:
                 return _find_dim(h5group.parent, dim)
             return h5group[dim]
 
-        for dim_name in self.dimensions:
-            if self.dimensions[dim_name] is not None:
-                continue
-            dim_variable = _find_dim(self._h5group, dim_name)
+        dim_variable = _find_dim(self._h5group, dim_name)
 
-            if "REFERENCE_LIST" not in dim_variable.attrs:
-                if dim_variable.shape == (0,):
-                    # NetCDF does not create the REFERENCE_LIST attribute if
-                    # an unlimited dimension is of zero length. In this case it
-                    # is safe to skip this dimension.
-                    continue
-                else:  # pragma: no cover
-                    raise ValueError(
-                        "Each dimension with an actual length must have a "
-                        "'REFERENCE_LIST' attribute.")
+        if "REFERENCE_LIST" not in dim_variable.attrs:
+            if dim_variable.shape == (0,):
+                # NetCDF does not create the REFERENCE_LIST attribute if
+                # an unlimited dimension is of zero length. In this case it
+                # is safe to skip this dimension.
+                return max_size
+            else:  # pragma: no cover
+                raise ValueError(
+                    "Each dimension with an actual length must have a "
+                    "'REFERENCE_LIST' attribute.")
 
-            root = self._h5group["/"]
+        root = self._h5group["/"]
 
-            max_size = self._current_dim_sizes[dim_name]
-            for ref, _ in dim_variable.attrs["REFERENCE_LIST"]:
-                var = root[ref]
+        for ref, _ in dim_variable.attrs["REFERENCE_LIST"]:
+            var = root[ref]
 
-                for i, var_d in enumerate(var.dims):
-                    name = _name_from_dimension(var_d)
-                    if name == dim_name:
-                        max_size = max(var.shape[i], max_size)
-            self._current_dim_sizes[dim_name] = max_size
+            for i, var_d in enumerate(var.dims):
+                name = _name_from_dimension(var_d)
+                if name == dim_name:
+                    max_size = max(var.shape[i], max_size)
+        return max_size
 
     @property
     def _h5group(self):
