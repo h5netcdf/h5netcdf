@@ -46,15 +46,8 @@ Usage
 
 h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
 reproduce most of the features of the netCDF interface, with the notable
-exceptions of:
-
-- support for operations the rename or delete existing objects.
-- The legacy interface currently does not support resizing unlimited dimensions
-  with array indexing. Dimensions can be manually resized with
-  ``Group.resize(dimension, size)`` which will resize the dimension axes and
-  all dependent variables.
-
-We simply haven't gotten around to implementing these features yet. Patches
+exception of support for operations the rename or delete existing objects.
+We simply haven't gotten around to implementing this yet. Patches
 would be very welcome.
 
 New API
@@ -89,6 +82,11 @@ design is an adaptation of h5py to the netCDF data model. For example:
         # you can access variables and groups directly using a hierarchical
         # keys like h5py
         print(f['/grouped/data'])
+
+        # add an unlimited dimension
+        f.dimensions['z'] = None
+        # explicitly resize a dimension and all variables using it
+        f.resize_dimension('z', 3)
 
 Legacy API
 ~~~~~~~~~~
@@ -127,6 +125,9 @@ exact match. Here is an incomplete list of functionality we don't include:
 - h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
   (e.g., xarray_), which can implement their exact desired scaling behavior.
+- No support yet for automatic resizing resizing of unlimited dimensions
+  with array indexing. This would be a welcome pull request. For now, dimensions
+  can be manually resized with ``Group.resize_dimension(dimension, size)``.
 
 .. _GitHub issue: https://github.com/shoyer/h5netcdf/issues/15
 
@@ -145,11 +146,8 @@ h5py implements some features that do not (yet) result in valid netCDF files:
     - Algorithms other than gzip
     - Scale-offset filters
 
-By default, h5netcdf does not allow writing files using any of these features,
+By default [*]_, h5netcdf will not allow writing files using any of these features,
 as files with such features are not readable by other netCDF tools.
-(For backwards compatibility, this is currently only a warning, but in h5netcdf
-v0.5 we will raise ``h5netcdf.CompatibilityError``. Use ``invalid_netcdf=False``
-to switch to the new behavior.)
 
 However, these are still valid HDF5 files. If you don't care about netCDF
 compatibility, you can use these features by setting ``invalid_netcdf=True``
@@ -165,8 +163,17 @@ when creating a file:
   ds = h5netcdf.legacyapi.Dataset('mydata.h5', invalid_netcdf=True)
   ...
 
+.. [*] Currently, we only issue a warning, but in a future version of h5netcdf,
+       we will raise ``h5netcdf.CompatibilityError``. Use
+       ``invalid_netcdf=False`` to switch to the new behavior now.
+
 Change Log
 ----------
+
+Version 0.5 (Oct 17, 2017):
+
+- Support for creating unlimited dimensions.
+  By `Lion Krischer <https://github.com/krischer>`_.
 
 Version 0.4.3 (Oct 10, 2017):
 
