@@ -269,7 +269,7 @@ class Group(Mapping):
         dim_variable = _find_dim(self._h5group, dim_name)
 
         if "REFERENCE_LIST" not in dim_variable.attrs:
-                return max_size
+            return max_size
 
         root = self._h5group["/"]
 
