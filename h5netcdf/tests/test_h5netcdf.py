@@ -744,5 +744,6 @@ def test_reading_unused_unlimited_dimension(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, 'w') as f:
         f.dimensions = {'x': None}
         f.resize_dimension('x', 5)
+        assert f.dimensions == {'x': None}
 
     f = h5netcdf.File(tmp_netcdf, 'r')
