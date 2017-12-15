@@ -12,6 +12,12 @@ from .attrs import Attributes
 from .dimensions import Dimensions
 from .utils import Frozen
 
+try:
+    import h5pyd
+except ImportError:
+    no_h5pyd = True
+else:
+    no_h5pyd = False
 
 __version__ = '0.5.0'
 
@@ -560,9 +566,15 @@ class Group(Mapping):
 class File(Group):
 
     def __init__(self, path, mode='a', invalid_netcdf=None, **kwargs):
-        self._preexisting_file = os.path.exists(path)
         try:
-            self._h5file = h5py.File(path, mode, **kwargs)
+            if path.startswith('http'):
+                if no_h5pyd:
+                    raise RuntimeError('h5pyd package required')
+                self._h5file = h5pyd.File(path, mode, **kwargs)
+                self._preexisting_file = True if 'r' in mode else False
+            else:
+                self._preexisting_file = os.path.exists(path)
+                self._h5file = h5py.File(path, mode, **kwargs)
         except Exception:
             self._closed = True
             raise
