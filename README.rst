@@ -170,6 +170,11 @@ when creating a file:
 Change Log
 ----------
 
+Version 0.5.1 (Apr 11, 2018):
+
+- Bug fix for files with an unlimited dimension with no associated variables.
+  By `Aleksandar Jelenak <https://github.com/ajelenak-thg>`_.
+
 Version 0.5 (Oct 17, 2017):
 
 - Support for creating unlimited dimensions.

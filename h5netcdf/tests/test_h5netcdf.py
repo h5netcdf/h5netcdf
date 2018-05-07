@@ -744,6 +744,16 @@ def test_reading_unlimited_dimensions_created_with_c_api(tmp_netcdf):
         f.groups['test']['dummy4'].shape == (0, 0)
 
 
+def test_reading_unused_unlimited_dimension(tmp_netcdf):
+    """Test reading a file with unused dimension of unlimited size"""
+    with h5netcdf.File(tmp_netcdf, 'w') as f:
+        f.dimensions = {'x': None}
+        f.resize_dimension('x', 5)
+        assert f.dimensions == {'x': None}
+
+    f = h5netcdf.File(tmp_netcdf, 'r')
+
+
 def test_mocked_remote_open_with_h5pyd():
     path = 'http://test.url'
     with mock.patch.object(h5netcdf.Group, '__init__', lambda a, b, c: None), \

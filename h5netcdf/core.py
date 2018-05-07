@@ -19,7 +19,7 @@ except ImportError:
 else:
     no_h5pyd = False
 
-__version__ = '0.5.0'
+__version__ = '0.5.1'
 
 
 _NC_PROPERTIES = (u'version=1|h5netcdfversion=%s|hdf5libversion=%s'
@@ -275,15 +275,7 @@ class Group(Mapping):
         dim_variable = _find_dim(self._h5group, dim_name)
 
         if "REFERENCE_LIST" not in dim_variable.attrs:
-            if dim_variable.shape == (0,):
-                # NetCDF does not create the REFERENCE_LIST attribute if
-                # an unlimited dimension is of zero length. In this case it
-                # is safe to skip this dimension.
-                return max_size
-            else:  # pragma: no cover
-                raise ValueError(
-                    "Each dimension with an actual length must have a "
-                    "'REFERENCE_LIST' attribute.")
+            return max_size
 
         root = self._h5group["/"]
 
@@ -617,7 +609,7 @@ class File(Group):
             _invalid_netcdf_feature('{} dtypes'.format(description),
                                     allow=self.invalid_netcdf,
                                     file=self,
-                                    stacklevel=stacklevel+1)
+                                    stacklevel=stacklevel + 1)
 
     @property
     def mode(self):
