@@ -1,6 +1,16 @@
 import os
 from setuptools import setup, find_packages
 
+try:
+    from unittest import mock
+except ImportError:
+    mock = None
+
+
+tests_require = ['netCDF4', 'pytest']
+if mock is None:
+    tests_require += ['mock']
+
 
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
@@ -30,5 +40,5 @@ setup(name='h5netcdf',
       author_email='shoyer@gmail.com',
       url='https://github.com/shoyer/h5netcdf',
       install_requires=['h5py'],
-      tests_require=['netCDF4', 'pytest'],
+      tests_require=tests_require,
       packages=find_packages())
