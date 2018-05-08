@@ -225,7 +225,10 @@ class Group(Mapping):
         self._groups = _LazyObjectLookup(self, self._group_cls)
 
         for k, v in self._h5group.items():
-            if isinstance(v, h5py.Group):
+            if ((not no_h5pyd and isinstance(v, h5pyd.Group)) or
+                    isinstance(v, h5py.Group)):
+                # add to the groups collection if this is a h5py(d) Group
+                # instance
                 self._groups.add(k)
             else:
                 if v.attrs.get('CLASS') == b'DIMENSION_SCALE':
