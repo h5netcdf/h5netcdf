@@ -49,6 +49,7 @@ _char_array = string_to_char(np.array(['a', 'b', 'c', 'foo', 'bar', 'baz'],
 _string_array = np.array([['foobar0', 'foobar1', 'foobar3'],
                           ['foofoofoo', 'foofoobar', 'foobarbar']])
 
+
 def is_h5py_char_working(tmp_netcdf, name):
     # https://github.com/Unidata/netcdf-c/issues/298
     with h5py.File(tmp_netcdf, 'r') as ds:
@@ -61,6 +62,7 @@ def is_h5py_char_working(tmp_netcdf, name):
                 return False
             else:
                 raise
+
 
 def write_legacy_netcdf(tmp_netcdf, write_module):
     ds = write_module.Dataset(tmp_netcdf, 'w')
@@ -194,7 +196,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
                            'shuffle': False, 'zlib': False}
     ds.close()
 
-    #Check the behavior if h5py. Cannot expect h5netcdf to overcome these errors:
+    # Check the behavior if h5py. Cannot expect h5netcdf to overcome these
+    # errors:
     if is_h5py_char_working(tmp_netcdf, 'z'):
         ds = read_module.Dataset(tmp_netcdf, 'r')
         v = ds.variables['z']
@@ -248,7 +251,8 @@ def read_h5netcdf(tmp_netcdf, write_module):
     if not PY2 and write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs['other_attr'] == 'yes'
-    assert set(ds.dimensions) == set(['x', 'y', 'z', 'empty', 'string3', 'mismatched_dim'])
+    assert set(ds.dimensions) == set(['x', 'y', 'z', 'empty', 'string3',
+                                      'mismatched_dim'])
     assert set(ds.variables) == set(['foo', 'y', 'z', 'intscalar', 'scalar',
                                      'var_len_str', 'mismatched_dim'])
     assert set(ds.groups) == set(['subgroup'])
@@ -276,9 +280,9 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v.ndim == 1
     assert list(v.attrs) == ['_FillValue']
     assert v.attrs['_FillValue'] == -1
-    assert v.chunks == None
-    assert v.compression == None
-    assert v.compression_opts == None
+    assert v.chunks is None
+    assert v.compression is None
+    assert v.compression_opts is None
     assert not v.fletcher32
     assert not v.shuffle
     ds.close()
@@ -483,6 +487,7 @@ def test_hierarchical_access_auto_create(tmp_netcdf):
     assert set(ds['foo']) == set(['bar', 'baz', 'hello'])
     ds.close()
 
+
 def test_reading_str_array_from_netCDF4(tmp_netcdf):
     # This tests reading string variables created by netCDF4
     with netCDF4.Dataset(tmp_netcdf, 'w') as ds:
@@ -497,11 +502,13 @@ def test_reading_str_array_from_netCDF4(tmp_netcdf):
     assert array_equal(v, _string_array)
     ds.close()
 
+
 def test_nc_properties_new(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, 'w'):
         pass
     with h5py.File(tmp_netcdf, 'r') as f:
         assert 'h5netcdf' in f.attrs['_NCProperties']
+
 
 def test_failed_read_open_and_clean_delete(tmpdir):
     # A file that does not exist but is opened for
@@ -527,6 +534,7 @@ def test_failed_read_open_and_clean_delete(tmpdir):
         if is_h5netcdf_File:
             obj.close()
 
+
 def test_invalid_netcdf_warns(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, 'w') as f:
         with pytest.warns(FutureWarning):
@@ -542,6 +550,7 @@ def test_invalid_netcdf_warns(tmp_netcdf):
     with h5py.File(tmp_netcdf) as f:
         assert '_NCProperties' not in f.attrs
 
+
 def test_invalid_netcdf_error(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, 'w', invalid_netcdf=False) as f:
         with pytest.raises(h5netcdf.CompatibilityError):
@@ -554,6 +563,7 @@ def test_invalid_netcdf_error(tmp_netcdf):
         with pytest.raises(h5netcdf.CompatibilityError):
             f.create_variable('scaleoffset', data=[1], dimensions=('x',),
                               scaleoffset=0)
+
 
 def test_invalid_netcdf_okay(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, 'w', invalid_netcdf=True) as f:
@@ -571,6 +581,7 @@ def test_invalid_netcdf_okay(tmp_netcdf):
     with h5py.File(tmp_netcdf) as f:
         assert '_NCProperties' not in f.attrs
 
+
 def test_invalid_then_valid_no_ncproperties(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf, invalid_netcdf=True):
         pass
@@ -579,6 +590,7 @@ def test_invalid_then_valid_no_ncproperties(tmp_netcdf):
     with h5py.File(tmp_netcdf) as f:
         # still not a valid netcdf file
         assert '_NCProperties' not in f.attrs
+
 
 def test_creating_and_resizing_unlimited_dimensions(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf) as f:
@@ -600,6 +612,7 @@ def test_creating_and_resizing_unlimited_dimensions(tmp_netcdf):
         assert f["y"].maxshape == (15,)
         assert f["z"].shape == (20,)
         assert f["z"].maxshape == (None,)
+
 
 def test_creating_variables_with_unlimited_dimensions(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf) as f:
@@ -643,6 +656,7 @@ def test_creating_variables_with_unlimited_dimensions(tmp_netcdf):
         assert f._h5file['y'].maxshape == (2,)
         assert f._h5file['y'].shape == (2,)
 
+
 def test_writing_to_an_unlimited_dimension(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf) as f:
         # Two dimensions, only one is unlimited.
@@ -683,6 +697,7 @@ def test_writing_to_an_unlimited_dimension(tmp_netcdf):
         np.testing.assert_allclose(f.variables['dummy3'],
                                    [[1, 2, 3], [5, 6, 7]])
 
+
 def test_c_api_can_read_unlimited_dimensions(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf) as f:
         # Three dimensions, only one is limited.
@@ -709,6 +724,7 @@ def test_c_api_can_read_unlimited_dimensions(tmp_netcdf):
         g = f.groups["test"]
         assert g.variables['dummy3'].shape == (3, 3)
         assert g.variables['dummy4'].shape == (0, 0)
+
 
 def test_reading_unlimited_dimensions_created_with_c_api(tmp_netcdf):
     with netCDF4.Dataset(tmp_netcdf, "w") as f:
