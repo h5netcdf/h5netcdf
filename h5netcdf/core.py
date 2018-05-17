@@ -562,11 +562,16 @@ class File(Group):
 
     def __init__(self, path, mode='a', invalid_netcdf=None, **kwargs):
         try:
-            if path.startswith('http'):
+            if path.startswith(('http', 'hdf5:')):
                 if no_h5pyd:
                     raise RuntimeError('h5pyd package required')
+                try:
+                    with h5pyd.File(path, 'r') as f:  # noqa
+                        pass
+                    self._preexisting_file = True
+                except OSError:
+                    self._preexisting_file = False
                 self._h5file = h5pyd.File(path, mode, **kwargs)
-                self._preexisting_file = True if 'r' in mode else False
             else:
                 self._preexisting_file = os.path.exists(path)
                 self._h5file = h5py.File(path, mode, **kwargs)
