@@ -2,6 +2,8 @@ import netCDF4
 import numpy as np
 import gc
 import re
+import string
+import random
 
 import h5netcdf
 from h5netcdf import legacyapi
@@ -23,12 +25,15 @@ except ImportError:
     has_h5pyd = False
 
 
-@pytest.fixture(params=['testfile.nc', 'hdf5:///home/ajelenak/testfile.nc'])
+@pytest.fixture(params=['testfile.nc', 'hdf5://home/ajelenak/testfile'])
 def tmp_netcdf(request, tmpdir):
     if request.param.startswith('hdf5:'):
+        if not pytest.config.option.restapi:
+            pytest.skip('Do not test with HDF5 REST API')
         if not has_h5pyd:
             pytest.skip('No h5pyd package')
-        return request.param
+        rnd = ''.join(random.choice(string.ascii_uppercase) for _ in range(5))
+        return request.param + rnd + '.nc'
     else:
         return str(tmpdir.join(request.param))
 
@@ -62,8 +67,12 @@ _string_array = np.array([['foobar0', 'foobar1', 'foobar3'],
 
 
 def is_h5py_char_working(tmp_netcdf, name):
+    if tmp_netcdf.startswith('hdf5:'):
+        h5 = h5pyd
+    else:
+        h5 = h5py
     # https://github.com/Unidata/netcdf-c/issues/298
-    with h5py.File(tmp_netcdf, 'r') as ds:
+    with h5.File(tmp_netcdf, 'r') as ds:
         v = ds[name]
         try:
             assert array_equal(v, _char_array)
@@ -255,6 +264,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 
 def read_h5netcdf(tmp_netcdf, write_module):
+    remote_h5 = True if tmp_netcdf.startswith('hdf5:') else False
     ds = h5netcdf.File(tmp_netcdf, 'r')
     assert ds.name == '/'
     assert list(ds.attrs) == ['global', 'other_attr']
@@ -291,7 +301,8 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v.ndim == 1
     assert list(v.attrs) == ['_FillValue']
     assert v.attrs['_FillValue'] == -1
-    assert v.chunks is None
+    if not remote_h5:
+        assert v.chunks is None
     assert v.compression is None
     assert v.compression_opts is None
     assert not v.fletcher32
@@ -539,7 +550,7 @@ def test_reading_str_array_from_netCDF4(tmp_netcdf):
 
 
 def test_nc_properties_new(tmp_netcdf):
-    with h5netcdf.File(tmp_netcdf, 'w'):
+    with h5netcdf.File(tmp_netcdf):
         pass
     if tmp_netcdf.startswith('hdf5:'):
         h5 = h5pyd
@@ -575,7 +586,7 @@ def test_failed_read_open_and_clean_delete(tmpdir):
 
 
 def test_invalid_netcdf_warns(tmp_netcdf):
-    with h5netcdf.File(tmp_netcdf, 'w') as f:
+    with h5netcdf.File(tmp_netcdf) as f:
         with pytest.warns(FutureWarning):
             f.create_variable('complex', data=1j)
         with pytest.warns(FutureWarning):
@@ -609,7 +620,7 @@ def test_invalid_netcdf_error(tmp_netcdf):
 
 
 def test_invalid_netcdf_okay(tmp_netcdf):
-    with h5netcdf.File(tmp_netcdf, 'w', invalid_netcdf=True) as f:
+    with h5netcdf.File(tmp_netcdf, invalid_netcdf=True) as f:
         f.create_variable('complex', data=1j)
         f.attrs['complex_attr'] = 1j
         f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
@@ -655,8 +666,12 @@ def test_creating_and_resizing_unlimited_dimensions(tmp_netcdf):
         assert e.value.args[0] == (
             "Dimension 'y' is not unlimited and thus cannot be resized.")
 
+    if tmp_netcdf.startswith('hdf5:'):
+        h5 = h5pyd
+    else:
+        h5 = h5py
     # Assert some behavior observed by using the C netCDF bindings.
-    with h5py.File(tmp_netcdf) as f:
+    with h5.File(tmp_netcdf) as f:
         assert f["x"].shape == (0,)
         assert f["x"].maxshape == (None,)
         assert f["y"].shape == (15,)
