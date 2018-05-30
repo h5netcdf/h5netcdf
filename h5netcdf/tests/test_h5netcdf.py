@@ -15,11 +15,6 @@ import pytest
 from pytest import raises
 
 try:
-    from unittest import mock
-except ImportError:
-    import mock
-
-try:
     import h5pyd
     without_h5pyd = False
 except ImportError:
@@ -826,18 +821,3 @@ def test_reading_unused_unlimited_dimension(tmp_netcdf):
         assert f.dimensions == {'x': None}
 
     f = h5netcdf.File(tmp_netcdf, 'r')
-
-
-def test_mocked_remote_open_with_h5pyd():
-    path = 'http://test.url'
-    with mock.patch.object(h5netcdf.Group, '__init__', lambda a, b, c: None), \
-            mock.patch('h5netcdf.core.no_h5pyd', False), \
-            mock.patch('h5pyd.File') as mock_h5pyd_open:
-        h5netcdf.File(path, 'r')
-        mock_h5pyd_open.assert_called_with(path, 'r')
-
-
-def test_mocked_remote_open_without_h5pyd_raises():
-    with mock.patch('h5netcdf.core.no_h5pyd', True):
-        with pytest.raises(RuntimeError):
-            h5netcdf.File('http://test.url', 'r')
