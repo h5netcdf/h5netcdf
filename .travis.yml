@@ -34,17 +34,25 @@ install:
   - python setup.py install
   - export HS_ENDPOINT=http://52.4.181.237:5104
   - curl ${HS_ENDPOINT}/about && export WITHRESTAPI=--restapi
-  - if [ ! -z "${WITHRESTAPI}" ]; then
+  - if [ -n "${WITHRESTAPI}" ]; then
       pip install requests pytz ;
       pip install git+https://github.com/HDFGroup/h5pyd.git@dimscale-fixes ;
-      export H5PYD_TEST_FOLDER=/home/test_user1/h5netcdf_test/${TRAVIS_PYTHON_VERSION} ;
+      export H5PYD_TEST_FOLDER=/home/test_user1/h5pyd_test/${TRAVIS_PYTHON_VERSION} ;
     fi
 
 script:
   - echo python_version ${TRAVIS_PYTHON_VERSION}
   - echo endpoint ${HS_ENDPOINT}
   - echo test folder ${H5PYD_TEST_FOLDER}
-  - echo user ${HS_USERNAME}
-  - echo password ${HS_PASSWORD}
+  - if [ -n "${HS_USERNAME}" ]; then
+      echo username IS defined;
+    else
+      echo username IS NOT defined;
+    fi
+  - if [ -n "${HS_PASSWORD}" ]; then
+      echo password IS defined;
+    else
+      echo password IS NOT defined;
+    fi
   - echo withrestapi ${WITHRESTAPI}
   - py.test -v ${WITHRESTAPI} h5netcdf/

@@ -4,6 +4,7 @@ import gc
 import re
 import string
 import random
+from os import environ as env
 
 import h5netcdf
 from h5netcdf import legacyapi
@@ -20,22 +21,33 @@ except ImportError:
 
 try:
     import h5pyd
-    has_h5pyd = True
+    without_h5pyd = False
 except ImportError:
-    has_h5pyd = False
+    without_h5pyd = True
 
 
-@pytest.fixture(params=['testfile.nc', 'hdf5://home/ajelenak/testfile'])
+@pytest.fixture(params=['testfile.nc', 'hdf5://testfile'])
 def tmp_netcdf(request, tmpdir):
-    if request.param.startswith('hdf5:'):
+    if request.param.startswith(('http:', 'hdf5:')):
         if not pytest.config.option.restapi:
             pytest.skip('Do not test with HDF5 REST API')
-        if not has_h5pyd:
-            pytest.skip('No h5pyd package')
+        elif without_h5pyd:
+            pytest.skip('h5pyd package not available')
+        if any([env.get(v) is None for v in ('HS_USERNAME', 'HS_PASSWORD')]):
+            pytest.skip('HSDS username and/or password missing')
         rnd = ''.join(random.choice(string.ascii_uppercase) for _ in range(5))
-        return request.param + rnd + '.nc'
+        return (env['HS_ENDPOINT'] + env['H5PYD_TEST_FOLDER'] + '/' +
+                'testfile' + rnd + '.nc')
     else:
         return str(tmpdir.join(request.param))
+
+
+def get_hdf5_module(resource):
+    """Return the correct h5py module based on the input resource."""
+    if resource.startswith(('http:', 'hdf5:')):
+        return h5pyd
+    else:
+        return h5py
 
 
 def string_to_char(arr):
@@ -67,10 +79,7 @@ _string_array = np.array([['foobar0', 'foobar1', 'foobar3'],
 
 
 def is_h5py_char_working(tmp_netcdf, name):
-    if tmp_netcdf.startswith('hdf5:'):
-        h5 = h5pyd
-    else:
-        h5 = h5py
+    h5 = get_hdf5_module(tmp_netcdf)
     # https://github.com/Unidata/netcdf-c/issues/298
     with h5.File(tmp_netcdf, 'r') as ds:
         v = ds[name]
@@ -264,7 +273,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 
 def read_h5netcdf(tmp_netcdf, write_module):
-    remote_h5 = True if tmp_netcdf.startswith('hdf5:') else False
+    remote_h5 = True if tmp_netcdf.startswith(('http:', 'hdf5:')) else False
     ds = h5netcdf.File(tmp_netcdf, 'r')
     assert ds.name == '/'
     assert list(ds.attrs) == ['global', 'other_attr']
@@ -363,32 +372,32 @@ def roundtrip_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 
 def test_write_legacyapi_read_netCDF4(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     roundtrip_legacy_netcdf(tmp_netcdf, netCDF4, legacyapi)
 
 
 def test_roundtrip_h5netcdf_legacyapi(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     roundtrip_legacy_netcdf(tmp_netcdf, legacyapi, legacyapi)
 
 
 def test_write_netCDF4_read_legacyapi(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     roundtrip_legacy_netcdf(tmp_netcdf, legacyapi, netCDF4)
 
 
 def test_write_h5netcdf_read_legacyapi(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     write_h5netcdf(tmp_netcdf)
     read_legacy_netcdf(tmp_netcdf, legacyapi, h5netcdf)
 
 
 def test_write_h5netcdf_read_netCDF4(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     write_h5netcdf(tmp_netcdf)
     read_legacy_netcdf(tmp_netcdf, netCDF4, h5netcdf)
@@ -400,14 +409,14 @@ def test_roundtrip_h5netcdf(tmp_netcdf):
 
 
 def test_write_netCDF4_read_h5netcdf(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     write_legacy_netcdf(tmp_netcdf, netCDF4)
     read_h5netcdf(tmp_netcdf, netCDF4)
 
 
 def test_write_legacyapi_read_h5netcdf(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     write_legacy_netcdf(tmp_netcdf, legacyapi)
     read_h5netcdf(tmp_netcdf, legacyapi)
@@ -467,10 +476,7 @@ def test_attrs_api(tmp_netcdf):
 
 
 def test_optional_netcdf4_attrs(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
-        h5 = h5pyd
-    else:
-        h5 = h5py
+    h5 = get_hdf5_module(tmp_netcdf)
     with h5.File(tmp_netcdf) as f:
         foo_data = np.arange(50).reshape(5, 10)
         f.create_dataset('foo', data=foo_data)
@@ -504,10 +510,7 @@ def test_error_handling(tmp_netcdf):
 
 
 def test_invalid_netcdf4(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
-        h5 = h5pyd
-    else:
-        h5 = h5py
+    h5 = get_hdf5_module(tmp_netcdf)
     with h5.File(tmp_netcdf) as f:
         f.create_dataset('foo', data=np.arange(5))
         # labeled dimensions but no dimension scales
@@ -533,7 +536,7 @@ def test_hierarchical_access_auto_create(tmp_netcdf):
 
 
 def test_reading_str_array_from_netCDF4(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     # This tests reading string variables created by netCDF4
     with netCDF4.Dataset(tmp_netcdf, 'w') as ds:
@@ -552,10 +555,7 @@ def test_reading_str_array_from_netCDF4(tmp_netcdf):
 def test_nc_properties_new(tmp_netcdf):
     with h5netcdf.File(tmp_netcdf):
         pass
-    if tmp_netcdf.startswith('hdf5:'):
-        h5 = h5pyd
-    else:
-        h5 = h5py
+    h5 = get_hdf5_module(tmp_netcdf)
     with h5.File(tmp_netcdf, 'r') as f:
         assert 'h5netcdf' in f.attrs['_NCProperties']
 
@@ -597,10 +597,7 @@ def test_invalid_netcdf_warns(tmp_netcdf):
         with pytest.warns(FutureWarning):
             f.create_variable('scaleoffset', data=[1], dimensions=('x',),
                               scaleoffset=0)
-    if tmp_netcdf.startswith('hdf5:'):
-        h5 = h5pyd
-    else:
-        h5 = h5py
+    h5 = get_hdf5_module(tmp_netcdf)
     with h5.File(tmp_netcdf) as f:
         assert '_NCProperties' not in f.attrs
 
@@ -632,10 +629,7 @@ def test_invalid_netcdf_okay(tmp_netcdf):
         assert f.attrs['complex_attr'] == 1j
         np.testing.assert_equal(f['lzf_compressed'][:], [1])
         np.testing.assert_equal(f['scaleoffset'][:], [1])
-    if tmp_netcdf.startswith('hdf5:'):
-        h5 = h5pyd
-    else:
-        h5 = h5py
+    h5 = get_hdf5_module(tmp_netcdf)
     with h5.File(tmp_netcdf) as f:
         assert '_NCProperties' not in f.attrs
 
@@ -645,10 +639,7 @@ def test_invalid_then_valid_no_ncproperties(tmp_netcdf):
         pass
     with h5netcdf.File(tmp_netcdf):
         pass
-    if tmp_netcdf.startswith('hdf5:'):
-        h5 = h5pyd
-    else:
-        h5 = h5py
+    h5 = get_hdf5_module(tmp_netcdf)
     with h5.File(tmp_netcdf) as f:
         # still not a valid netcdf file
         assert '_NCProperties' not in f.attrs
@@ -666,10 +657,7 @@ def test_creating_and_resizing_unlimited_dimensions(tmp_netcdf):
         assert e.value.args[0] == (
             "Dimension 'y' is not unlimited and thus cannot be resized.")
 
-    if tmp_netcdf.startswith('hdf5:'):
-        h5 = h5pyd
-    else:
-        h5 = h5py
+    h5 = get_hdf5_module(tmp_netcdf)
     # Assert some behavior observed by using the C netCDF bindings.
     with h5.File(tmp_netcdf) as f:
         assert f["x"].shape == (0,)
@@ -765,7 +753,7 @@ def test_writing_to_an_unlimited_dimension(tmp_netcdf):
 
 
 def test_c_api_can_read_unlimited_dimensions(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     with h5netcdf.File(tmp_netcdf) as f:
         # Three dimensions, only one is limited.
@@ -795,7 +783,7 @@ def test_c_api_can_read_unlimited_dimensions(tmp_netcdf):
 
 
 def test_reading_unlimited_dimensions_created_with_c_api(tmp_netcdf):
-    if tmp_netcdf.startswith('hdf5:'):
+    if tmp_netcdf.startswith(('http:', 'hdf5:')):
         pytest.skip('Skip for HDF5 REST API')
     with netCDF4.Dataset(tmp_netcdf, "w") as f:
         f.createDimension('x', None)
