@@ -37,7 +37,7 @@ install:
   - if [ -n "${WITHRESTAPI}" ]; then
       pip install requests pytz ;
       pip install git+https://github.com/HDFGroup/h5pyd.git@dimscale-fixes ;
-      export H5PYD_TEST_FOLDER=/home/test_user1/h5pyd_test/${TRAVIS_PYTHON_VERSION} ;
+      export H5PYD_TEST_FOLDER=/home/${HS_USERNAME}/h5pyd_test/${TRAVIS_PYTHON_VERSION} ;
     fi
 
 script:

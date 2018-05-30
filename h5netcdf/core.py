@@ -569,7 +569,7 @@ class File(Group):
                     with h5pyd.File(path, 'r') as f:  # noqa
                         pass
                     self._preexisting_file = True
-                except OSError:
+                except (OSError, IOError):
                     self._preexisting_file = False
                 self._h5file = h5pyd.File(path, mode, **kwargs)
             else:
