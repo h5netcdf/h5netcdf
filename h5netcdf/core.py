@@ -16,8 +16,10 @@ try:
     import h5pyd
 except ImportError:
     no_h5pyd = True
+    h5_group_types = (h5py.Group,)
 else:
     no_h5pyd = False
+    h5_group_types = (h5py.Group, h5pyd.Group)
 
 __version__ = '0.5.1'
 
@@ -225,8 +227,7 @@ class Group(Mapping):
         self._groups = _LazyObjectLookup(self, self._group_cls)
 
         for k, v in self._h5group.items():
-            if ((not no_h5pyd and isinstance(v, h5pyd.Group)) or
-                    isinstance(v, h5py.Group)):
+            if isinstance(v, h5_group_types):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
                 self._groups.add(k)
@@ -562,9 +563,11 @@ class File(Group):
 
     def __init__(self, path, mode='a', invalid_netcdf=None, **kwargs):
         try:
-            if path.startswith(('http', 'hdf5:')):
+            if path.startswith(('http://', 'https://', 'hdf5://')):
                 if no_h5pyd:
-                    raise RuntimeError('h5pyd package required')
+                    raise ImportError(
+                        "No module named 'h5pyd'. h5pyd is required for "
+                        "opening remote paths with h5netcdf: {}".format(path))
                 try:
                     with h5pyd.File(path, 'r') as f:  # noqa
                         pass

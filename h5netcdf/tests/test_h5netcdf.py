@@ -21,6 +21,9 @@ except ImportError:
     without_h5pyd = True
 
 
+REMOTE_H5_PATH_PREFIX = ('http:', 'hdf5:')
+
+
 @pytest.fixture
 def tmp_local_netcdf(tmpdir):
     return str(tmpdir.join('testfile.nc'))
@@ -28,7 +31,7 @@ def tmp_local_netcdf(tmpdir):
 
 @pytest.fixture(params=['testfile.nc', 'hdf5://testfile'])
 def tmp_local_or_remote_netcdf(request, tmpdir):
-    if request.param.startswith(('http:', 'hdf5:')):
+    if request.param.startswith(REMOTE_H5_PATH_PREFIX):
         if not pytest.config.option.restapi:
             pytest.skip('Do not test with HDF5 REST API')
         elif without_h5pyd:
@@ -44,7 +47,7 @@ def tmp_local_or_remote_netcdf(request, tmpdir):
 
 def get_hdf5_module(resource):
     """Return the correct h5py module based on the input resource."""
-    if resource.startswith(('http:', 'hdf5:')):
+    if resource.startswith(REMOTE_H5_PATH_PREFIX):
         return h5pyd
     else:
         return h5py
@@ -273,7 +276,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 
 def read_h5netcdf(tmp_netcdf, write_module):
-    remote_h5 = True if tmp_netcdf.startswith(('http:', 'hdf5:')) else False
+    remote_h5 = True if tmp_netcdf.startswith(REMOTE_H5_PATH_PREFIX) else False
     ds = h5netcdf.File(tmp_netcdf, 'r')
     assert ds.name == '/'
     assert list(ds.attrs) == ['global', 'other_attr']
