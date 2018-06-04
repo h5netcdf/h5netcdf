@@ -21,7 +21,7 @@ except ImportError:
     without_h5pyd = True
 
 
-REMOTE_H5_PATH_PREFIX = ('http:', 'hdf5:')
+remote_h5 = ('http:', 'hdf5:')
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def tmp_local_netcdf(tmpdir):
 
 @pytest.fixture(params=['testfile.nc', 'hdf5://testfile'])
 def tmp_local_or_remote_netcdf(request, tmpdir):
-    if request.param.startswith(REMOTE_H5_PATH_PREFIX):
+    if request.param.startswith(remote_h5):
         if not pytest.config.option.restapi:
             pytest.skip('Do not test with HDF5 REST API')
         elif without_h5pyd:
@@ -47,7 +47,7 @@ def tmp_local_or_remote_netcdf(request, tmpdir):
 
 def get_hdf5_module(resource):
     """Return the correct h5py module based on the input resource."""
-    if resource.startswith(REMOTE_H5_PATH_PREFIX):
+    if resource.startswith(remote_h5):
         return h5pyd
     else:
         return h5py
@@ -276,7 +276,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 
 def read_h5netcdf(tmp_netcdf, write_module):
-    remote_h5 = True if tmp_netcdf.startswith(REMOTE_H5_PATH_PREFIX) else False
+    remote_file = True if tmp_netcdf.startswith(remote_h5) else False
     ds = h5netcdf.File(tmp_netcdf, 'r')
     assert ds.name == '/'
     assert list(ds.attrs) == ['global', 'other_attr']
@@ -313,7 +313,7 @@ def read_h5netcdf(tmp_netcdf, write_module):
     assert v.ndim == 1
     assert list(v.attrs) == ['_FillValue']
     assert v.attrs['_FillValue'] == -1
-    if not remote_h5:
+    if not remote_file:
         assert v.chunks is None
     assert v.compression is None
     assert v.compression_opts is None
