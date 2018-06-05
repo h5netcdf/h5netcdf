@@ -573,6 +573,8 @@ def test_failed_read_open_and_clean_delete(tmpdir):
 
 
 def test_invalid_netcdf_warns(tmp_local_or_remote_netcdf):
+    if tmp_local_or_remote_netcdf.startswith(remote_h5):
+        pytest.skip('h5pyd does not support NumPy complex dtype yet')
     with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
         with pytest.warns(FutureWarning):
             f.create_variable('complex', data=1j)
@@ -605,6 +607,8 @@ def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
 
 
 def test_invalid_netcdf_okay(tmp_local_or_remote_netcdf):
+    if tmp_local_or_remote_netcdf.startswith(remote_h5):
+        pytest.skip('h5pyd does not support NumPy complex dtype yet')
     with h5netcdf.File(tmp_local_or_remote_netcdf, invalid_netcdf=True) as f:
         f.create_variable('complex', data=1j)
         f.attrs['complex_attr'] = 1j
