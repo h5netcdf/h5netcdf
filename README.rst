@@ -6,11 +6,13 @@ h5netcdf
 .. image:: https://badge.fury.io/py/h5netcdf.svg
     :target: https://pypi.python.org/pypi/h5netcdf/
 
-A Python interface for the netCDF4_ file-format that reads and writes HDF5
-files API directly via h5py_, without relying on the Unidata netCDF library.
+A Python interface for the netCDF4_ file-format that reads and writes local or
+remote HDF5 files directly via h5py_ or h5pyd_, without relying on the Unidata
+netCDF library.
 
 .. _netCDF4: http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
 .. _h5py: http://www.h5py.org/
+.. _h5pyd: https://github.com/HDFGroup/h5pyd
 
 Why h5netcdf?
 -------------
@@ -169,6 +171,11 @@ when creating a file:
 
 Change Log
 ----------
+
+Version 0.6 (Jun 5, 2018):
+
+- Support for reading and writing data to remote HDF5 files via the HDF5 REST API using the h5pyd_ package. Any file "path" starting with either ``http://``, ``https://``, or ``hdf5://`` will automatically trigger the use of this package. No changes to the code required.
+  By `Aleksandar Jelenak <https://github.com/ajelenak-thg>`_.
 
 Version 0.5.1 (Apr 11, 2018):
 

@@ -12,6 +12,14 @@ from .attrs import Attributes
 from .dimensions import Dimensions
 from .utils import Frozen
 
+try:
+    import h5pyd
+except ImportError:
+    no_h5pyd = True
+    h5_group_types = (h5py.Group,)
+else:
+    no_h5pyd = False
+    h5_group_types = (h5py.Group, h5pyd.Group)
 
 __version__ = '0.5.1'
 
@@ -219,7 +227,9 @@ class Group(Mapping):
         self._groups = _LazyObjectLookup(self, self._group_cls)
 
         for k, v in self._h5group.items():
-            if isinstance(v, h5py.Group):
+            if isinstance(v, h5_group_types):
+                # add to the groups collection if this is a h5py(d) Group
+                # instance
                 self._groups.add(k)
             else:
                 if v.attrs.get('CLASS') == b'DIMENSION_SCALE':
@@ -552,9 +562,22 @@ class Group(Mapping):
 class File(Group):
 
     def __init__(self, path, mode='a', invalid_netcdf=None, **kwargs):
-        self._preexisting_file = os.path.exists(path)
         try:
-            self._h5file = h5py.File(path, mode, **kwargs)
+            if path.startswith(('http://', 'https://', 'hdf5://')):
+                if no_h5pyd:
+                    raise ImportError(
+                        "No module named 'h5pyd'. h5pyd is required for "
+                        "opening remote paths with h5netcdf: {}".format(path))
+                try:
+                    with h5pyd.File(path, 'r') as f:  # noqa
+                        pass
+                    self._preexisting_file = True
+                except IOError:
+                    self._preexisting_file = False
+                self._h5file = h5pyd.File(path, mode, **kwargs)
+            else:
+                self._preexisting_file = os.path.exists(path)
+                self._h5file = h5py.File(path, mode, **kwargs)
         except Exception:
             self._closed = True
             raise
