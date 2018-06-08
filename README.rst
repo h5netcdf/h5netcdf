@@ -172,9 +172,12 @@ when creating a file:
 Change Log
 ----------
 
-Version 0.6 (Jun 5, 2018):
+Version 0.6 (Jun 7, 2018):
 
-- Support for reading and writing data to remote HDF5 files via the HDF5 REST API using the h5pyd_ package. Any file "path" starting with either ``http://``, ``https://``, or ``hdf5://`` will automatically trigger the use of this package. No changes to the code required.
+- Support for reading and writing data to remote HDF5 files via the HDF5 REST
+  API using the h5pyd_ package. Any file "path" starting with either
+  ``http://``, ``https://``, or ``hdf5://`` will automatically trigger the use
+  of this package.
   By `Aleksandar Jelenak <https://github.com/ajelenak-thg>`_.
 
 Version 0.5.1 (Apr 11, 2018):
