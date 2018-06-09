@@ -576,13 +576,16 @@ def test_invalid_netcdf_warns(tmp_local_or_remote_netcdf):
     if tmp_local_or_remote_netcdf.startswith(remote_h5):
         pytest.skip('h5pyd does not support NumPy complex dtype yet')
     with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+        # valid
+        with pytest.warns(None) as record:
+            f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
+                              compression='lzf')
+        assert not record.list
+        # invalid
         with pytest.warns(FutureWarning):
             f.create_variable('complex', data=1j)
         with pytest.warns(FutureWarning):
             f.attrs['complex_attr'] = 1j
-        with pytest.warns(FutureWarning):
-            f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
-                              compression='lzf')
         with pytest.warns(FutureWarning):
             f.create_variable('scaleoffset', data=[1], dimensions=('x',),
                               scaleoffset=0)
@@ -594,13 +597,14 @@ def test_invalid_netcdf_warns(tmp_local_or_remote_netcdf):
 def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, 'w',
                        invalid_netcdf=False) as f:
+        # valid
+        f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
+                          compression='lzf')
+        # invalid
         with pytest.raises(h5netcdf.CompatibilityError):
             f.create_variable('complex', data=1j)
         with pytest.raises(h5netcdf.CompatibilityError):
             f.attrs['complex_attr'] = 1j
-        with pytest.raises(h5netcdf.CompatibilityError):
-            f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
-                              compression='lzf')
         with pytest.raises(h5netcdf.CompatibilityError):
             f.create_variable('scaleoffset', data=[1], dimensions=('x',),
                               scaleoffset=0)
@@ -610,16 +614,16 @@ def test_invalid_netcdf_okay(tmp_local_or_remote_netcdf):
     if tmp_local_or_remote_netcdf.startswith(remote_h5):
         pytest.skip('h5pyd does not support NumPy complex dtype yet')
     with h5netcdf.File(tmp_local_or_remote_netcdf, invalid_netcdf=True) as f:
-        f.create_variable('complex', data=1j)
-        f.attrs['complex_attr'] = 1j
         f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
                           compression='lzf')
+        f.create_variable('complex', data=1j)
+        f.attrs['complex_attr'] = 1j
         f.create_variable('scaleoffset', data=[1], dimensions=('x',),
                           scaleoffset=0)
     with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+        np.testing.assert_equal(f['lzf_compressed'][:], [1])
         assert f['complex'][...] == 1j
         assert f.attrs['complex_attr'] == 1j
-        np.testing.assert_equal(f['lzf_compressed'][:], [1])
         np.testing.assert_equal(f['scaleoffset'][:], [1])
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
     with h5.File(tmp_local_or_remote_netcdf) as f:

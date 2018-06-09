@@ -21,7 +21,7 @@ else:
     no_h5pyd = False
     h5_group_types = (h5py.Group, h5pyd.Group)
 
-__version__ = '0.5.1'
+__version__ = '0.6.1'
 
 
 _NC_PROPERTIES = (u'version=1|h5netcdfversion=%s|hdf5libversion=%s'
@@ -373,13 +373,6 @@ class Group(Mapping):
                                     stacklevel=stacklevel)
         else:
             self._root._check_valid_netcdf_dtype(dtype, stacklevel=stacklevel)
-
-        compression = kwargs.get('compression')
-        if compression not in {None, 'gzip'}:
-            _invalid_netcdf_feature('{} compression'.format(compression),
-                                    allow=self._root.invalid_netcdf,
-                                    file=self._root,
-                                    stacklevel=stacklevel)
 
         if 'scaleoffset' in kwargs:
             _invalid_netcdf_feature('scale-offset filters',

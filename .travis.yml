@@ -9,11 +9,6 @@ matrix:
   - python: 3.4
   - python: 3.5
   - python: 3.6
-  - python: 2.7
-    env: H5PY_VERSION="=2.1"
-  allow_failures:
-  - python: 2.7
-    env: H5PY_VERSION="=2.1"
 
 before_install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then

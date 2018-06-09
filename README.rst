@@ -144,8 +144,7 @@ h5py implements some features that do not (yet) result in valid netCDF files:
     - Non-string variable length types
     - Enum types
     - Reference types
-- Compression algorithms:
-    - Algorithms other than gzip
+- Arbitrary filters:
     - Scale-offset filters
 
 By default [*]_, h5netcdf will not allow writing files using any of these features,
@@ -172,9 +171,18 @@ when creating a file:
 Change Log
 ----------
 
-Version 0.6 (Jun 5, 2018):
+Version 0.6.1 (Jun 8, 2018):
 
-- Support for reading and writing data to remote HDF5 files via the HDF5 REST API using the h5pyd_ package. Any file "path" starting with either ``http://``, ``https://``, or ``hdf5://`` will automatically trigger the use of this package. No changes to the code required.
+- Compression with arbitrary filters no longer triggers warnings about invalid
+  netCDF files, because this is now
+  `supported by netCDF <https://github.com/Unidata/netcdf-c/pull/399>`__.
+
+Version 0.6 (Jun 7, 2018):
+
+- Support for reading and writing data to remote HDF5 files via the HDF5 REST
+  API using the h5pyd_ package. Any file "path" starting with either
+  ``http://``, ``https://``, or ``hdf5://`` will automatically trigger the use
+  of this package.
   By `Aleksandar Jelenak <https://github.com/ajelenak-thg>`_.
 
 Version 0.5.1 (Apr 11, 2018):
