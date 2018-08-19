@@ -9,6 +9,7 @@ from os import environ as env
 import h5netcdf
 from h5netcdf import legacyapi
 from h5netcdf.compat import PY2, unicode
+from h5netcdf.core import NOT_A_VARIABLE
 import h5py
 import pytest
 
@@ -570,6 +571,23 @@ def test_failed_read_open_and_clean_delete(tmpdir):
             is_h5netcdf_File = False
         if is_h5netcdf_File:
             obj.close()
+
+
+def test_create_variable_matching_saved_dimension(tmp_local_or_remote_netcdf):
+    h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+        f.dimensions['x'] = 2
+        f.create_variable('y', data=[1, 2], dimensions=('x',))
+
+    with h5.File(tmp_local_or_remote_netcdf) as f:
+        assert f['y'].dims[0].keys() == [NOT_A_VARIABLE.decode('ascii')]
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+        f.create_variable('x', data=[0, 1], dimensions=('x',))
+
+    with h5.File(tmp_local_or_remote_netcdf) as f:
+        assert f['y'].dims[0].keys() == ['x']
 
 
 def test_invalid_netcdf_warns(tmp_local_or_remote_netcdf):

@@ -171,6 +171,11 @@ when creating a file:
 Change Log
 ----------
 
+Version 0.6.2 (Aug 19, 2018):
+
+- Fixed a bug that prevented creating variables with the same name as
+  previously created dimensions in reopened files.
+
 Version 0.6.1 (Jun 8, 2018):
 
 - Compression with arbitrary filters no longer triggers warnings about invalid
