@@ -171,7 +171,7 @@ when creating a file:
 Change Log
 ----------
 
-Version 0.6.2 (Aug 18, 2018):
+Version 0.6.2 (Aug 19, 2018):
 
 - Fixed a bug that prevented creating variables with the same name as
   previously created dimensions in reopened files.
