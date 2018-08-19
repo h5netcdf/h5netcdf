@@ -573,18 +573,20 @@ def test_failed_read_open_and_clean_delete(tmpdir):
             obj.close()
 
 
-def test_create_variable_matching_saved_dimension(tmp_local_netcdf):
-    with h5netcdf.File(tmp_local_netcdf) as f:
+def test_create_variable_matching_saved_dimension(tmp_local_or_remote_netcdf):
+    h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
         f.dimensions['x'] = 2
         f.create_variable('y', data=[1, 2], dimensions=('x',))
 
-    with h5py.File(tmp_local_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf) as f:
         assert f['y'].dims[0].keys() == [NOT_A_VARIABLE.decode('ascii')]
 
-    with h5netcdf.File(tmp_local_netcdf) as f:
+    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
         f.create_variable('x', data=[0, 1], dimensions=('x',))
 
-    with h5py.File(tmp_local_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf) as f:
         assert f['y'].dims[0].keys() == ['x']
 
 
