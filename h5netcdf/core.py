@@ -205,6 +205,10 @@ class _LazyObjectLookup(Mapping):
             return self._objects[key]
 
 
+def _netcdf_dimension_but_not_variable(h5py_dataset):
+    return NOT_A_VARIABLE in h5py_dataset.attrs.get('NAME', b'')
+
+
 class Group(Mapping):
 
     _variable_cls = Variable
@@ -222,6 +226,7 @@ class Group(Mapping):
             self._dim_sizes = parent._dim_sizes.new_child()
             self._current_dim_sizes = parent._current_dim_sizes.new_child()
             self._dim_order = parent._dim_order.new_child()
+            self._all_h5groups = parent._all_h5groups.new_child(self._h5group)
 
         self._variables = _LazyObjectLookup(self, self._variable_cls)
         self._groups = _LazyObjectLookup(self, self._group_cls)
@@ -255,7 +260,7 @@ class Group(Mapping):
                     if dim_id is None:
                         dim_id = len(self._dim_order)
                     self._dim_order[k] = dim_id
-                if NOT_A_VARIABLE not in v.attrs.get('NAME', b''):
+                if not _netcdf_dimension_but_not_variable(v):
                     var_name = k
                     if k.startswith('_nc4_non_coord_'):
                         var_name = k[len('_nc4_non_coord_'):]
@@ -393,6 +398,14 @@ class Group(Mapping):
         if shape != maxshape:
             kwargs["maxshape"] = maxshape
 
+        # Clear dummy HDF5 datasets with this name that were created for a
+        # dimension scale without a corresponding variable.
+        if name in self.dimensions and name in self._h5group:
+            h5ds = self._h5group[name]
+            if _netcdf_dimension_but_not_variable(h5ds):
+                self._detach_dim_scale(name)
+                del self._h5group[name]
+
         self._h5group.create_dataset(h5name, shape, dtype=dtype,
                                      data=data, fillvalue=fillvalue,
                                      **kwargs)
@@ -442,6 +455,7 @@ class Group(Mapping):
         return len(self.variables) + len(self.groups)
 
     def _create_dim_scales(self):
+        """Create all necessary HDF5 dimension scale."""
         dim_order = self._dim_order.maps[0]
         for dim in sorted(dim_order, key=lambda d: dim_order[d]):
             if dim not in self._h5group:
@@ -466,19 +480,26 @@ class Group(Mapping):
         for subgroup in self.groups.values():
             subgroup._create_dim_scales()
 
-    def _attach_dim_scales(self, parent_h5groups=None):
-        if parent_h5groups is None:
-            all_h5groups = ChainMap(self._h5group)
-        else:
-            all_h5groups = parent_h5groups.new_child(self._h5group)
-
+    def _attach_dim_scales(self):
+        """Attach dimension scales to all variables."""
         for name, var in self.variables.items():
             if name not in self.dimensions:
                 for n, dim in enumerate(var.dimensions):
-                    var._h5ds.dims[n].attach_scale(all_h5groups[dim])
+                    var._h5ds.dims[n].attach_scale(self._all_h5groups[dim])
 
         for subgroup in self.groups.values():
-            subgroup._attach_dim_scales(all_h5groups)
+            subgroup._attach_dim_scales()
+
+    def _detach_dim_scale(self, name):
+        """Detach the dimension scale corresponding to a dimension name."""
+        for var in self.variables.values():
+            for n, dim in enumerate(var.dimensions):
+                if dim == name:
+                    var._h5ds.dims[n].detach_scale(self._all_h5groups[dim])
+
+        for subgroup in self.groups.values():
+            if dim not in subgroup._h5group:
+                subgroup._detach_dim_scale(name)
 
     @property
     def parent(self):
@@ -577,20 +598,23 @@ class File(Group):
         else:
             self._closed = False
 
-        # Three maps to keep track of dimensions in terms of size (might be
-        # unlimited), current size (identical to size for limited dimensions),
-        # and their position.
-        self._dim_sizes = ChainMap()
-        self._current_dim_sizes = ChainMap()
-        self._dim_order = ChainMap()
-
         self._mode = mode
         self._root = self
         self._h5path = '/'
         self.invalid_netcdf = invalid_netcdf
         # If invalid_netcdf is None, we'll disable writing _NCProperties only
         # if we actually use invalid NetCDF features.
-        self._write_ncproperties = (invalid_netcdf is not True)
+        self._write_ncproperties = invalid_netcdf is not True
+
+        # These maps keep track of dimensions in terms of size (might be
+        # unlimited), current size (identical to size for limited dimensions),
+        # their position, and look-up for HDF5 datasets corresponding to a
+        # dimension.
+        self._dim_sizes = ChainMap()
+        self._current_dim_sizes = ChainMap()
+        self._dim_order = ChainMap()
+        self._all_h5groups = ChainMap(self._h5group)
+
         super(File, self).__init__(self, self._h5path)
 
     def _check_valid_netcdf_dtype(self, dtype, stacklevel=3):
