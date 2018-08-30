@@ -27,7 +27,6 @@ install:
   - conda create -c conda-forge --yes -n test_env python=$TRAVIS_PYTHON_VERSION pip pytest h5py$H5PY_VERSION cython netCDF4
   - source activate test_env
   - python setup.py install
-  - export HS_ENDPOINT=http://52.4.181.237:5104
   - curl ${HS_ENDPOINT}/about && export WITHRESTAPI=--restapi
   - if [ -n "${WITHRESTAPI}" ]; then
       pip install requests pytz ;
