@@ -576,6 +576,9 @@ def test_failed_read_open_and_clean_delete(tmpdir):
 def test_create_variable_matching_saved_dimension(tmp_local_or_remote_netcdf):
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
 
+    if h5 is not h5py:
+        pytest.xfail('https://github.com/shoyer/h5netcdf/issues/48')
+
     with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
         f.dimensions['x'] = 2
         f.create_variable('y', data=[1, 2], dimensions=('x',))
