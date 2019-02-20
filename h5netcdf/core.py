@@ -577,7 +577,7 @@ class File(Group):
 
     def __init__(self, path, mode='a', invalid_netcdf=None, **kwargs):
         try:
-            if path.startswith(('http://', 'https://', 'hdf5://')):
+            if isinstance(path, str) and path.startswith(('http://', 'https://', 'hdf5://')):
                 if no_h5pyd:
                     raise ImportError(
                         "No module named 'h5pyd'. h5pyd is required for "
@@ -590,7 +590,7 @@ class File(Group):
                     self._preexisting_file = False
                 self._h5file = h5pyd.File(path, mode, **kwargs)
             else:
-                self._preexisting_file = os.path.exists(path)
+                #self._preexisting_file = os.path.exists(path)
                 self._h5file = h5py.File(path, mode, **kwargs)
         except Exception:
             self._closed = True
