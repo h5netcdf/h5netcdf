@@ -577,21 +577,30 @@ class File(Group):
 
     def __init__(self, path, mode='a', invalid_netcdf=None, **kwargs):
         try:
-            if isinstance(path, str) and path.startswith(('http://', 'https://', 'hdf5://')):
-                if no_h5pyd:
+            if isinstance(path, str):
+                if path.startswith(('http://', 'https://', 'hdf5://')):
+                    if no_h5pyd:
+                        raise ImportError(
+                            "No module named 'h5pyd'. h5pyd is required for "
+                            "opening urls: {}".format(path))
+                    try:
+                        with h5pyd.File(path, 'r') as f:  # noqa
+                            pass
+                        self._preexisting_file = True
+                    except IOError:
+                        self._preexisting_file = False
+                    self._h5file = h5pyd.File(path, mode, **kwargs)
+                else:
+                    self._preexisting_file = os.path.exists(path)
+                    self._h5file = h5py.File(path, mode, **kwargs)
+            else: #file-like object
+                if h5py.__version__ >= '2.9.0':
                     raise ImportError(
-                        "No module named 'h5pyd'. h5pyd is required for "
-                        "opening remote paths with h5netcdf: {}".format(path))
-                try:
-                    with h5pyd.File(path, 'r') as f:  # noqa
-                        pass
-                    self._preexisting_file = True
-                except IOError:
+                        "h5py version ({}) must be greater than 2.9.0 to load \
+                        file-like objects.".format(h5py.__version__))
+                else:
                     self._preexisting_file = False
-                self._h5file = h5pyd.File(path, mode, **kwargs)
-            else:
-                #self._preexisting_file = os.path.exists(path)
-                self._h5file = h5py.File(path, mode, **kwargs)
+                    self._h5file = h5py.File(path, mode, **kwargs)
         except Exception:
             self._closed = True
             raise
