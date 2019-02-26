@@ -280,9 +280,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 
 def read_h5netcdf(tmp_netcdf, write_module):
-    remote_file = False
-    if isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5):
-        remote_file = True
+    remote_file = (isinstance(tmp_netcdf, str) and
+                   tmp_netcdf.startswith(remote_h5))
     ds = h5netcdf.File(tmp_netcdf, 'r')
     assert ds.name == '/'
     assert list(ds.attrs) == ['global', 'other_attr']
