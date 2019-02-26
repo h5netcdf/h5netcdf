@@ -7,6 +7,7 @@ import random
 from os import environ as env
 import io
 import tempfile
+from distutils.version import LooseVersion
 
 import h5netcdf
 from h5netcdf import legacyapi
@@ -50,10 +51,10 @@ def tmp_local_or_remote_netcdf(request, tmpdir):
 
 def get_hdf5_module(resource):
     """Return the correct h5py module based on the input resource."""
-    if isinstance(resource, str):
-        if resource.startswith(remote_h5):
-            return h5pyd
-    return h5py
+    if isinstance(resource, str) and resource.startswith(remote_h5):
+        return h5pyd
+    else:
+        return h5py
 
 
 def string_to_char(arr):
@@ -280,9 +281,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
 def read_h5netcdf(tmp_netcdf, write_module):
     remote_file = False
-    if isinstance(tmp_netcdf, str):
-        if tmp_netcdf.startswith(remote_h5):
-            remote_file = True
+    if isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5):
+        remote_file = True
     ds = h5netcdf.File(tmp_netcdf, 'r')
     assert ds.name == '/'
     assert list(ds.attrs) == ['global', 'other_attr']
@@ -418,7 +418,8 @@ def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf):
 
 
 def test_fileobj():
-    # requires h5py>2.9.0
+    if h5py.__version__ < LooseVersion('2.9.0'):
+        pytest.skip('h5py > 2.9.0 required to test file-like objects')
     fileobj = tempfile.TemporaryFile()
     write_h5netcdf(fileobj)
     read_h5netcdf(fileobj, h5netcdf)

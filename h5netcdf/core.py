@@ -7,6 +7,8 @@ import warnings
 import h5py
 import numpy as np
 
+from distutils.version import LooseVersion
+
 from .compat import ChainMap, OrderedDict, unicode
 from .attrs import Attributes
 from .dimensions import Dimensions
@@ -594,12 +596,12 @@ class File(Group):
                     self._preexisting_file = os.path.exists(path)
                     self._h5file = h5py.File(path, mode, **kwargs)
             else:  # file-like object
-                if h5py.__version__ < '2.9.0':
+                if h5py.__version__ < LooseVersion('2.9.0'):
                     raise ImportError(
-                        "h5py version ({}) must be greater than 2.9.0 to load \
-                        file-like objects.".format(h5py.__version__))
+                        "h5py version ({}) must be greater than 2.9.0 to load "
+                        "file-like objects.".format(h5py.__version__))
                 else:
-                    self._preexisting_file = False
+                    self._preexisting_file = mode in {'r', 'r+', 'a'}
                     self._h5file = h5py.File(path, mode, **kwargs)
         except Exception:
             self._closed = True
