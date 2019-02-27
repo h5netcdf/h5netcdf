@@ -171,6 +171,12 @@ when creating a file:
 Change Log
 ----------
 
+Version 0.7 (Feb 26, 2019):
+
+- Support for reading and writing file-like objects (requires h5py 2.9 or
+  newer).
+  By `Scott Henderson <https://github.com/scottyhq>`_.
+
 Version 0.6.2 (Aug 19, 2018):
 
 - Fixed a bug that prevented creating variables with the same name as
