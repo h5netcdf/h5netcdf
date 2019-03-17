@@ -102,38 +102,38 @@ def is_h5py_char_working(tmp_netcdf, name):
 
 def write_legacy_netcdf(tmp_netcdf, write_module):
     ds = write_module.Dataset(tmp_netcdf, 'w')
-    ds.setncattr('global', 42)
-    ds.other_attr = 'yes'
+    # ds.setncattr('global', 42)
+    # ds.other_attr = 'yes'
     ds.createDimension('x', 4)
     ds.createDimension('y', 5)
-    ds.createDimension('z', 6)
-    ds.createDimension('empty', 0)
-    ds.createDimension('string3', 3)
+    # ds.createDimension('z', 6)
+    # ds.createDimension('empty', 0)
+    # ds.createDimension('string3', 3)
 
-    v = ds.createVariable('foo', float, ('x', 'y'), chunksizes=(4, 5),
-                          zlib=True)
-    v[...] = 1
-    v.setncattr('units', 'meters')
+    # v = ds.createVariable('foo', float, ('x', 'y'), chunksizes=(4, 5),
+    #                       zlib=True)
+    # v[...] = 1
+    # v.setncattr('units', 'meters')
 
     v = ds.createVariable('y', int, ('y',), fill_value=-1)
     v[:4] = np.arange(4)
 
-    v = ds.createVariable('z', 'S1', ('z', 'string3'), fill_value=b'X')
-    v[...] = _char_array
+    # v = ds.createVariable('z', 'S1', ('z', 'string3'), fill_value=b'X')
+    # v[...] = _char_array
 
-    v = ds.createVariable('scalar', np.float32, ())
-    v[...] = 2.0
+    # v = ds.createVariable('scalar', np.float32, ())
+    # v[...] = 2.0
 
-    # test creating a scalar with compression option (with should be ignored)
-    v = ds.createVariable('intscalar', np.int64, (), zlib=6, fill_value=None)
-    v[...] = 2
+    # # test creating a scalar with compression option (with should be ignored)
+    # v = ds.createVariable('intscalar', np.int64, (), zlib=6, fill_value=None)
+    # v[...] = 2
 
-    with raises((h5netcdf.CompatibilityError, TypeError)):
-        ds.createVariable('boolean', np.bool_, ('x'))
+    # with raises((h5netcdf.CompatibilityError, TypeError)):
+    #     ds.createVariable('boolean', np.bool_, ('x'))
 
     g = ds.createGroup('subgroup')
-    v = g.createVariable('subvar', np.int32, ('x',))
-    v[...] = np.arange(4.0)
+    # v = g.createVariable('subvar', np.int32, ('x',))
+    # v[...] = np.arange(4.0)
 
     g.createDimension('y', 10)
     g.createVariable('y_var', float, ('y',))
@@ -141,8 +141,8 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.createDimension('mismatched_dim', 1)
     ds.createVariable('mismatched_dim', int, ())
 
-    v = ds.createVariable('var_len_str', str, ('x'))
-    v[0] = u'foo'
+    # v = ds.createVariable('var_len_str', str, ('x'))
+    # v[0] = u'foo'
 
     ds.close()
 

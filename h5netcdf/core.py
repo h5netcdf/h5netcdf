@@ -26,8 +26,8 @@ else:
 __version__ = '0.7.0'
 
 
-_NC_PROPERTIES = (u'version=1|h5netcdfversion=%s|hdf5libversion=%s'
-                  % (__version__, h5py.version.hdf5_version))
+_NC_PROPERTIES = (u'version=2,h5netcdf=%s,hdf5=%s,h5py=%s'
+                  % (__version__, h5py.version.hdf5_version, h5py.__version__))
 
 NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
