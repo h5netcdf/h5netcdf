@@ -23,11 +23,11 @@ else:
     no_h5pyd = False
     h5_group_types = (h5py.Group, h5pyd.Group)
 
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 
 
-_NC_PROPERTIES = (u'version=1|h5netcdfversion=%s|hdf5libversion=%s'
-                  % (__version__, h5py.version.hdf5_version))
+_NC_PROPERTIES = (u'version=2,h5netcdf=%s,hdf5=%s,h5py=%s'
+                  % (__version__, h5py.version.hdf5_version, h5py.__version__))
 
 NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
 
@@ -260,7 +260,7 @@ class Group(Mapping):
                         self._determine_current_dimension_size(k, current_size)
 
                     if dim_id is None:
-                        dim_id = len(self._dim_order)
+                        dim_id = self._root._get_next_dim_id()
                     self._dim_order[k] = dim_id
                 if not _netcdf_dimension_but_not_variable(v):
                     var_name = k
@@ -315,7 +315,7 @@ class Group(Mapping):
 
         self._dim_sizes[name] = size
         self._current_dim_sizes[name] = 0 if size is None else size
-        self._dim_order[name] = len(self._dim_order)
+        self._dim_order[name] = self._root._get_next_dim_id()
 
     @property
     def dimensions(self):
@@ -626,7 +626,15 @@ class File(Group):
         self._dim_order = ChainMap()
         self._all_h5groups = ChainMap(self._h5group)
 
+        # used for picking numbers to use in self._dim_order
+        self._next_dim_id = 0
+
         super(File, self).__init__(self, self._h5path)
+
+    def _get_next_dim_id(self):
+        dim_id = self._next_dim_id
+        self._next_dim_id += 1
+        return dim_id
 
     def _check_valid_netcdf_dtype(self, dtype, stacklevel=3):
         dtype = np.dtype(dtype)

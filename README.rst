@@ -171,6 +171,12 @@ when creating a file:
 Change Log
 ----------
 
+Version 0.7.1 (Mar 16, 2019):
+
+- Fixed a bug where h5netcdf could write invalid netCDF files with reused
+  dimension IDs. netCDF-C 4.6.2 will crash when reading these files.
+- Updated to use version 2 of ``_NCProperties`` attribute.
+
 Version 0.7 (Feb 26, 2019):
 
 - Support for reading and writing file-like objects (requires h5py 2.9 or
