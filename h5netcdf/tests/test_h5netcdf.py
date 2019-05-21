@@ -680,6 +680,16 @@ def test_invalid_netcdf_okay(tmp_local_or_remote_netcdf):
         assert '_NCProperties' not in f.attrs
 
 
+def test_reopen_file_different_dimension_sizes(tmp_local_netcdf):
+    # regression test for https://github.com/shoyer/h5netcdf/issues/55
+    with h5netcdf.File(tmp_local_netcdf, mode='w') as f:
+        f.create_variable('/one/foo', data=[1], dimensions=('x',))
+    with h5netcdf.File(tmp_local_netcdf, mode='a') as f:
+        f.create_variable('/two/foo', data=[1, 2], dimensions=('x',))
+    with netCDF4.Dataset(tmp_local_netcdf, mode='r') as f:
+        assert f.groups['one'].variables['foo'][...].shape == (1,)
+
+
 def test_invalid_then_valid_no_ncproperties(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, invalid_netcdf=True):
         pass

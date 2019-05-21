@@ -171,6 +171,11 @@ when creating a file:
 Change Log
 ----------
 
+Version 0.7.2 (May 20, 2019):
+
+- Fixed another bug that could result in reusing dimension IDs, when modifying
+  existing files.
+
 Version 0.7.1 (Mar 16, 2019):
 
 - Fixed a bug where h5netcdf could write invalid netCDF files with reused

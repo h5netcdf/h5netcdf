@@ -259,8 +259,6 @@ class Group(Mapping):
                     self._current_dim_sizes[k] = \
                         self._determine_current_dimension_size(k, current_size)
 
-                    if dim_id is None:
-                        dim_id = self._root._get_next_dim_id()
                     self._dim_order[k] = dim_id
                 if not _netcdf_dimension_but_not_variable(v):
                     var_name = k
@@ -315,7 +313,7 @@ class Group(Mapping):
 
         self._dim_sizes[name] = size
         self._current_dim_sizes[name] = 0 if size is None else size
-        self._dim_order[name] = self._root._get_next_dim_id()
+        self._dim_order[name] = None
 
     @property
     def dimensions(self):
@@ -476,6 +474,9 @@ class Group(Mapping):
                 coord_ids = np.array([dim_order[d] for d in dims], 'int32')
                 h5ds.attrs['_Netcdf4Coordinates'] = coord_ids
 
+            # TODO: don't re-create scales if they already exist. With the
+            # current version of h5py, this would require using the low-level
+            # h5py.h5ds.is_scale interface to detect pre-existing scales.
             scale_name = dim if dim in self.variables else NOT_A_VARIABLE
             h5ds.dims.create_scale(h5ds, scale_name)
 
@@ -626,15 +627,7 @@ class File(Group):
         self._dim_order = ChainMap()
         self._all_h5groups = ChainMap(self._h5group)
 
-        # used for picking numbers to use in self._dim_order
-        self._next_dim_id = 0
-
         super(File, self).__init__(self, self._h5path)
-
-    def _get_next_dim_id(self):
-        dim_id = self._next_dim_id
-        self._next_dim_id += 1
-        return dim_id
 
     def _check_valid_netcdf_dtype(self, dtype, stacklevel=3):
         dtype = np.dtype(dtype)
@@ -670,8 +663,32 @@ class File(Group):
     def parent(self):
         return None
 
+    def _set_unassigned_dimension_ids(self):
+        max_dim_id = -1
+
+        # collect the largest assigned dimension ID
+        groups = [self]
+        while groups:
+            group = groups.pop()
+            assigned_dim_ids = [dim_id for dim_id in group._dim_order.values()
+                                if dim_id is not None]
+            max_dim_id = max([max_dim_id] + assigned_dim_ids)
+            groups.extend(group._groups.values())
+
+        # set all dimension IDs to valid values
+        next_dim_id = max_dim_id + 1
+        groups = [self]
+        while groups:
+            group = groups.pop()
+            for key in group._dim_order:
+                if group._dim_order[key] is None:
+                    group._dim_order[key] = next_dim_id
+                    next_dim_id += 1
+            groups.extend(group._groups.values())
+
     def flush(self):
         if 'r' not in self._mode:
+            self._set_unassigned_dimension_ids()
             self._create_dim_scales()
             self._attach_dim_scales()
             if not self._preexisting_file and self._write_ncproperties:
