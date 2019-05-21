@@ -23,7 +23,7 @@ else:
     no_h5pyd = False
     h5_group_types = (h5py.Group, h5pyd.Group)
 
-__version__ = '0.7.1'
+__version__ = '0.7.3'
 
 
 _NC_PROPERTIES = (u'version=2,h5netcdf=%s,hdf5=%s,h5py=%s'

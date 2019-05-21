@@ -171,7 +171,7 @@ when creating a file:
 Change Log
 ----------
 
-Version 0.7.2 (May 20, 2019):
+Version 0.7.3 (May 20, 2019):
 
 - Fixed another bug that could result in reusing dimension IDs, when modifying
   existing files.
