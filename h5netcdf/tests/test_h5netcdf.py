@@ -540,7 +540,7 @@ def test_hierarchical_access_auto_create(tmp_local_or_remote_netcdf):
     ds.close()
 
 
-def test_netcdf4Dimid(tmp_local_netcdf):
+def test_Netcdf4Dimid(tmp_local_netcdf):
     # regression test for https://github.com/shoyer/h5netcdf/issues/53
     with h5netcdf.File(tmp_local_netcdf, 'w') as f:
         f.dimensions['x'] = 1
@@ -549,9 +549,11 @@ def test_netcdf4Dimid(tmp_local_netcdf):
         g.dimensions['y'] = 3
 
     with h5py.File(tmp_local_netcdf) as f:
-        assert f['x'].attrs['_Netcdf4Dimid'] == 0
-        assert f['foo/x'].attrs['_Netcdf4Dimid'] == 1
-        assert f['foo/y'].attrs['_Netcdf4Dimid'] == 2
+        # all dimension IDs should be present exactly once
+        dim_ids = {
+            f[name].attrs['_Netcdf4Dimid'] for name in ['x', 'foo/x', 'foo/y']
+        }
+        assert dim_ids == {0, 1, 2}
 
 
 def test_reading_str_array_from_netCDF4(tmp_local_netcdf):
