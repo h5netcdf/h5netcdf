@@ -1,21 +1,18 @@
-language: python
+language: minimal
 sudo: false # use container based build
 notifications:
   email: false
 
 matrix:
   include:
-  - python: 2.7
-  - python: 3.4
-  - python: 3.5
-  - python: 3.6
+  - env: PYTHON_VERSION=2.7
+  - env: PYTHON_VERSION=3.4
+  - env: PYTHON_VERSION=3.5
+  - env: PYTHON_VERSION=3.6
+  - env: PYTHON_VERSION=3.7
 
 before_install:
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget http://repo.continuum.io/miniconda/Miniconda-3.7.3-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget http://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh -O miniconda.sh;
-    fi
+  - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
@@ -24,17 +21,18 @@ before_install:
   - conda info -a
 
 install:
-  - conda create -c conda-forge --yes -n test_env python=$TRAVIS_PYTHON_VERSION pip pytest h5py$H5PY_VERSION cython netCDF4
+  - conda create -c conda-forge --yes -n test_env python=$PYTHON_VERSION pip pytest h5py$H5PY_VERSION cython netCDF4
   - source activate test_env
   - python setup.py install
   - if [ -n "${WITHRESTAPI}" ]; then
       pip install requests pytz ;
       pip install git+https://github.com/HDFGroup/h5pyd.git ;
-      export H5PYD_TEST_FOLDER=${TEST_BASE_DIR}/h5pyd_test/${TRAVIS_PYTHON_VERSION} ;
+      export H5PYD_TEST_FOLDER=${TEST_BASE_DIR}/h5pyd_test/${PYTHON_VERSION} ;
     fi
+  - conda list
 
 script:
-  - echo python_version ${TRAVIS_PYTHON_VERSION}
+  - echo python_version ${PYTHON_VERSION}
   - echo endpoint ${HS_ENDPOINT}
   - echo test folder ${H5PYD_TEST_FOLDER}
   - if [ -n "${HS_USERNAME}" ]; then
