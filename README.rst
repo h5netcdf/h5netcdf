@@ -171,6 +171,10 @@ when creating a file:
 Change Log
 ----------
 
+Version 0.7.4 (June 1, 2019):
+
+- Fixed a flakey test on Python 2.7 and 3.4.
+
 Version 0.7.3 (May 20, 2019):
 
 - Fixed another bug that could result in reusing dimension IDs, when modifying

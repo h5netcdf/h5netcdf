@@ -24,7 +24,7 @@ setup(name='h5netcdf',
       long_description=(open('README.rst').read()
                         if os.path.exists('README.rst')
                         else ''),
-      version='0.7.3',
+      version='0.7.4',
       license='BSD',
       classifiers=CLASSIFIERS,
       author='Stephan Hoyer',
