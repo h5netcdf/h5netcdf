@@ -1,6 +1,6 @@
 # For details on how netCDF4 builds on HDF5:
 # http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
-from collections import Mapping
+from collections.abc import Mapping
 import os.path
 import warnings
 
