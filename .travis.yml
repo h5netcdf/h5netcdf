@@ -5,8 +5,6 @@ notifications:
 
 matrix:
   include:
-  - env: PYTHON_VERSION=2.7
-  - env: PYTHON_VERSION=3.4
   - env: PYTHON_VERSION=3.5
   - env: PYTHON_VERSION=3.6
   - env: PYTHON_VERSION=3.7
