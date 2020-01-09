@@ -36,7 +36,7 @@ def tmp_local_netcdf(tmpdir):
 @pytest.fixture(params=['testfile.nc', 'hdf5://testfile'])
 def tmp_local_or_remote_netcdf(request, tmpdir):
     if request.param.startswith(remote_h5):
-        if not pytest.config.option.restapi:
+        if not request.config.option.restapi:
             pytest.skip('Do not test with HDF5 REST API')
         elif without_h5pyd:
             pytest.skip('h5pyd package not available')
