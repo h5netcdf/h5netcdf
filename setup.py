@@ -2,8 +2,8 @@ import os
 from setuptools import setup, find_packages
 import sys
 
-if sys.version_info[:2] < (3, 5):
-    raise RuntimeError('Python version >= 3.5 required.')
+if sys.version_info[:2] < (3, 6):
+    raise RuntimeError('Python version >= 3.6 required.')
 
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
@@ -12,9 +12,9 @@ CLASSIFIERS = [
     'Intended Audience :: Science/Research',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
     'Topic :: Scientific/Engineering',
 ]
 
@@ -30,7 +30,7 @@ setup(name='h5netcdf',
       author='Stephan Hoyer',
       author_email='shoyer@gmail.com',
       url='https://github.com/shoyer/h5netcdf',
-      python_requires='>=3.5',
+      python_requires='>=3.6',
       install_requires=['h5py'],
       tests_require=['netCDF4', 'pytest'],
       packages=find_packages())
