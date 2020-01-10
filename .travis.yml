@@ -5,9 +5,9 @@ notifications:
 
 matrix:
   include:
-  - env: PYTHON_VERSION=3.5 H5PYD_VERSION=v0.5.0
   - env: PYTHON_VERSION=3.6 H5PYD_VERSION=v0.6.0
   - env: PYTHON_VERSION=3.7 H5PYD_VERSION=v0.6.0
+  - env: PYTHON_VERSION=3.8 H5PYD_VERSION=v0.6.0
 
 before_install:
   - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
