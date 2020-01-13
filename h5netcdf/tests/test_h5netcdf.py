@@ -880,3 +880,11 @@ def test_reading_unused_unlimited_dimension(tmp_local_or_remote_netcdf):
         assert f.dimensions == {'x': None}
 
     f = h5netcdf.File(tmp_local_or_remote_netcdf, 'r')
+
+def test_reading_special_datatype_created_with_c_api(tmp_local_netcdf):
+    "Test reading a file with unsupported Datatype"
+    with netCDF4.Dataset(tmp_local_netcdf, "w") as f:
+        complex128 = np.dtype([('real', np.float64), ('imag', np.float64)])
+        f.createCompoundType(complex128, 'complex128')
+    with h5netcdf.File(tmp_local_netcdf) as f:
+        pass
