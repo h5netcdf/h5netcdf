@@ -482,7 +482,7 @@ def test_attrs_api(tmp_local_or_remote_netcdf):
 
 def test_optional_netcdf4_attrs(tmp_local_or_remote_netcdf):
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'w') as f:
         foo_data = np.arange(50).reshape(5, 10)
         f.create_dataset('foo', data=foo_data)
         f.create_dataset('x', data=np.arange(5))
@@ -516,7 +516,7 @@ def test_error_handling(tmp_local_or_remote_netcdf):
 
 def test_invalid_netcdf4(tmp_local_or_remote_netcdf):
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'w') as f:
         f.create_dataset('foo', data=np.arange(5))
         # labeled dimensions but no dimension scales
         f['foo'].dims[0].label = 'x'
@@ -548,7 +548,7 @@ def test_Netcdf4Dimid(tmp_local_netcdf):
         g.dimensions['x'] = 2
         g.dimensions['y'] = 3
 
-    with h5py.File(tmp_local_netcdf) as f:
+    with h5py.File(tmp_local_netcdf, 'r') as f:
         # all dimension IDs should be present exactly once
         dim_ids = {
             f[name].attrs['_Netcdf4Dimid'] for name in ['x', 'foo/x', 'foo/y']
@@ -610,24 +610,24 @@ def test_create_variable_matching_saved_dimension(tmp_local_or_remote_netcdf):
     if h5 is not h5py:
         pytest.xfail('https://github.com/shoyer/h5netcdf/issues/48')
 
-    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'w') as f:
         f.dimensions['x'] = 2
         f.create_variable('y', data=[1, 2], dimensions=('x',))
 
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'r') as f:
         assert f['y'].dims[0].keys() == [NOT_A_VARIABLE.decode('ascii')]
 
-    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'a') as f:
         f.create_variable('x', data=[0, 1], dimensions=('x',))
 
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'r') as f:
         assert f['y'].dims[0].keys() == ['x']
 
 
 def test_invalid_netcdf_warns(tmp_local_or_remote_netcdf):
     if tmp_local_or_remote_netcdf.startswith(remote_h5):
         pytest.skip('h5pyd does not support NumPy complex dtype yet')
-    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'w') as f:
         # valid
         with pytest.warns(None) as record:
             f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
@@ -642,7 +642,7 @@ def test_invalid_netcdf_warns(tmp_local_or_remote_netcdf):
             f.create_variable('scaleoffset', data=[1], dimensions=('x',),
                               scaleoffset=0)
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'r') as f:
         assert '_NCProperties' not in f.attrs
 
 
@@ -665,20 +665,21 @@ def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
 def test_invalid_netcdf_okay(tmp_local_or_remote_netcdf):
     if tmp_local_or_remote_netcdf.startswith(remote_h5):
         pytest.skip('h5pyd does not support NumPy complex dtype yet')
-    with h5netcdf.File(tmp_local_or_remote_netcdf, invalid_netcdf=True) as f:
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'w',
+                       invalid_netcdf=True) as f:
         f.create_variable('lzf_compressed', data=[1], dimensions=('x'),
                           compression='lzf')
         f.create_variable('complex', data=1j)
         f.attrs['complex_attr'] = 1j
         f.create_variable('scaleoffset', data=[1], dimensions=('x',),
                           scaleoffset=0)
-    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'r') as f:
         np.testing.assert_equal(f['lzf_compressed'][:], [1])
         assert f['complex'][...] == 1j
         assert f.attrs['complex_attr'] == 1j
         np.testing.assert_equal(f['scaleoffset'][:], [1])
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'r') as f:
         assert '_NCProperties' not in f.attrs
 
 
@@ -693,18 +694,18 @@ def test_reopen_file_different_dimension_sizes(tmp_local_netcdf):
 
 
 def test_invalid_then_valid_no_ncproperties(tmp_local_or_remote_netcdf):
-    with h5netcdf.File(tmp_local_or_remote_netcdf, invalid_netcdf=True):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'w', invalid_netcdf=True):
         pass
-    with h5netcdf.File(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'r'):
         pass
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'r') as f:
         # still not a valid netcdf file
         assert '_NCProperties' not in f.attrs
 
 
 def test_creating_and_resizing_unlimited_dimensions(tmp_local_or_remote_netcdf):
-    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'w') as f:
         f.dimensions['x'] = None
         f.dimensions['y'] = 15
         f.dimensions['z'] = None
@@ -717,7 +718,7 @@ def test_creating_and_resizing_unlimited_dimensions(tmp_local_or_remote_netcdf):
 
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
     # Assert some behavior observed by using the C netCDF bindings.
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'r') as f:
         assert f["x"].shape == (0,)
         assert f["x"].maxshape == (None,)
         assert f["y"].shape == (15,)
