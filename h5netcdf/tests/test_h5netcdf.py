@@ -487,8 +487,12 @@ def test_optional_netcdf4_attrs(tmp_local_or_remote_netcdf):
         f.create_dataset('foo', data=foo_data)
         f.create_dataset('x', data=np.arange(5))
         f.create_dataset('y', data=np.arange(10))
-        f['foo'].dims.create_scale(f['x'])
-        f['foo'].dims.create_scale(f['y'])
+        if h5py.__version__ < LooseVersion('2.10.0'):
+            f['foo'].dims.create_scale(f['x'])
+            f['foo'].dims.create_scale(f['y'])
+        else:
+            f['x'].make_scale()
+            f['y'].make_scale()
         f['foo'].dims[0].attach_scale(f['x'])
         f['foo'].dims[1].attach_scale(f['y'])
     with h5netcdf.File(tmp_local_or_remote_netcdf, 'r') as ds:

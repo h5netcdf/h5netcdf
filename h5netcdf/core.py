@@ -478,7 +478,10 @@ class Group(Mapping):
             # current version of h5py, this would require using the low-level
             # h5py.h5ds.is_scale interface to detect pre-existing scales.
             scale_name = dim if dim in self.variables else NOT_A_VARIABLE
-            h5ds.dims.create_scale(h5ds, scale_name)
+            if h5py.__version__ < LooseVersion('2.10.0'):
+                h5ds.dims.create_scale(h5ds, scale_name)
+            else:
+                h5ds.make_scale(scale_name)
 
         for subgroup in self.groups.values():
             subgroup._create_dim_scales()
