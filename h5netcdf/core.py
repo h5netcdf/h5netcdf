@@ -261,10 +261,11 @@ class Group(Mapping):
 
                     self._dim_order[k] = dim_id
                 if not _netcdf_dimension_but_not_variable(v):
-                    var_name = k
-                    if k.startswith('_nc4_non_coord_'):
-                        var_name = k[len('_nc4_non_coord_'):]
-                    self._variables.add(var_name)
+                    if isinstance(v, h5py.Dataset):
+                        var_name = k
+                        if k.startswith('_nc4_non_coord_'):
+                            var_name = k[len('_nc4_non_coord_'):]
+                        self._variables.add(var_name)
 
         self._initialized = True
 
