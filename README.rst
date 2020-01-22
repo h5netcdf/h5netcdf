@@ -178,7 +178,7 @@ phony dimensions according to `netCDF`_ behaviour.
 
 .. code-block:: python
 
-  # mimick netCDF-behaviour for non-netcdf files
+  # mimic netCDF-behaviour for non-netcdf files
   f = h5netcdf.File('mydata.h5', mode='r', phony_dims='sort')
   ...
 
@@ -186,7 +186,7 @@ Note, that this iterates once over the whole group-hierarchy. This has affects
 on performance in case you rely on lazyness of group access.
 You can set ``phony_dims='access'`` instead to defer phony dimension creation
 to group access time. The created phony dimension naming will differ from
-`netCDF`_ behaviour
+`netCDF`_ behaviour.
 
 .. code-block:: python
 
