@@ -333,13 +333,11 @@ class Group(Mapping):
     def _create_phony_dimensions(self):
         # this is for 'sort' naming
         for key, value in self._phony_dims.items():
-            try:
+            if isinstance(value, int):
                 value += self._root._labeled_dim_count
                 name = "phony_dim_{}".format(value)
                 self._create_dimension(name, key[0])
                 self._phony_dims[key] = name
-            except TypeError:
-                pass
 
     def _determine_current_dimension_size(self, dim_name, max_size):
         """
