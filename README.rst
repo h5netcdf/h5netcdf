@@ -198,6 +198,13 @@ to group access time. The created phony dimension naming will differ from
 
 Change Log
 ----------
+Version 0.8.0 (TBD):
+
+- Support for reading Datasets with missing dimension scales.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Fixed a bug where ``Datatype`` objects were treated as ``Datasets``.
+- Fixed several issues with upstream deprecations.
+
 Version 0.7.4 (June 1, 2019):
 
 - Fixed a flakey test on Python 2.7 and 3.4.
