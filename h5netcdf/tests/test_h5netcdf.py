@@ -718,6 +718,31 @@ def test_invalid_netcdf4_mixed(tmp_local_or_remote_netcdf):
             ds.variables['foo1'].dimensions
 
 
+def test_invalid_netcdf_malformed_dimension_scales(tmp_local_or_remote_netcdf):
+    h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
+    with h5.File(tmp_local_or_remote_netcdf) as f:
+        foo_data = np.arange(125).reshape(5, 5, 5)
+        f.create_dataset('foo1', data=foo_data)
+        f.create_dataset('x', data=np.arange(5))
+        f.create_dataset('y', data=np.arange(5))
+        f.create_dataset('z', data=np.arange(5))
+
+        if h5py.__version__ < LooseVersion('2.10.0'):
+            f['foo1'].dims.create_scale(f['x'])
+            f['foo1'].dims.create_scale(f['y'])
+            f['foo1'].dims.create_scale(f['z'])
+        else:
+            f['x'].make_scale()
+            f['y'].make_scale()
+            f['z'].make_scale()
+        f['foo1'].dims[0].attach_scale(f['x'])
+
+    with raises(ValueError):
+        with h5netcdf.File(tmp_local_or_remote_netcdf, 'r',
+                           phony_dims='sort') as ds:
+            pass
+
+
 def test_hierarchical_access_auto_create(tmp_local_or_remote_netcdf):
     ds = h5netcdf.File(tmp_local_or_remote_netcdf, 'w')
     ds.create_variable('/foo/bar', data=1)

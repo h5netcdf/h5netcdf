@@ -224,7 +224,10 @@ def _netcdf_dimension_but_not_variable(h5py_dataset):
 def _unlabeled_dimension_mix(h5py_dataset):
     dims = sum([len(j) for j in h5py_dataset.dims])
     if dims:
-        assert dims == h5py_dataset.ndim
+        if dims != h5py_dataset.ndim:
+            name = h5py_dataset.name.split('/')[-1]
+            raise ValueError('malformed variable %r has mixing of labeled and '
+                             'unlabeled dimensions.'.format(name))
     return dims
 
 
