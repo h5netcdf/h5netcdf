@@ -105,7 +105,7 @@ class BaseVariable(object):
                 name = _name_from_dimension(dim)
             else:
                 # if unlabeled dimensions are found
-                if self._root._phony_dim_count is None:
+                if self._root._phony_dims_mode is None:
                     raise ValueError('variable %r has no dimension scale '
                                      'associated with axis %s. \n'
                                      'Use phony_dims=%r for sorted naming or '
@@ -254,7 +254,7 @@ class Group(Mapping):
         self._groups = _LazyObjectLookup(self, self._group_cls)
 
         # # initialize phony dimension counter
-        if self._root._phony_dim_count is not None:
+        if self._root._phony_dims_mode is not None:
             self._phony_dims = {}
             phony_dims = defaultdict(int)
             labeled_dims = defaultdict(int)
@@ -281,7 +281,7 @@ class Group(Mapping):
                     self._dim_sizes[k] = size
 
                     # keep track of found labeled dimensions
-                    if self._root._phony_dim_count is not None:
+                    if self._root._phony_dims_mode is not None:
                         labeled_dims[size] += 1
                         self._phony_dims[(size, labeled_dims[size] - 1)] = k
 
@@ -293,7 +293,7 @@ class Group(Mapping):
 
                     self._dim_order[k] = dim_id
                 else:
-                    if self._root._phony_dim_count is not None:
+                    if self._root._phony_dims_mode is not None:
                         # check if malformed variable
                         if not _unlabeled_dimension_mix(v):
                             # if unscaled variable, get phony dimensions
@@ -312,7 +312,7 @@ class Group(Mapping):
                         self._variables.add(var_name)
 
         # iterate over found phony dimensions and create them
-        if self._root._phony_dim_count is not None:
+        if self._root._phony_dims_mode is not None:
             grp_phony_count = 0
             for size, cnt in phony_dims.items():
                 # only create missing dimensions
@@ -320,8 +320,7 @@ class Group(Mapping):
                     name = (grp_phony_count +
                             self._root._phony_dim_count)
                     grp_phony_count += 1
-                    # this is for per access naming
-                    if self._root._labeled_dim_count is None:
+                    if self._root._phony_dims_mode == "access":
                         name = "phony_dim_{}".format(name)
                         self._create_dimension(name, size)
                     self._phony_dims[(size, pcnt)] = name
@@ -694,21 +693,14 @@ class File(Group):
         self._write_ncproperties = invalid_netcdf is not True
 
         # phony dimension handling
+        self._phony_dims_mode = phony_dims
         if phony_dims is not None:
-            if phony_dims == 'sort':
-                self._phony_dim_count = 0
-                self._labeled_dim_count = 0
-            elif phony_dims == 'access':
-                self._phony_dim_count = 0
-                self._labeled_dim_count = None
-            else:
+            self._phony_dim_count = 0
+            if phony_dims not in ['sort', 'access']:
                 raise ValueError('unknown value %r for phony_dims\n'
                                  'Use phony_dims=%r for sorted naming, '
                                  'phony_dims=%r for per access naming.'
                                  % (phony_dims, 'sort', 'access'))
-        else:
-            self._phony_dim_count = None
-            self._labeled_dim_count = None
 
         # These maps keep track of dimensions in terms of size (might be
         # unlimited), current size (identical to size for limited dimensions),
