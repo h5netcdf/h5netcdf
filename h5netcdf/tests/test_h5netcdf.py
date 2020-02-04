@@ -518,15 +518,165 @@ def test_error_handling(tmp_local_or_remote_netcdf):
             ds.create_group('subgroup')
 
 
+def create_invalid_netcdf_data():
+    foo_data = np.arange(125).reshape(5, 5, 5)
+    bar_data = np.arange(625).reshape(25, 5, 5)
+    var = {'foo1': foo_data, 'foo2': bar_data,
+           'foo3': foo_data, 'foo4': bar_data}
+    var2 = {'x': 5, 'y': 5, 'z': 5, 'x1': 25, 'y1': 5, 'z1': 5}
+    return var, var2
+
+
+def check_invalid_netcdf4(var, i):
+    pdim = 'phony_dim_{}'
+    assert var['foo1'].dimensions[0] == pdim.format(i * 4)
+    assert var['foo1'].dimensions[1] == pdim.format(1 + i * 4)
+    assert var['foo1'].dimensions[2] == pdim.format(2 + i * 4)
+    assert var['foo2'].dimensions[0] == pdim.format(3 + i * 4)
+    assert var['foo2'].dimensions[1] == pdim.format(0 + i * 4)
+    assert var['foo2'].dimensions[2] == pdim.format(1 + i * 4)
+    assert var['foo3'].dimensions[0] == pdim.format(i * 4)
+    assert var['foo3'].dimensions[1] == pdim.format(1 + i * 4)
+    assert var['foo3'].dimensions[2] == pdim.format(2 + i * 4)
+    assert var['foo4'].dimensions[0] == pdim.format(3 + i * 4)
+    assert var['foo4'].dimensions[1] == pdim.format(i * 4)
+    assert var['foo4'].dimensions[2] == pdim.format(1 + i * 4)
+    assert var['x'].dimensions[0] == pdim.format(i * 4)
+    assert var['y'].dimensions[0] == pdim.format(i * 4)
+    assert var['z'].dimensions[0] == pdim.format(i * 4)
+    assert var['x1'].dimensions[0] == pdim.format(3 + i * 4)
+    assert var['y1'].dimensions[0] == pdim.format(i * 4)
+    assert var['z1'].dimensions[0] == pdim.format(i * 4)
+
+
 def test_invalid_netcdf4(tmp_local_or_remote_netcdf):
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
     with h5.File(tmp_local_or_remote_netcdf, 'w') as f:
-        f.create_dataset('foo', data=np.arange(5))
-        # labeled dimensions but no dimension scales
-        f['foo'].dims[0].label = 'x'
+        var, var2 = create_invalid_netcdf_data()
+        grps = ['bar', 'baz']
+        for grp in grps:
+            fx = f.create_group(grp)
+            for k, v in var.items():
+                fx.create_dataset(k, data=v)
+            for k, v in var2.items():
+                fx.create_dataset(k, data=np.arange(v))
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'r',
+                       phony_dims='sort') as dsr:
+        i = len(grps) - 1
+        for grp in grps[::-1]:
+            var = dsr[grp].variables
+            check_invalid_netcdf4(var, i)
+            i -= 1
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'r',
+                       phony_dims='access') as dsr:
+        for i, grp in enumerate(grps[::-1]):
+            print(dsr[grp])
+            var = dsr[grp].variables
+            check_invalid_netcdf4(var, i)
+
+    with netCDF4.Dataset(tmp_local_or_remote_netcdf, mode='r') as dsr:
+        for i, grp in enumerate(grps):
+            print(dsr[grp])
+            var = dsr[grp].variables
+            check_invalid_netcdf4(var, i)
+
     with h5netcdf.File(tmp_local_or_remote_netcdf, 'r') as ds:
         with raises(ValueError):
-            ds.variables['foo'].dimensions
+            ds['bar'].variables['foo1'].dimensions
+
+    with raises(ValueError):
+        with h5netcdf.File(tmp_local_or_remote_netcdf, 'r',
+                           phony_dims='srt') as ds:
+            pass
+
+
+def check_invalid_netcdf4_mixed(var, i):
+    pdim = 'phony_dim_{}'.format(i)
+    assert var['foo1'].dimensions[0] == 'y1'
+    assert var['foo1'].dimensions[1] == 'z1'
+    assert var['foo1'].dimensions[2] == pdim
+    assert var['foo2'].dimensions[0] == 'x1'
+    assert var['foo2'].dimensions[1] == 'y1'
+    assert var['foo2'].dimensions[2] == 'z1'
+    assert var['foo3'].dimensions[0] == 'y1'
+    assert var['foo3'].dimensions[1] == 'z1'
+    assert var['foo3'].dimensions[2] == pdim
+    assert var['foo4'].dimensions[0] == 'x1'
+    assert var['foo4'].dimensions[1] == 'y1'
+    assert var['foo4'].dimensions[2] == 'z1'
+    assert var['x'].dimensions[0] == 'y1'
+    assert var['y'].dimensions[0] == 'y1'
+    assert var['z'].dimensions[0] == 'y1'
+    assert var['x1'].dimensions[0] == 'x1'
+    assert var['y1'].dimensions[0] == 'y1'
+    assert var['z1'].dimensions[0] == 'z1'
+
+
+def test_invalid_netcdf4_mixed(tmp_local_or_remote_netcdf):
+    h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
+    with h5.File(tmp_local_or_remote_netcdf) as f:
+        var, var2 = create_invalid_netcdf_data()
+        for k, v in var.items():
+            f.create_dataset(k, data=v)
+        for k, v in var2.items():
+            f.create_dataset(k, data=np.arange(v))
+
+        if h5py.__version__ < LooseVersion('2.10.0'):
+            f['foo2'].dims.create_scale(f['x1'])
+            f['foo2'].dims.create_scale(f['y1'])
+            f['foo2'].dims.create_scale(f['z1'])
+        else:
+            f['x1'].make_scale()
+            f['y1'].make_scale()
+            f['z1'].make_scale()
+        f['foo2'].dims[0].attach_scale(f['x1'])
+        f['foo2'].dims[1].attach_scale(f['y1'])
+        f['foo2'].dims[2].attach_scale(f['z1'])
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'r',
+                       phony_dims='sort') as ds:
+        var = ds.variables
+        check_invalid_netcdf4_mixed(var, 3)
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'r',
+                       phony_dims='access') as ds:
+        var = ds.variables
+        check_invalid_netcdf4_mixed(var, 0)
+
+    with netCDF4.Dataset(tmp_local_or_remote_netcdf, 'r') as ds:
+        var = ds.variables
+        check_invalid_netcdf4_mixed(var, 3)
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf, 'r') as ds:
+        with raises(ValueError):
+            ds.variables['foo1'].dimensions
+
+
+def test_invalid_netcdf_malformed_dimension_scales(tmp_local_or_remote_netcdf):
+    h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
+    with h5.File(tmp_local_or_remote_netcdf) as f:
+        foo_data = np.arange(125).reshape(5, 5, 5)
+        f.create_dataset('foo1', data=foo_data)
+        f.create_dataset('x', data=np.arange(5))
+        f.create_dataset('y', data=np.arange(5))
+        f.create_dataset('z', data=np.arange(5))
+
+        if h5py.__version__ < LooseVersion('2.10.0'):
+            f['foo1'].dims.create_scale(f['x'])
+            f['foo1'].dims.create_scale(f['y'])
+            f['foo1'].dims.create_scale(f['z'])
+        else:
+            f['x'].make_scale()
+            f['y'].make_scale()
+            f['z'].make_scale()
+        f['foo1'].dims[0].attach_scale(f['x'])
+
+    with raises(ValueError):
+        with h5netcdf.File(tmp_local_or_remote_netcdf, 'r',
+                           phony_dims='sort') as ds:
+            pass
 
 
 def test_hierarchical_access_auto_create(tmp_local_or_remote_netcdf):
@@ -885,6 +1035,7 @@ def test_reading_unused_unlimited_dimension(tmp_local_or_remote_netcdf):
         assert f.dimensions == {'x': None}
 
     f = h5netcdf.File(tmp_local_or_remote_netcdf, 'r')
+
 
 def test_reading_special_datatype_created_with_c_api(tmp_local_netcdf):
     "Test reading a file with unsupported Datatype"

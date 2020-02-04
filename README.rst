@@ -168,8 +168,42 @@ when creating a file:
        we will raise ``h5netcdf.CompatibilityError``. Use
        ``invalid_netcdf=False`` to switch to the new behavior now.
 
+Datasets with missing dimension scales
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default [*]_ h5netcdf raises a ``ValueError`` if variables with no dimension
+scale associated with one of their axes are accessed.
+You can set ``phony_dims='sort'`` when opening a file to let h5netcdf invent
+phony dimensions according to `netCDF`_ behaviour.
+
+.. code-block:: python
+
+  # mimic netCDF-behaviour for non-netcdf files
+  f = h5netcdf.File('mydata.h5', mode='r', phony_dims='sort')
+  ...
+
+Note, that this iterates once over the whole group-hierarchy. This has affects
+on performance in case you rely on lazyness of group access.
+You can set ``phony_dims='access'`` instead to defer phony dimension creation
+to group access time. The created phony dimension naming will differ from
+`netCDF`_ behaviour.
+
+.. code-block:: python
+
+  f = h5netcdf.File('mydata.h5', mode='r', phony_dims='access')
+  ...
+
+.. _netCDF: https://www.unidata.ucar.edu/software/netcdf/docs/interoperability_hdf5.html
+.. [*] Keyword default setting ``phony_dims=None`` for backwards compatibility.
+
 Change Log
 ----------
+Version 0.8.0 (TBD):
+
+- Support for reading Datasets with missing dimension scales.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Fixed a bug where ``Datatype`` objects were treated as ``Datasets``.
+- Fixed several issues with upstream deprecations.
 
 Version 0.7.4 (June 1, 2019):
 
