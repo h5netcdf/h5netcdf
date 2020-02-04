@@ -198,7 +198,7 @@ to group access time. The created phony dimension naming will differ from
 
 Change Log
 ----------
-Version 0.8.0 (TBD):
+Version 0.8.0 (February 4, 2020):
 
 - Support for reading Datasets with missing dimension scales.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
