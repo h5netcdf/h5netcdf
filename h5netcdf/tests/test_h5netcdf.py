@@ -616,7 +616,7 @@ def check_invalid_netcdf4_mixed(var, i):
 
 def test_invalid_netcdf4_mixed(tmp_local_or_remote_netcdf):
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'w') as f:
         var, var2 = create_invalid_netcdf_data()
         for k, v in var.items():
             f.create_dataset(k, data=v)
@@ -656,7 +656,7 @@ def test_invalid_netcdf4_mixed(tmp_local_or_remote_netcdf):
 
 def test_invalid_netcdf_malformed_dimension_scales(tmp_local_or_remote_netcdf):
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
-    with h5.File(tmp_local_or_remote_netcdf) as f:
+    with h5.File(tmp_local_or_remote_netcdf, 'w') as f:
         foo_data = np.arange(125).reshape(5, 5, 5)
         f.create_dataset('foo1', data=foo_data)
         f.create_dataset('x', data=np.arange(5))
