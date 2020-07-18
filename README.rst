@@ -198,6 +198,11 @@ to group access time. The created phony dimension naming will differ from
 
 Change Log
 ----------
+
+Version 0.8.1 (July 17, 2020):
+
+- Fix h5py deprecation warning in test suite.
+
 Version 0.8.0 (February 4, 2020):
 
 - Support for reading Datasets with missing dimension scales.
