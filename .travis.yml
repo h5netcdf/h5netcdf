@@ -45,4 +45,4 @@ script:
       echo password IS NOT defined;
     fi
   - echo withrestapi ${WITHRESTAPI}
-  - py.test -v ${WITHRESTAPI} h5netcdf/
+  - py.test -v h5netcdf/
