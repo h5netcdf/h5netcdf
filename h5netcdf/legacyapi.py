@@ -1,7 +1,8 @@
 import h5py
 
 from . import core
-from .compat import unicode
+
+# from .compat import unicode
 
 
 class HasAttributesMixin(object):
@@ -20,8 +21,9 @@ class HasAttributesMixin(object):
         try:
             return self.attrs[name]
         except KeyError:
-            raise AttributeError('NetCDF: attribute {} not found'
-                                 .format(type(self).__name__, name))
+            raise AttributeError(
+                "NetCDF: attribute {0}:{1} not found".format(type(self).__name__, name)
+            )
 
     def __setattr__(self, name, value):
         if self._initialized and name not in self.__dict__:
@@ -31,32 +33,34 @@ class HasAttributesMixin(object):
 
 
 class Variable(core.BaseVariable, HasAttributesMixin):
-    _cls_name = 'h5netcdf.legacyapi.Variable'
+    _cls_name = "h5netcdf.legacyapi.Variable"
 
     def chunking(self):
         chunks = self._h5ds.chunks
         if chunks is None:
-            return 'contiguous'
+            return "contiguous"
         else:
             return chunks
 
     def filters(self):
         complevel = self._h5ds.compression_opts
-        return {'complevel': 0 if complevel is None else complevel,
-                'fletcher32': self._h5ds.fletcher32,
-                'shuffle': self._h5ds.shuffle,
-                'zlib': self._h5ds.compression == 'gzip'}
+        return {
+            "complevel": 0 if complevel is None else complevel,
+            "fletcher32": self._h5ds.fletcher32,
+            "shuffle": self._h5ds.shuffle,
+            "zlib": self._h5ds.compression == "gzip",
+        }
 
     @property
     def dtype(self):
         dt = self._h5ds.dtype
-        if h5py.check_dtype(vlen=dt) is unicode:
-            return str
+        # if h5py.check_dtype(vlen=dt) is unicode:
+        #    return str
         return dt
 
 
 class Group(core.Group, HasAttributesMixin):
-    _cls_name = 'h5netcdf.legacyapi.Group'
+    _cls_name = "h5netcdf.legacyapi.Group"
     _variable_cls = Variable
 
     @property
@@ -66,9 +70,18 @@ class Group(core.Group, HasAttributesMixin):
     createGroup = core.Group.create_group
     createDimension = core.Group._create_dimension
 
-    def createVariable(self, varname, datatype, dimensions=(), zlib=False,
-                       complevel=4, shuffle=True, fletcher32=False,
-                       chunksizes=None, fill_value=None):
+    def createVariable(
+        self,
+        varname,
+        datatype,
+        dimensions=(),
+        zlib=False,
+        complevel=4,
+        shuffle=True,
+        fletcher32=False,
+        chunksizes=None,
+        fill_value=None,
+    ):
         if len(dimensions) == 0:  # it's a scalar
             # rip off chunk and filter options for consistency with netCDF4-python
 
@@ -78,20 +91,26 @@ class Group(core.Group, HasAttributesMixin):
             shuffle = False
 
         if datatype is str:
-            datatype = h5py.special_dtype(vlen=unicode)
+            datatype = h5py.special_dtype(vlen=str)
 
         kwds = {}
         if zlib:
             # only add compression related keyword arguments if relevant (h5py
             # chokes otherwise)
-            kwds['compression'] = 'gzip'
-            kwds['compression_opts'] = complevel
-            kwds['shuffle'] = shuffle
+            kwds["compression"] = "gzip"
+            kwds["compression_opts"] = complevel
+            kwds["shuffle"] = shuffle
 
         return super(Group, self).create_variable(
-            varname, dimensions, dtype=datatype, fletcher32=fletcher32,
-            chunks=chunksizes, fillvalue=fill_value, **kwds)
+            varname,
+            dimensions,
+            dtype=datatype,
+            fletcher32=fletcher32,
+            chunks=chunksizes,
+            fillvalue=fill_value,
+            **kwds
+        )
 
 
 class Dataset(core.File, Group, HasAttributesMixin):
-    _cls_name = 'h5netcdf.legacyapi.Dataset'
+    _cls_name = "h5netcdf.legacyapi.Dataset"

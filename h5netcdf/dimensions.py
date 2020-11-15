@@ -12,7 +12,7 @@ class Dimensions(MutableMapping):
         self._group._create_dimension(key, value)
 
     def __delitem__(self, key):
-        raise NotImplementedError('cannot yet delete dimensions')
+        raise NotImplementedError("cannot yet delete dimensions")
 
     def __iter__(self):
         for key in self._group._dim_sizes:
@@ -23,6 +23,7 @@ class Dimensions(MutableMapping):
 
     def __repr__(self):
         if self._group._root._closed:
-            return '<Closed h5netcdf.Dimensions>'
-        return ('<h5netcdf.Dimensions: %s>' %
-                ', '.join('%s=%r' % (k, v) for k, v in self.items()))
+            return "<Closed h5netcdf.Dimensions>"
+        return "<h5netcdf.Dimensions: %s>" % ", ".join(
+            "%s=%r" % (k, v) for k, v in self.items()
+        )

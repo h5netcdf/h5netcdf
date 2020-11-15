@@ -1,13 +1,12 @@
 from collections.abc import Mapping
 
-import numpy as np
-
 
 class Frozen(Mapping):
     """Wrapper around an object implementing the mapping interface to make it
     immutable. If you really want to modify the mapping, the mutable version is
     saved under the `_mapping` attribute.
     """
+
     def __init__(self, mapping):
         self._mapping = mapping
 
@@ -24,4 +23,4 @@ class Frozen(Mapping):
         return key in self._mapping
 
     def __repr__(self):
-        return '%s(%r)' % (type(self).__name__, self._mapping)
+        return "%s(%r)" % (type(self).__name__, self._mapping)

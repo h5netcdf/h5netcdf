@@ -1,8 +1,8 @@
 h5netcdf
 ========
 
-.. image:: https://travis-ci.org/shoyer/h5netcdf.svg?branch=master
-    :target: https://travis-ci.org/shoyer/h5netcdf
+.. image:: https://github.com/h5netcdf/h5netcdf/workflows/CI/badge.svg
+    :target: https://github.com/h5netcdf/h5netcdf/actions
 .. image:: https://badge.fury.io/py/h5netcdf.svg
     :target: https://pypi.python.org/pypi/h5netcdf/
 
@@ -131,7 +131,7 @@ exact match. Here is an incomplete list of functionality we don't include:
   indexing. This would be a welcome pull request. For now, dimensions can be
   manually resized with ``Group.resize_dimension(dimension, size)``.
 
-.. _GitHub issue: https://github.com/shoyer/h5netcdf/issues/15
+.. _GitHub issue: https://github.com/h5netcdf/h5netcdf/issues/15
 
 Invalid netCDF files
 ~~~~~~~~~~~~~~~~~~~~
@@ -302,4 +302,4 @@ License
 
 `3-clause BSD`_
 
-.. _3-clause BSD: https://github.com/shoyer/h5netcdf/blob/master/LICENSE
+.. _3-clause BSD: https://github.com/h5netcdf/h5netcdf/blob/master/LICENSE

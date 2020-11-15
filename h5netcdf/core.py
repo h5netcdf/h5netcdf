@@ -1,16 +1,15 @@
 # For details on how netCDF4 builds on HDF5:
 # http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
-from collections import defaultdict
-from collections.abc import Mapping
 import os.path
 import warnings
+from collections import ChainMap, OrderedDict, defaultdict
+from collections.abc import Mapping
+from distutils.version import LooseVersion
 
 import h5py
 import numpy as np
 
-from distutils.version import LooseVersion
-
-from .compat import ChainMap, OrderedDict, unicode
+# from .compat import ChainMap, OrderedDict, unicode
 from .attrs import Attributes
 from .dimensions import Dimensions
 from .utils import Frozen
@@ -24,13 +23,16 @@ else:
     no_h5pyd = False
     h5_group_types = (h5py.Group, h5pyd.Group)
 
-__version__ = '0.8.1'
+__version__ = "0.8.1"
 
 
-_NC_PROPERTIES = (u'version=2,h5netcdf=%s,hdf5=%s,h5py=%s'
-                  % (__version__, h5py.version.hdf5_version, h5py.__version__))
+_NC_PROPERTIES = u"version=2,h5netcdf=%s,hdf5=%s,h5py=%s" % (
+    __version__,
+    h5py.version.hdf5_version,
+    h5py.__version__,
+)
 
-NOT_A_VARIABLE = b'This is a netCDF dimension but not a netCDF variable.'
+NOT_A_VARIABLE = b"This is a netCDF dimension but not a netCDF variable."
 
 
 def _reverse_dict(dict_):
@@ -38,13 +40,13 @@ def _reverse_dict(dict_):
 
 
 def _join_h5paths(parent_path, child_path):
-    return '/'.join([parent_path.rstrip('/'), child_path.lstrip('/')])
+    return "/".join([parent_path.rstrip("/"), child_path.lstrip("/")])
 
 
 def _name_from_dimension(dim):
     # First value in a dimension is the actual dimension scale
     # which we'll use to extract the name.
-    return dim[0].name.split('/')[-1]
+    return dim[0].name.split("/")[-1]
 
 
 class CompatibilityError(Exception):
@@ -53,20 +55,23 @@ class CompatibilityError(Exception):
 
 def _invalid_netcdf_feature(feature, allow, file, stacklevel=0):
     if allow is None:
-        msg = ('{} are supported by h5py, but not part of the NetCDF API. '
-               'You are writing an HDF5 file that is not a valid NetCDF file! '
-               'In the future, this will be an error, unless you set '
-               'invalid_netcdf=True.'.format(feature))
+        msg = (
+            "{} are supported by h5py, but not part of the NetCDF API. "
+            "You are writing an HDF5 file that is not a valid NetCDF file! "
+            "In the future, this will be an error, unless you set "
+            "invalid_netcdf=True.".format(feature)
+        )
         warnings.warn(msg, FutureWarning, stacklevel=stacklevel)
         file._write_ncproperties = False
     elif not allow:
-        msg = ('{} are not a supported NetCDF feature, and are not allowed by '
-               'h5netcdf unless invalid_netcdf=True.'.format(feature))
+        msg = (
+            "{} are not a supported NetCDF feature, and are not allowed by "
+            "h5netcdf unless invalid_netcdf=True.".format(feature)
+        )
         raise CompatibilityError(msg)
 
 
 class BaseVariable(object):
-
     def __init__(self, parent, name, dimensions=None):
         self._parent = parent
         self._root = parent._root
@@ -86,12 +91,13 @@ class BaseVariable(object):
 
     def _lookup_dimensions(self):
         attrs = self._h5ds.attrs
-        if '_Netcdf4Coordinates' in attrs:
+        if "_Netcdf4Coordinates" in attrs:
             order_dim = _reverse_dict(self._parent._dim_order)
-            return tuple(order_dim[coord_id]
-                         for coord_id in attrs['_Netcdf4Coordinates'])
+            return tuple(
+                order_dim[coord_id] for coord_id in attrs["_Netcdf4Coordinates"]
+            )
 
-        child_name = self.name.split('/')[-1]
+        child_name = self.name.split("/")[-1]
         if child_name in self._parent.dimensions:
             return (child_name,)
 
@@ -106,15 +112,16 @@ class BaseVariable(object):
             else:
                 # if unlabeled dimensions are found
                 if self._root._phony_dims_mode is None:
-                    raise ValueError('variable %r has no dimension scale '
-                                     'associated with axis %s. \n'
-                                     'Use phony_dims=%r for sorted naming or '
-                                     'phony_dims=%r for per access naming.'
-                                     % (self.name, axis, 'sort', 'access'))
+                    raise ValueError(
+                        "variable %r has no dimension scale "
+                        "associated with axis %s. \n"
+                        "Use phony_dims=%r for sorted naming or "
+                        "phony_dims=%r for per access naming."
+                        % (self.name, axis, "sort", "access")
+                    )
                 else:
                     # get dimension name
-                    name = self._parent._phony_dims[(dimsize,
-                                                     phony_dims[dimsize] - 1)]
+                    name = self._parent._phony_dims[(dimsize, phony_dims[dimsize] - 1)]
             dims.append(name)
         return tuple(dims)
 
@@ -143,6 +150,9 @@ class BaseVariable(object):
         return self._h5ds.__array__(*args, **kwargs)
 
     def __getitem__(self, key):
+        if h5py.__version__ >= LooseVersion("3.0.0"):
+            if self.dtype in [str, object]:
+                return self._h5ds.asstr()[key]
         return self._h5ds[key]
 
     def __setitem__(self, key, value):
@@ -150,25 +160,28 @@ class BaseVariable(object):
 
     @property
     def attrs(self):
-        return Attributes(self._h5ds.attrs,
-                          self._root._check_valid_netcdf_dtype)
+        return Attributes(self._h5ds.attrs, self._root._check_valid_netcdf_dtype)
 
-    _cls_name = 'h5netcdf.Variable'
+    _cls_name = "h5netcdf.Variable"
 
     def __repr__(self):
         if self._parent._root._closed:
-            return '<Closed %s>' % self._cls_name
-        header = ('<%s %r: dimensions %s, shape %s, dtype %s>' %
-                  (self._cls_name, self.name, self.dimensions, self.shape,
-                   self.dtype))
-        return '\n'.join([header] +
-                         ['Attributes:'] +
-                         ['    %s: %r' % (k, v)
-                          for k, v in self.attrs.items()])
+            return "<Closed %s>" % self._cls_name
+        header = "<%s %r: dimensions %s, shape %s, dtype %s>" % (
+            self._cls_name,
+            self.name,
+            self.dimensions,
+            self.shape,
+            self.dtype,
+        )
+        return "\n".join(
+            [header]
+            + ["Attributes:"]
+            + ["    %s: %r" % (k, v) for k, v in self.attrs.items()]
+        )
 
 
 class Variable(BaseVariable):
-
     @property
     def chunks(self):
         return self._h5ds.chunks
@@ -218,16 +231,18 @@ class _LazyObjectLookup(Mapping):
 
 
 def _netcdf_dimension_but_not_variable(h5py_dataset):
-    return NOT_A_VARIABLE in h5py_dataset.attrs.get('NAME', b'')
+    return NOT_A_VARIABLE in h5py_dataset.attrs.get("NAME", b"")
 
 
 def _unlabeled_dimension_mix(h5py_dataset):
     dims = sum([len(j) for j in h5py_dataset.dims])
     if dims:
         if dims != h5py_dataset.ndim:
-            name = h5py_dataset.name.split('/')[-1]
-            raise ValueError('malformed variable %r has mixing of labeled and '
-                             'unlabeled dimensions.'.format(name))
+            name = h5py_dataset.name.split("/")[-1]
+            raise ValueError(
+                "malformed variable {0} has mixing of labeled and "
+                "unlabeled dimensions.".format(name)
+            )
     return dims
 
 
@@ -265,11 +280,11 @@ class Group(Mapping):
                 # instance
                 self._groups.add(k)
             else:
-                if v.attrs.get('CLASS') == b'DIMENSION_SCALE':
-                    dim_id = v.attrs.get('_Netcdf4Dimid')
-                    if '_Netcdf4Coordinates' in v.attrs:
+                if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
+                    dim_id = v.attrs.get("_Netcdf4Dimid")
+                    if "_Netcdf4Coordinates" in v.attrs:
                         assert dim_id is not None
-                        coord_ids = v.attrs['_Netcdf4Coordinates']
+                        coord_ids = v.attrs["_Netcdf4Coordinates"]
                         size = v.shape[list(coord_ids).index(dim_id)]
                         current_size = size
                     else:
@@ -288,8 +303,9 @@ class Group(Mapping):
                     # Figure out the current size of a dimension, which for
                     # unlimited dimensions requires looking at the actual
                     # variables.
-                    self._current_dim_sizes[k] = \
-                        self._determine_current_dimension_size(k, current_size)
+                    self._current_dim_sizes[k] = self._determine_current_dimension_size(
+                        k, current_size
+                    )
 
                     self._dim_order[k] = dim_id
                 else:
@@ -301,14 +317,13 @@ class Group(Mapping):
                             for i in v.shape:
                                 vdims[i] += 1
                             for dimsize, cnt in vdims.items():
-                                phony_dims[dimsize] = max(phony_dims[dimsize],
-                                                          cnt)
+                                phony_dims[dimsize] = max(phony_dims[dimsize], cnt)
 
                 if not _netcdf_dimension_but_not_variable(v):
                     if isinstance(v, h5py.Dataset):
                         var_name = k
-                        if k.startswith('_nc4_non_coord_'):
-                            var_name = k[len('_nc4_non_coord_'):]
+                        if k.startswith("_nc4_non_coord_"):
+                            var_name = k[len("_nc4_non_coord_") :]
                         self._variables.add(var_name)
 
         # iterate over found phony dimensions and create them
@@ -317,8 +332,7 @@ class Group(Mapping):
             for size, cnt in phony_dims.items():
                 # only create missing dimensions
                 for pcnt in range(labeled_dims[size], cnt):
-                    name = (grp_phony_count +
-                            self._root._phony_dim_count)
+                    name = grp_phony_count + self._root._phony_dim_count
                     grp_phony_count += 1
                     if self._root._phony_dims_mode == "access":
                         name = "phony_dim_{}".format(name)
@@ -379,7 +393,7 @@ class Group(Mapping):
 
     def _create_dimension(self, name, size=None):
         if name in self._dim_sizes.maps[0]:
-            raise ValueError('dimension %r already exists' % name)
+            raise ValueError("dimension %r already exists" % name)
 
         self._dim_sizes[name] = size
         self._current_dim_sizes[name] = 0 if size is None else size
@@ -394,16 +408,16 @@ class Group(Mapping):
         for k, v in self._dim_sizes.maps[0].items():
             if k in value:
                 if v != value[k]:
-                    raise ValueError('cannot modify existing dimension %r' % k)
+                    raise ValueError("cannot modify existing dimension %r" % k)
             else:
-                raise ValueError('new dimensions do not include existing '
-                                 'dimension %r' % k)
+                raise ValueError(
+                    "new dimensions do not include existing " "dimension %r" % k
+                )
         self.dimensions.update(value)
 
     def _create_child_group(self, name):
         if name in self:
-            raise ValueError('unable to create group %r (name already exists)'
-                             % name)
+            raise ValueError("unable to create group %r (name already exists)" % name)
         self._h5group.create_group(name)
         self._groups[name] = self._group_cls(self, name)
         return self._groups[name]
@@ -415,21 +429,23 @@ class Group(Mapping):
             return self._create_child_group(name)
 
     def create_group(self, name):
-        if name.startswith('/'):
+        if name.startswith("/"):
             return self._root.create_group(name[1:])
-        keys = name.split('/')
+        keys = name.split("/")
         group = self
         for k in keys[:-1]:
             group = group._require_child_group(k)
         return group._create_child_group(keys[-1])
 
-    def _create_child_variable(self, name, dimensions, dtype, data, fillvalue,
-                               **kwargs):
+    def _create_child_variable(
+        self, name, dimensions, dtype, data, fillvalue, **kwargs
+    ):
         stacklevel = 4  # correct if name does not start with '/'
 
         if name in self:
-            raise ValueError('unable to create variable %r '
-                             '(name already exists)' % name)
+            raise ValueError(
+                "unable to create variable %r " "(name already exists)" % name
+            )
 
         if data is not None:
             data = np.asarray(data)
@@ -442,21 +458,25 @@ class Group(Mapping):
 
         if dtype == np.bool_:
             # never warn since h5netcdf has always errored here
-            _invalid_netcdf_feature('boolean dtypes',
-                                    allow=bool(self._root.invalid_netcdf),
-                                    file=self._root,
-                                    stacklevel=stacklevel)
+            _invalid_netcdf_feature(
+                "boolean dtypes",
+                allow=bool(self._root.invalid_netcdf),
+                file=self._root,
+                stacklevel=stacklevel,
+            )
         else:
             self._root._check_valid_netcdf_dtype(dtype, stacklevel=stacklevel)
 
-        if 'scaleoffset' in kwargs:
-            _invalid_netcdf_feature('scale-offset filters',
-                                    allow=self._root.invalid_netcdf,
-                                    file=self._root,
-                                    stacklevel=stacklevel)
+        if "scaleoffset" in kwargs:
+            _invalid_netcdf_feature(
+                "scale-offset filters",
+                allow=self._root.invalid_netcdf,
+                file=self._root,
+                stacklevel=stacklevel,
+            )
 
         if name in self.dimensions and name not in dimensions:
-            h5name = '_nc4_non_coord_' + name
+            h5name = "_nc4_non_coord_" + name
         else:
             h5name = name
 
@@ -476,29 +496,32 @@ class Group(Mapping):
                 self._detach_dim_scale(name)
                 del self._h5group[name]
 
-        self._h5group.create_dataset(h5name, shape, dtype=dtype,
-                                     data=data, fillvalue=fillvalue,
-                                     **kwargs)
+        self._h5group.create_dataset(
+            h5name, shape, dtype=dtype, data=data, fillvalue=fillvalue, **kwargs
+        )
 
         self._variables[h5name] = self._variable_cls(self, h5name, dimensions)
         variable = self._variables[h5name]
 
         if fillvalue is not None:
             value = variable.dtype.type(fillvalue)
-            variable.attrs._h5attrs['_FillValue'] = value
+            variable.attrs._h5attrs["_FillValue"] = value
         return variable
 
-    def create_variable(self, name, dimensions=(), dtype=None, data=None,
-                        fillvalue=None, **kwargs):
-        if name.startswith('/'):
-            return self._root.create_variable(name[1:], dimensions, dtype,
-                                              data, fillvalue, **kwargs)
-        keys = name.split('/')
+    def create_variable(
+        self, name, dimensions=(), dtype=None, data=None, fillvalue=None, **kwargs
+    ):
+        if name.startswith("/"):
+            return self._root.create_variable(
+                name[1:], dimensions, dtype, data, fillvalue, **kwargs
+            )
+        keys = name.split("/")
         group = self
         for k in keys[:-1]:
             group = group._require_child_group(k)
-        return group._create_child_variable(keys[-1], dimensions, dtype, data,
-                                            fillvalue, **kwargs)
+        return group._create_child_variable(
+            keys[-1], dimensions, dtype, data, fillvalue, **kwargs
+        )
 
     def _get_child(self, key):
         try:
@@ -507,9 +530,9 @@ class Group(Mapping):
             return self.groups[key]
 
     def __getitem__(self, key):
-        if key.startswith('/'):
+        if key.startswith("/"):
             return self._root[key[1:]]
-        keys = key.split('/')
+        keys = key.split("/")
         item = self
         for k in keys:
             item = item._get_child(k)
@@ -534,21 +557,22 @@ class Group(Mapping):
                 if self._dim_sizes[dim] is None:
                     kwargs["maxshape"] = (None,)
                 self._h5group.create_dataset(
-                    name=dim, shape=(size,), dtype='S1', **kwargs)
+                    name=dim, shape=(size,), dtype="S1", **kwargs
+                )
 
             h5ds = self._h5group[dim]
-            h5ds.attrs['_Netcdf4Dimid'] = dim_order[dim]
+            h5ds.attrs["_Netcdf4Dimid"] = dim_order[dim]
 
             if len(h5ds.shape) > 1:
                 dims = self._variables[dim].dimensions
-                coord_ids = np.array([dim_order[d] for d in dims], 'int32')
-                h5ds.attrs['_Netcdf4Coordinates'] = coord_ids
+                coord_ids = np.array([dim_order[d] for d in dims], "int32")
+                h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
             # TODO: don't re-create scales if they already exist. With the
             # current version of h5py, this would require using the low-level
             # h5py.h5ds.is_scale interface to detect pre-existing scales.
             scale_name = dim if dim in self.variables else NOT_A_VARIABLE
-            if h5py.__version__ < LooseVersion('2.10.0'):
+            if h5py.__version__ < LooseVersion("2.10.0"):
                 h5ds.dims.create_scale(h5ds, scale_name)
             else:
                 h5ds.make_scale(scale_name)
@@ -583,6 +607,7 @@ class Group(Mapping):
 
     def flush(self):
         self._root.flush()
+
     sync = flush
 
     @property
@@ -595,31 +620,39 @@ class Group(Mapping):
 
     @property
     def attrs(self):
-        return Attributes(self._h5group.attrs,
-                          self._root._check_valid_netcdf_dtype)
+        return Attributes(self._h5group.attrs, self._root._check_valid_netcdf_dtype)
 
-    _cls_name = 'h5netcdf.Group'
+    _cls_name = "h5netcdf.Group"
 
     def _repr_body(self):
         return (
-            ['Dimensions:'] +
-            ['    %s: %s' % (
-             k, ("Unlimited (current: %s)" % self._current_dim_sizes[k])
-             if v is None else v) for k, v in self.dimensions.items()] +
-            ['Groups:'] +
-            ['    %s' % g for g in self.groups] +
-            ['Variables:'] +
-            ['    %s: %r %s' % (k, v.dimensions, v.dtype)
-             for k, v in self.variables.items()] +
-            ['Attributes:'] +
-            ['    %s: %r' % (k, v) for k, v in self.attrs.items()])
+            ["Dimensions:"]
+            + [
+                "    %s: %s"
+                % (
+                    k,
+                    ("Unlimited (current: %s)" % self._current_dim_sizes[k])
+                    if v is None
+                    else v,
+                )
+                for k, v in self.dimensions.items()
+            ]
+            + ["Groups:"]
+            + ["    %s" % g for g in self.groups]
+            + ["Variables:"]
+            + [
+                "    %s: %r %s" % (k, v.dimensions, v.dtype)
+                for k, v in self.variables.items()
+            ]
+            + ["Attributes:"]
+            + ["    %s: %r" % (k, v) for k, v in self.attrs.items()]
+        )
 
     def __repr__(self):
         if self._root._closed:
-            return '<Closed %s>' % self._cls_name
-        header = ('<%s %r (%s members)>'
-                  % (self._cls_name, self.name, len(self)))
-        return '\n'.join([header] + self._repr_body())
+            return "<Closed %s>" % self._cls_name
+        header = "<%s %r (%s members)>" % (self._cls_name, self.name, len(self))
+        return "\n".join([header] + self._repr_body())
 
     def resize_dimension(self, dimension, size):
         """
@@ -629,8 +662,10 @@ class Group(Mapping):
         zero) where necessary.
         """
         if self.dimensions[dimension] is not None:
-            raise ValueError("Dimension '%s' is not unlimited and thus "
-                             "cannot be resized." % dimension)
+            raise ValueError(
+                "Dimension '%s' is not unlimited and thus "
+                "cannot be resized." % dimension
+            )
 
         # Resize the dimension.
         self._current_dim_sizes[dimension] = size
@@ -650,18 +685,17 @@ class Group(Mapping):
 
 
 class File(Group):
-
-    def __init__(self, path, mode='a', invalid_netcdf=None, phony_dims=None,
-                 **kwargs):
+    def __init__(self, path, mode="a", invalid_netcdf=None, phony_dims=None, **kwargs):
         try:
             if isinstance(path, str):
-                if path.startswith(('http://', 'https://', 'hdf5://')):
+                if path.startswith(("http://", "https://", "hdf5://")):
                     if no_h5pyd:
                         raise ImportError(
                             "No module named 'h5pyd'. h5pyd is required for "
-                            "opening urls: {}".format(path))
+                            "opening urls: {}".format(path)
+                        )
                     try:
-                        with h5pyd.File(path, 'r') as f:  # noqa
+                        with h5pyd.File(path, "r") as f:  # noqa
                             pass
                         self._preexisting_file = True
                     except IOError:
@@ -671,12 +705,13 @@ class File(Group):
                     self._preexisting_file = os.path.exists(path)
                     self._h5file = h5py.File(path, mode, **kwargs)
             else:  # file-like object
-                if h5py.__version__ < LooseVersion('2.9.0'):
+                if h5py.__version__ < LooseVersion("2.9.0"):
                     raise TypeError(
                         "h5py version ({}) must be greater than 2.9.0 to load "
-                        "file-like objects.".format(h5py.__version__))
+                        "file-like objects.".format(h5py.__version__)
+                    )
                 else:
-                    self._preexisting_file = mode in {'r', 'r+', 'a'}
+                    self._preexisting_file = mode in {"r", "r+", "a"}
                     self._h5file = h5py.File(path, mode, **kwargs)
         except Exception:
             self._closed = True
@@ -686,7 +721,7 @@ class File(Group):
 
         self._mode = mode
         self._root = self
-        self._h5path = '/'
+        self._h5path = "/"
         self.invalid_netcdf = invalid_netcdf
         # If invalid_netcdf is None, we'll disable writing _NCProperties only
         # if we actually use invalid NetCDF features.
@@ -696,11 +731,13 @@ class File(Group):
         self._phony_dims_mode = phony_dims
         if phony_dims is not None:
             self._phony_dim_count = 0
-            if phony_dims not in ['sort', 'access']:
-                raise ValueError('unknown value %r for phony_dims\n'
-                                 'Use phony_dims=%r for sorted naming, '
-                                 'phony_dims=%r for per access naming.'
-                                 % (phony_dims, 'sort', 'access'))
+            if phony_dims not in ["sort", "access"]:
+                raise ValueError(
+                    "unknown value %r for phony_dims\n"
+                    "Use phony_dims=%r for sorted naming, "
+                    "phony_dims=%r for per access naming."
+                    % (phony_dims, "sort", "access")
+                )
 
         # These maps keep track of dimensions in terms of size (might be
         # unlimited), current size (identical to size for limited dimensions),
@@ -713,7 +750,7 @@ class File(Group):
         super(File, self).__init__(self, self._h5path)
         # initialize all groups to detect/create phony dimensions
         # mimics netcdf-c style naming
-        if phony_dims == 'sort':
+        if phony_dims == "sort":
             self._determine_phony_dimensions()
 
     def _determine_phony_dimensions(self):
@@ -735,23 +772,25 @@ class File(Group):
         dtype = np.dtype(dtype)
 
         if dtype == bool:
-            description = 'boolean'
+            description = "boolean"
         elif dtype == complex:
-            description = 'complex'
+            description = "complex"
         elif h5py.check_dtype(enum=dtype) is not None:
-            description = 'enum'
+            description = "enum"
         elif h5py.check_dtype(ref=dtype) is not None:
-            description = 'reference'
-        elif h5py.check_dtype(vlen=dtype) not in {None, unicode, bytes}:
-            description = 'non-string variable length'
+            description = "reference"
+        elif h5py.check_dtype(vlen=dtype) not in {None, str, bytes}:
+            description = "non-string variable length"
         else:
             description = None
 
         if description is not None:
-            _invalid_netcdf_feature('{} dtypes'.format(description),
-                                    allow=self.invalid_netcdf,
-                                    file=self,
-                                    stacklevel=stacklevel + 1)
+            _invalid_netcdf_feature(
+                "{} dtypes".format(description),
+                allow=self.invalid_netcdf,
+                file=self,
+                stacklevel=stacklevel + 1,
+            )
 
     @property
     def mode(self):
@@ -772,8 +811,9 @@ class File(Group):
         groups = [self]
         while groups:
             group = groups.pop()
-            assigned_dim_ids = [dim_id for dim_id in group._dim_order.values()
-                                if dim_id is not None]
+            assigned_dim_ids = [
+                dim_id for dim_id in group._dim_order.values() if dim_id is not None
+            ]
             max_dim_id = max([max_dim_id] + assigned_dim_ids)
             groups.extend(group._groups.values())
 
@@ -789,12 +829,13 @@ class File(Group):
             groups.extend(group._groups.values())
 
     def flush(self):
-        if 'r' not in self._mode:
+        if "r" not in self._mode:
             self._set_unassigned_dimension_ids()
             self._create_dim_scales()
             self._attach_dim_scales()
             if not self._preexisting_file and self._write_ncproperties:
-                self.attrs._h5attrs['_NCProperties'] = _NC_PROPERTIES
+                self.attrs._h5attrs["_NCProperties"] = _NC_PROPERTIES
+
     sync = flush
 
     def close(self):
@@ -802,6 +843,7 @@ class File(Group):
             self.flush()
             self._h5file.close()
             self._closed = True
+
     __del__ = close
 
     def __enter__(self):
@@ -810,12 +852,14 @@ class File(Group):
     def __exit__(self, type, value, traceback):
         self.close()
 
-    _cls_name = 'h5netcdf.File'
+    _cls_name = "h5netcdf.File"
 
     def __repr__(self):
         if self._closed:
-            return '<Closed %s>' % self._cls_name
-        header = '<%s %r (mode %s)>' % (self._cls_name,
-                                        self.filename.split('/')[-1],
-                                        self.mode)
-        return '\n'.join([header] + self._repr_body())
+            return "<Closed %s>" % self._cls_name
+        header = "<%s %r (mode %s)>" % (
+            self._cls_name,
+            self.filename.split("/")[-1],
+            self.mode,
+        )
+        return "\n".join([header] + self._repr_body())
