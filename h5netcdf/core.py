@@ -150,9 +150,6 @@ class BaseVariable(object):
         return self._h5ds.__array__(*args, **kwargs)
 
     def __getitem__(self, key):
-        if h5py.__version__ >= LooseVersion("3.0.0"):
-            if self.dtype in [str, object]:
-                return self._h5ds.asstr()[key]
         return self._h5ds[key]
 
     def __setitem__(self, key, value):
