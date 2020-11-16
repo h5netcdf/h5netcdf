@@ -2,10 +2,18 @@ from collections.abc import MutableMapping
 
 import numpy as np
 
-
-_HIDDEN_ATTRS = frozenset(['REFERENCE_LIST', 'CLASS', 'DIMENSION_LIST', 'NAME',
-                           '_Netcdf4Dimid', '_Netcdf4Coordinates',
-                           '_nc3_strict', '_NCProperties'])
+_HIDDEN_ATTRS = frozenset(
+    [
+        "REFERENCE_LIST",
+        "CLASS",
+        "DIMENSION_LIST",
+        "NAME",
+        "_Netcdf4Dimid",
+        "_Netcdf4Coordinates",
+        "_nc3_strict",
+        "_NCProperties",
+    ]
+)
 
 
 class Attributes(MutableMapping):
@@ -20,9 +28,8 @@ class Attributes(MutableMapping):
 
     def __setitem__(self, key, value):
         if key in _HIDDEN_ATTRS:
-            raise AttributeError('cannot write attribute with reserved name %r'
-                                 % key)
-        if hasattr(value, 'dtype'):
+            raise AttributeError("cannot write attribute with reserved name %r" % key)
+        if hasattr(value, "dtype"):
             dtype = value.dtype
         else:
             dtype = np.asarray(value).dtype
@@ -38,10 +45,10 @@ class Attributes(MutableMapping):
                 yield key
 
     def __len__(self):
-        hidden_count = sum(1 if attr in self._h5attrs else 0
-                           for attr in _HIDDEN_ATTRS)
+        hidden_count = sum(1 if attr in self._h5attrs else 0 for attr in _HIDDEN_ATTRS)
         return len(self._h5attrs) - hidden_count
 
     def __repr__(self):
-        return '\n'.join(['%r' % type(self)] +
-                         ['%s: %r' % (k, v) for k, v in self.items()])
+        return "\n".join(
+            ["%r" % type(self)] + ["%s: %r" % (k, v) for k, v in self.items()]
+        )
