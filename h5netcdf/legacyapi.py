@@ -2,8 +2,6 @@ import h5py
 
 from . import core
 
-# from .compat import unicode
-
 
 class HasAttributesMixin(object):
     _initialized = False
@@ -54,8 +52,8 @@ class Variable(core.BaseVariable, HasAttributesMixin):
     @property
     def dtype(self):
         dt = self._h5ds.dtype
-        # if h5py.check_dtype(vlen=dt) is unicode:
-        #    return str
+        if h5py.check_dtype(vlen=dt) is str:
+            return str
         return dt
 
 

@@ -151,7 +151,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.createVariable("mismatched_dim", int, ())
 
     v = ds.createVariable("var_len_str", str, ("x"))
-    v[0] = "foo"
+    v[0] = u"foo"
 
     ds.close()
 
@@ -196,7 +196,7 @@ def write_h5netcdf(tmp_netcdf):
 
     dt = h5py.special_dtype(vlen=str)
     v = ds.create_variable("var_len_str", ("x",), dtype=dt)
-    v[0] = "foo"
+    v[0] = u"foo"
 
     ds.close()
 
@@ -280,9 +280,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.ncattrs() == []
 
     v = ds.variables["var_len_str"]
-    print("dtype:", v.dtype)
-    # assert v.dtype == 'O'
-    assert v[0] == "foo"
+    assert v.dtype == str
+    assert v[0] == u"foo"
 
     v = ds.groups["subgroup"].variables["subvar"]
     assert ds.groups["subgroup"].parent is ds
