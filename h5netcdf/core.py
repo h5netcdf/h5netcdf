@@ -150,15 +150,10 @@ class BaseVariable(object):
         return self._h5ds.__array__(*args, **kwargs)
 
     def __getitem__(self, key):
-        if h5py.__version__ >= LooseVersion("3.0.0") and self._root.decode_strings:
-            if self.dtype == str:
+        if getattr(self._root, "decode_strings", False):
+            # need to wrap with np.array to fetch .dtype in any case
+            if h5py.check_string_dtype(np.array(self._h5ds[key]).dtype) is not None:
                 return self._h5ds.asstr()[key]
-            if self.dtype == object:
-                if isinstance(self._h5ds[key], bytes) or (
-                    isinstance(self._h5ds[key], np.ndarray)
-                    and type(self._h5ds[key].flat[0]) == bytes
-                ):
-                    return self._h5ds.asstr()[key]
         return self._h5ds[key]
 
     def __setitem__(self, key, value):
@@ -693,7 +688,7 @@ class Group(Mapping):
 class File(Group):
     def __init__(self, path, mode="a", invalid_netcdf=None, phony_dims=None, **kwargs):
         if h5py.__version__ >= LooseVersion("3.0.0"):
-            decode_strings = kwargs.pop("decode_strings", None)
+            self.decode_strings = kwargs.pop("decode_strings", None)
         try:
             if isinstance(path, str):
                 if path.startswith(("http://", "https://", "hdf5://")):
@@ -750,9 +745,14 @@ class File(Group):
         # string decoding
         if h5py.__version__ >= LooseVersion("3.0.0"):
             if "legacy" in self._cls_name:
+                if self.decode_strings is not None:
+                    msg = (
+                        "'decode_strings' keyword argument is not allowed in h5netcdf"
+                        "legacy API."
+                    )
+                    raise TypeError(msg)
                 self.decode_strings = True
             else:
-                self.decode_strings = decode_strings
                 if self.decode_strings is None:
                     msg = (
                         "String decoding changed with h5py >= 3.0. "
