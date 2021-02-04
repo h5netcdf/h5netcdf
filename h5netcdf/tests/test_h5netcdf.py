@@ -564,14 +564,16 @@ def test_decode_string_warning(tmp_local_or_remote_netcdf):
         with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
             assert ds.name == "/"
 
+
 @pytest.mark.skipif(
     h5py.__version__ < LooseVersion("3.0.0"), reason="not needed with h5py < 3.0"
 )
 def test_decode_string_error(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)
     with pytest.raises(TypeError):
-        with h5netcdf.legacyapi.Dataset(tmp_local_or_remote_netcdf, "r",
-                                        decode_strings=True) as ds:
+        with h5netcdf.legacyapi.Dataset(
+            tmp_local_or_remote_netcdf, "r", decode_strings=True
+        ) as ds:
             assert ds.name == "/"
 
 
