@@ -752,7 +752,7 @@ class File(Group):
             if "legacy" in self._cls_name:
                 if self.decode_strings is not None:
                     msg = (
-                        "'decode_strings' keyword argument is not allowed in h5netcdf"
+                        "'decode_strings' keyword argument is not allowed in h5netcdf "
                         "legacy API."
                     )
                     raise TypeError(msg)
