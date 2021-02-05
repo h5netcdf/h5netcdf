@@ -151,9 +151,14 @@ class BaseVariable(object):
 
     def __getitem__(self, key):
         if getattr(self._root, "decode_strings", False):
-            # need to wrap with np.array to fetch .dtype in any case
-            if h5py.check_string_dtype(np.array(self._h5ds[key]).dtype) is not None:
-                return self._h5ds.asstr()[key]
+            try:
+                if h5py.check_string_dtype(self._h5ds[key].dtype) is not None:
+                    return self._h5ds.asstr()[key]
+            # need to catch object arrays of bytes (which are returned from
+            # HDF5 variable-length strings)
+            except AttributeError as err:
+                if err.args[0] == "'bytes' object has no attribute 'dtype'":
+                    return self._h5ds.asstr()[key]
         return self._h5ds[key]
 
     def __setitem__(self, key, value):
