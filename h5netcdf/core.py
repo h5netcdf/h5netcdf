@@ -150,6 +150,9 @@ class BaseVariable(object):
         return self._h5ds.__array__(*args, **kwargs)
 
     def __getitem__(self, key):
+        if getattr(self._root, "decode_strings", False):
+            if h5py.check_string_dtype(self._h5ds.dtype) is not None:
+                return self._h5ds.asstr()[key]
         return self._h5ds[key]
 
     def __setitem__(self, key, value):
@@ -683,6 +686,8 @@ class Group(Mapping):
 
 class File(Group):
     def __init__(self, path, mode="a", invalid_netcdf=None, phony_dims=None, **kwargs):
+        if h5py.__version__ >= LooseVersion("3.0.0"):
+            self.decode_strings = kwargs.pop("decode_strings", None)
         try:
             if isinstance(path, str):
                 if path.startswith(("http://", "https://", "hdf5://")):
@@ -735,6 +740,28 @@ class File(Group):
                     "phony_dims=%r for per access naming."
                     % (phony_dims, "sort", "access")
                 )
+
+        # string decoding
+        if h5py.__version__ >= LooseVersion("3.0.0"):
+            if "legacy" in self._cls_name:
+                if self.decode_strings is not None:
+                    msg = (
+                        "'decode_strings' keyword argument is not allowed in h5netcdf "
+                        "legacy API."
+                    )
+                    raise TypeError(msg)
+                self.decode_strings = True
+            else:
+                if self.decode_strings is None:
+                    msg = (
+                        "String decoding changed with h5py >= 3.0. "
+                        "Currently backwards compatibility with h5py < 3.0 is kept by "
+                        "decoding strings per default. This will change in future "
+                        "versions for consistency with h5py >= 3.0. "
+                        "Setting 'decode_strings=True' forces string decoding."
+                    )
+                    warnings.warn(msg, FutureWarning, stacklevel=0)
+                    self.decode_strings = True
 
         # These maps keep track of dimensions in terms of size (might be
         # unlimited), current size (identical to size for limited dimensions),

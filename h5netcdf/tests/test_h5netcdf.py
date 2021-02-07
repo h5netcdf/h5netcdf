@@ -60,6 +60,14 @@ def tmp_local_or_remote_netcdf(request, tmpdir, restapi):
         return str(tmpdir.join(request.param))
 
 
+@pytest.fixture(params=[True, False])
+def decode_strings(request):
+    if h5py.__version__ >= LooseVersion("3.0.0"):
+        return dict(decode_strings=request.param)
+    else:
+        return {}
+
+
 def get_hdf5_module(resource):
     """Return the correct h5py module based on the input resource."""
     if isinstance(resource, str) and resource.startswith(remote_h5):
@@ -218,7 +226,6 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     )
     assert set(ds.groups) == set(["subgroup"])
     assert ds.parent is None
-
     v = ds.variables["foo"]
     assert array_equal(v, np.ones((4, 5)))
     assert v.dtype == float
@@ -256,7 +263,10 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     if is_h5py_char_working(tmp_netcdf, "z"):
         ds = read_module.Dataset(tmp_netcdf, "r")
         v = ds.variables["z"]
-        assert array_equal(v, _char_array)
+        if getattr(ds, "decode_strings", False):
+            assert array_equal(v, np.char.decode(_char_array))
+        else:
+            assert array_equal(v, _char_array)
         assert v.dtype == "S1"
         assert v.ndim == 2
         assert v.dimensions == ("z", "string3")
@@ -281,7 +291,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
     v = ds.variables["var_len_str"]
     assert v.dtype == str
-    assert v[0] == u"foo"
+    assert v[0] == "foo"
 
     v = ds.groups["subgroup"].variables["subvar"]
     assert ds.groups["subgroup"].parent is ds
@@ -298,9 +308,9 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     ds.close()
 
 
-def read_h5netcdf(tmp_netcdf, write_module):
+def read_h5netcdf(tmp_netcdf, write_module, decode_strings):
     remote_file = isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5)
-    ds = h5netcdf.File(tmp_netcdf, "r")
+    ds = h5netcdf.File(tmp_netcdf, "r", **decode_strings)
     assert ds.name == "/"
     assert list(ds.attrs) == ["global", "other_attr"]
     assert ds.attrs["global"] == 42
@@ -347,15 +357,19 @@ def read_h5netcdf(tmp_netcdf, write_module):
     ds.close()
 
     if is_h5py_char_working(tmp_netcdf, "z"):
-        ds = h5netcdf.File(tmp_netcdf, "r")
+        ds = h5netcdf.File(tmp_netcdf, "r", **decode_strings)
         v = ds["z"]
+        if getattr(ds, "decode_strings", False):
+            assert array_equal(v, np.char.decode(_char_array))
+        else:
+            assert array_equal(v, _char_array)
         assert v.dtype == "S1"
         assert v.ndim == 2
         assert v.dimensions == ("z", "string3")
         assert list(v.attrs) == ["_FillValue"]
         assert v.attrs["_FillValue"] == b"X"
     else:
-        ds = h5netcdf.File(tmp_netcdf, "r")
+        ds = h5netcdf.File(tmp_netcdf, "r", **decode_strings)
 
     v = ds["scalar"]
     assert array_equal(v, np.array(2.0))
@@ -373,7 +387,10 @@ def read_h5netcdf(tmp_netcdf, write_module):
 
     v = ds["var_len_str"]
     assert h5py.check_dtype(vlen=v.dtype) == str
-    assert v[0] == "foo"
+    foo = "foo"
+    if not getattr(ds, "decode_strings", True):
+        foo = foo.encode()
+    assert v[0] == foo
 
     v = ds["/subgroup/subvar"]
     assert v is ds["subgroup"]["subvar"]
@@ -421,30 +438,30 @@ def test_write_h5netcdf_read_netCDF4(tmp_local_netcdf):
     read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf)
 
 
-def test_roundtrip_h5netcdf(tmp_local_or_remote_netcdf):
+def test_roundtrip_h5netcdf(tmp_local_or_remote_netcdf, decode_strings):
     write_h5netcdf(tmp_local_or_remote_netcdf)
-    read_h5netcdf(tmp_local_or_remote_netcdf, h5netcdf)
+    read_h5netcdf(tmp_local_or_remote_netcdf, h5netcdf, decode_strings)
 
 
-def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf):
+def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf, decode_strings):
     write_legacy_netcdf(tmp_local_netcdf, netCDF4)
-    read_h5netcdf(tmp_local_netcdf, netCDF4)
+    read_h5netcdf(tmp_local_netcdf, netCDF4, decode_strings)
 
 
-def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf):
+def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf, decode_strings):
     write_legacy_netcdf(tmp_local_netcdf, legacyapi)
-    read_h5netcdf(tmp_local_netcdf, legacyapi)
+    read_h5netcdf(tmp_local_netcdf, legacyapi, decode_strings)
 
 
-def test_fileobj():
+def test_fileobj(decode_strings):
     if h5py.__version__ < LooseVersion("2.9.0"):
         pytest.skip("h5py > 2.9.0 required to test file-like objects")
     fileobj = tempfile.TemporaryFile()
     write_h5netcdf(fileobj)
-    read_h5netcdf(fileobj, h5netcdf)
+    read_h5netcdf(fileobj, h5netcdf, decode_strings)
     fileobj = io.BytesIO()
     write_h5netcdf(fileobj)
-    read_h5netcdf(fileobj, h5netcdf)
+    read_h5netcdf(fileobj, h5netcdf, decode_strings)
 
 
 def test_repr(tmp_local_or_remote_netcdf):
@@ -536,6 +553,28 @@ def test_error_handling(tmp_local_or_remote_netcdf):
         ds.create_group("subgroup")
         with raises(ValueError):
             ds.create_group("subgroup")
+
+
+@pytest.mark.skipif(
+    h5py.__version__ < LooseVersion("3.0.0"), reason="not needed with h5py < 3.0"
+)
+def test_decode_string_warning(tmp_local_or_remote_netcdf):
+    write_h5netcdf(tmp_local_or_remote_netcdf)
+    with pytest.warns(FutureWarning):
+        with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+            assert ds.name == "/"
+
+
+@pytest.mark.skipif(
+    h5py.__version__ < LooseVersion("3.0.0"), reason="not needed with h5py < 3.0"
+)
+def test_decode_string_error(tmp_local_or_remote_netcdf):
+    write_h5netcdf(tmp_local_or_remote_netcdf)
+    with pytest.raises(TypeError):
+        with h5netcdf.legacyapi.Dataset(
+            tmp_local_or_remote_netcdf, "r", decode_strings=True
+        ) as ds:
+            assert ds.name == "/"
 
 
 def create_invalid_netcdf_data():
