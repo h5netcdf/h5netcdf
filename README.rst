@@ -17,18 +17,18 @@ netCDF library.
 Why h5netcdf?
 -------------
 
+- It has one less binary dependency (netCDF C). If you already have h5py
+  installed, reading netCDF4 with h5netcdf may be much easier than installing
+  netCDF4-Python.
 - We've seen occasional reports of better performance with h5py than
   netCDF4-python, though in many cases performance is identical. For
   `one workflow`_, h5netcdf was reported to be almost **4x faster** than
   `netCDF4-python`_.
-- It has one less massive binary dependency (netCDF C). If you already have h5py
-  installed, reading netCDF4 with h5netcdf may be much easier than installing
-  netCDF4-Python.
 - Anecdotally, HDF5 users seem to be unexcited about switching to netCDF --
-  hopefully this will convince them that the netCDF4 is actually quite sane!
+  hopefully this will convince them that netCDF4 is actually quite sane!
 - Finally, side-stepping the netCDF C library (and Cython bindings to it)
   gives us an easier way to identify the source of performance issues and
-  bugs.
+  bugs in the netCDF libraries/specification.
 
 .. _one workflow: https://github.com/Unidata/netcdf4-python/issues/390#issuecomment-93864839
 .. _xarray: http://github.com/pydata/xarray/
@@ -168,6 +168,24 @@ when creating a file:
        we will raise ``h5netcdf.CompatibilityError``. Use
        ``invalid_netcdf=False`` to switch to the new behavior now.
 
+Decoding variable length strings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+h5py 3.0 introduced `new behavior`_ for handling variable length string.
+Instead of being automatically decoded with UTF-8 into NumPy arrays of ``str``,
+they are required as arrays of ``bytes``.
+
+The legacy API preserves the old behavior of h5py (which matches netCDF4),
+and automatically decodes strings.
+
+The new API *also* currently preserves the old behavior of h5py, but issues a
+warning that it will change in the future to match h5py. Explicitly set
+``decode_strings=False`` in the ``h5netcdf.File`` constructor to opt-in to the
+new behavior early, or set ``decode_strings=True`` to opt-in to automatic
+decoding.
+
+.. _new behavior: https://docs.h5py.org/en/stable/strings.html
+
 Datasets with missing dimension scales
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -198,6 +216,13 @@ to group access time. The created phony dimension naming will differ from
 
 Change Log
 ----------
+
+Version 0.9.0 (February 7, 2021):
+
+- Special thanks to `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ for
+  stepping up as a co-maintainer!
+- Support for ``decode_strings``, to restore old behavior with h5py 3.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 0.8.1 (July 17, 2020):
 
