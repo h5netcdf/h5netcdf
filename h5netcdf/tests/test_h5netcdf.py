@@ -102,6 +102,8 @@ _string_array = np.array(
     [["foobar0", "foobar1", "foobar3"], ["foofoofoo", "foofoobar", "foobarbar"]]
 )
 
+_vlen_string = u"foo"
+
 
 def is_h5py_char_working(tmp_netcdf, name):
     h5 = get_hdf5_module(tmp_netcdf)
@@ -204,7 +206,7 @@ def write_h5netcdf(tmp_netcdf):
 
     dt = h5py.special_dtype(vlen=str)
     v = ds.create_variable("var_len_str", ("x",), dtype=dt)
-    v[0] = u"foo"
+    v[0] = _vlen_string
 
     ds.close()
 
@@ -263,10 +265,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     if is_h5py_char_working(tmp_netcdf, "z"):
         ds = read_module.Dataset(tmp_netcdf, "r")
         v = ds.variables["z"]
-        if getattr(ds, "decode_strings", False):
-            assert array_equal(v, np.char.decode(_char_array))
-        else:
-            assert array_equal(v, _char_array)
+        assert array_equal(v, _char_array)
         assert v.dtype == "S1"
         assert v.ndim == 2
         assert v.dimensions == ("z", "string3")
@@ -291,7 +290,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
     v = ds.variables["var_len_str"]
     assert v.dtype == str
-    assert v[0] == "foo"
+    assert v[0] == _vlen_string
 
     v = ds.groups["subgroup"].variables["subvar"]
     assert ds.groups["subgroup"].parent is ds
@@ -359,10 +358,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_strings):
     if is_h5py_char_working(tmp_netcdf, "z"):
         ds = h5netcdf.File(tmp_netcdf, "r", **decode_strings)
         v = ds["z"]
-        if getattr(ds, "decode_strings", False):
-            assert array_equal(v, np.char.decode(_char_array))
-        else:
-            assert array_equal(v, _char_array)
+        assert array_equal(v, _char_array)
         assert v.dtype == "S1"
         assert v.ndim == 2
         assert v.dimensions == ("z", "string3")
@@ -387,10 +383,10 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_strings):
 
     v = ds["var_len_str"]
     assert h5py.check_dtype(vlen=v.dtype) == str
-    foo = "foo"
-    if not getattr(ds, "decode_strings", True):
-        foo = foo.encode()
-    assert v[0] == foo
+    if getattr(ds, "decode_strings", True):
+        assert v[0] == _vlen_string
+    else:
+        assert v[0] == _vlen_string.encode('utf_8')
 
     v = ds["/subgroup/subvar"]
     assert v is ds["subgroup"]["subvar"]
@@ -760,7 +756,7 @@ def test_Netcdf4Dimid(tmp_local_netcdf):
         assert dim_ids == {0, 1, 2}
 
 
-def test_reading_str_array_from_netCDF4(tmp_local_netcdf):
+def test_reading_str_array_from_netCDF4(tmp_local_netcdf, decode_strings):
     # This tests reading string variables created by netCDF4
     with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
         ds.createDimension("foo1", _string_array.shape[0])
@@ -768,10 +764,14 @@ def test_reading_str_array_from_netCDF4(tmp_local_netcdf):
         ds.createVariable("bar", str, ("foo1", "foo2"))
         ds.variables["bar"][:] = _string_array
 
-    ds = h5netcdf.File(tmp_local_netcdf, "r")
+    ds = h5netcdf.File(tmp_local_netcdf, "r", **decode_strings)
 
     v = ds.variables["bar"]
-    assert array_equal(v, _string_array)
+    if getattr(ds, "decode_strings", True):
+        assert array_equal(v, _string_array)
+    else:
+        assert array_equal(v, np.char.encode(_string_array))
+
     ds.close()
 
 

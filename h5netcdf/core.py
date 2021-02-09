@@ -151,7 +151,8 @@ class BaseVariable(object):
 
     def __getitem__(self, key):
         if getattr(self._root, "decode_strings", False):
-            if h5py.check_string_dtype(self._h5ds.dtype) is not None:
+            string_info = h5py.check_string_dtype(self._h5ds.dtype)
+            if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
         return self._h5ds[key]
 
