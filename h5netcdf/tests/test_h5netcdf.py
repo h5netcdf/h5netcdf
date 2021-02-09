@@ -780,7 +780,7 @@ def test_nc_properties_new(tmp_local_or_remote_netcdf):
         pass
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
     with h5.File(tmp_local_or_remote_netcdf, "r") as f:
-        assert "h5netcdf" in f.attrs["_NCProperties"]
+        assert b"h5netcdf" in f.attrs["_NCProperties"]
 
 
 def test_failed_read_open_and_clean_delete(tmpdir):
@@ -819,7 +819,8 @@ def test_create_variable_matching_saved_dimension(tmp_local_or_remote_netcdf):
         f.create_variable("y", data=[1, 2], dimensions=("x",))
 
     with h5.File(tmp_local_or_remote_netcdf, "r") as f:
-        assert f["y"].dims[0].keys() == [NOT_A_VARIABLE.decode("ascii")]
+        dimlen = f"{f['y'].dims[0].values()[0].size:10}"
+        assert f["y"].dims[0].keys() == [NOT_A_VARIABLE.decode("ascii") + dimlen]
 
     with h5netcdf.File(tmp_local_or_remote_netcdf, "a") as f:
         f.create_variable("x", data=[0, 1], dimensions=("x",))

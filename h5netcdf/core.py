@@ -562,7 +562,7 @@ class Group(Mapping):
                 )
 
             h5ds = self._h5group[dim]
-            h5ds.attrs["_Netcdf4Dimid"] = dim_order[dim]
+            h5ds.attrs["_Netcdf4Dimid"] = np.int32(dim_order[dim])
 
             if len(h5ds.shape) > 1:
                 dims = self._variables[dim].dimensions
