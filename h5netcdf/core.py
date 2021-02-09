@@ -26,7 +26,7 @@ else:
 __version__ = "0.9.0"
 
 
-_NC_PROPERTIES = u"version=2,h5netcdf=%s,hdf5=%s,h5py=%s" % (
+_NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5py=%s" % (
     __version__,
     h5py.version.hdf5_version,
     h5py.__version__,
@@ -572,7 +572,8 @@ class Group(Mapping):
             # TODO: don't re-create scales if they already exist. With the
             # current version of h5py, this would require using the low-level
             # h5py.h5ds.is_scale interface to detect pre-existing scales.
-            scale_name = dim if dim in self.variables else NOT_A_VARIABLE
+            dimlen = bytes(f"{self._current_dim_sizes[dim]:10}", "ascii")
+            scale_name = dim if dim in self.variables else NOT_A_VARIABLE + dimlen
             if h5py.__version__ < LooseVersion("2.10.0"):
                 h5ds.dims.create_scale(h5ds, scale_name)
             else:
@@ -859,7 +860,12 @@ class File(Group):
             self._create_dim_scales()
             self._attach_dim_scales()
             if not self._preexisting_file and self._write_ncproperties:
-                self.attrs._h5attrs["_NCProperties"] = _NC_PROPERTIES
+                self.attrs._h5attrs["_NCProperties"] = np.array(
+                    _NC_PROPERTIES,
+                    dtype=h5py.string_dtype(
+                        encoding="ascii", length=len(_NC_PROPERTIES)
+                    ),
+                )
 
     sync = flush
 
