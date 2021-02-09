@@ -558,7 +558,7 @@ class Group(Mapping):
                 if self._dim_sizes[dim] is None:
                     kwargs["maxshape"] = (None,)
                 self._h5group.create_dataset(
-                    name=dim, shape=(size,), dtype="S1", **kwargs
+                    name=dim, shape=(size,), dtype=">f4", **kwargs
                 )
 
             h5ds = self._h5group[dim]
