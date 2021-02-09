@@ -102,7 +102,7 @@ _string_array = np.array(
     [["foobar0", "foobar1", "foobar3"], ["foofoofoo", "foofoobar", "foobarbar"]]
 )
 
-_vlen_string = u"foo"
+_vlen_string = "foo"
 
 
 def is_h5py_char_working(tmp_netcdf, name):
@@ -161,7 +161,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.createVariable("mismatched_dim", int, ())
 
     v = ds.createVariable("var_len_str", str, ("x"))
-    v[0] = u"foo"
+    v[0] = "foo"
 
     ds.close()
 
@@ -386,7 +386,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_strings):
     if getattr(ds, "decode_strings", True):
         assert v[0] == _vlen_string
     else:
-        assert v[0] == _vlen_string.encode('utf_8')
+        assert v[0] == _vlen_string.encode("utf_8")
 
     v = ds["/subgroup/subvar"]
     assert v is ds["subgroup"]["subvar"]
