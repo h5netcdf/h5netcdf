@@ -180,9 +180,9 @@ and automatically decodes strings.
 
 The new API *also* currently preserves the old behavior of h5py, but issues a
 warning that it will change in the future to match h5py. Explicitly set
-``decode_strings=False`` in the ``h5netcdf.File`` constructor to opt-in to the
-new behavior early, or set ``decode_strings=True`` to opt-in to automatic
-decoding.
+``decode_vlen_strings=False`` in the ``h5netcdf.File`` constructor to opt-in to
+the new behavior early, or set ``decode_vlen_strings=True`` to opt-in to
+automatic decoding.
 
 .. _new behavior: https://docs.h5py.org/en/stable/strings.html
 
@@ -216,6 +216,11 @@ to group access time. The created phony dimension naming will differ from
 
 Change Log
 ----------
+
+Version 0.10.0 (February 11, 2021):
+
+- Replaced ``decode_strings`` with ``decode_vlen_strings``.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 0.9.0 (February 7, 2021):
 
