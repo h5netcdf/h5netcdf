@@ -26,7 +26,7 @@ else:
 __version__ = "0.9.0"
 
 
-_NC_PROPERTIES = u"version=2,h5netcdf=%s,hdf5=%s,h5py=%s" % (
+_NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5py=%s" % (
     __version__,
     h5py.version.hdf5_version,
     h5py.__version__,
@@ -150,8 +150,9 @@ class BaseVariable(object):
         return self._h5ds.__array__(*args, **kwargs)
 
     def __getitem__(self, key):
-        if getattr(self._root, "decode_strings", False):
-            if h5py.check_string_dtype(self._h5ds.dtype) is not None:
+        if getattr(self._root, "decode_vlen_strings", False):
+            string_info = h5py.check_string_dtype(self._h5ds.dtype)
+            if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
         return self._h5ds[key]
 
@@ -557,11 +558,11 @@ class Group(Mapping):
                 if self._dim_sizes[dim] is None:
                     kwargs["maxshape"] = (None,)
                 self._h5group.create_dataset(
-                    name=dim, shape=(size,), dtype="S1", **kwargs
+                    name=dim, shape=(size,), dtype=">f4", **kwargs
                 )
 
             h5ds = self._h5group[dim]
-            h5ds.attrs["_Netcdf4Dimid"] = dim_order[dim]
+            h5ds.attrs["_Netcdf4Dimid"] = np.int32(dim_order[dim])
 
             if len(h5ds.shape) > 1:
                 dims = self._variables[dim].dimensions
@@ -571,7 +572,8 @@ class Group(Mapping):
             # TODO: don't re-create scales if they already exist. With the
             # current version of h5py, this would require using the low-level
             # h5py.h5ds.is_scale interface to detect pre-existing scales.
-            scale_name = dim if dim in self.variables else NOT_A_VARIABLE
+            dimlen = bytes(f"{self._current_dim_sizes[dim]:10}", "ascii")
+            scale_name = dim if dim in self.variables else NOT_A_VARIABLE + dimlen
             if h5py.__version__ < LooseVersion("2.10.0"):
                 h5ds.dims.create_scale(h5ds, scale_name)
             else:
@@ -687,7 +689,7 @@ class Group(Mapping):
 class File(Group):
     def __init__(self, path, mode="a", invalid_netcdf=None, phony_dims=None, **kwargs):
         if h5py.__version__ >= LooseVersion("3.0.0"):
-            self.decode_strings = kwargs.pop("decode_strings", None)
+            self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         try:
             if isinstance(path, str):
                 if path.startswith(("http://", "https://", "hdf5://")):
@@ -744,24 +746,24 @@ class File(Group):
         # string decoding
         if h5py.__version__ >= LooseVersion("3.0.0"):
             if "legacy" in self._cls_name:
-                if self.decode_strings is not None:
+                if self.decode_vlen_strings is not None:
                     msg = (
-                        "'decode_strings' keyword argument is not allowed in h5netcdf "
+                        "'decode_vlen_strings' keyword argument is not allowed in h5netcdf "
                         "legacy API."
                     )
                     raise TypeError(msg)
-                self.decode_strings = True
+                self.decode_vlen_strings = True
             else:
-                if self.decode_strings is None:
+                if self.decode_vlen_strings is None:
                     msg = (
                         "String decoding changed with h5py >= 3.0. "
                         "Currently backwards compatibility with h5py < 3.0 is kept by "
-                        "decoding strings per default. This will change in future "
+                        "decoding vlen strings per default. This will change in future "
                         "versions for consistency with h5py >= 3.0. "
-                        "Setting 'decode_strings=True' forces string decoding."
+                        "Setting 'decode_vlen_strings=True' forces string decoding."
                     )
                     warnings.warn(msg, FutureWarning, stacklevel=0)
-                    self.decode_strings = True
+                    self.decode_vlen_strings = True
 
         # These maps keep track of dimensions in terms of size (might be
         # unlimited), current size (identical to size for limited dimensions),
@@ -858,7 +860,12 @@ class File(Group):
             self._create_dim_scales()
             self._attach_dim_scales()
             if not self._preexisting_file and self._write_ncproperties:
-                self.attrs._h5attrs["_NCProperties"] = _NC_PROPERTIES
+                self.attrs._h5attrs["_NCProperties"] = np.array(
+                    _NC_PROPERTIES,
+                    dtype=h5py.string_dtype(
+                        encoding="ascii", length=len(_NC_PROPERTIES)
+                    ),
+                )
 
     sync = flush
 
