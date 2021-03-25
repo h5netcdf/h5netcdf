@@ -19,9 +19,11 @@ try:
 except ImportError:
     no_h5pyd = True
     h5_group_types = (h5py.Group,)
+    h5_dataset_types = (h5py.Dataset,)
 else:
     no_h5pyd = False
     h5_group_types = (h5py.Group, h5pyd.Group)
+    h5_dataset_types = (h5py.Dataset, h5pyd.Dataset)
 
 __version__ = "0.10.0"
 
@@ -321,7 +323,7 @@ class Group(Mapping):
                                 phony_dims[dimsize] = max(phony_dims[dimsize], cnt)
 
                 if not _netcdf_dimension_but_not_variable(v):
-                    if isinstance(v, h5py.Dataset):
+                    if isinstance(v, h5_dataset_types):
                         var_name = k
                         if k.startswith("_nc4_non_coord_"):
                             var_name = k[len("_nc4_non_coord_") :]
