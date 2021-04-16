@@ -759,10 +759,12 @@ class File(Group):
                 if self.decode_vlen_strings is None:
                     msg = (
                         "String decoding changed with h5py >= 3.0. "
+                        "See https://docs.h5py.org/en/latest/strings.html for more details. "
                         "Currently backwards compatibility with h5py < 3.0 is kept by "
                         "decoding vlen strings per default. This will change in future "
-                        "versions for consistency with h5py >= 3.0. "
-                        "Setting 'decode_vlen_strings=True' forces string decoding."
+                        "versions for consistency with h5py >= 3.0. To silence this "
+                        "warning set kwarg ``decode_vlen_strings=False``. Setting "
+                        "``decode_vlen_strings=True`` forces vlen string decoding."
                     )
                     warnings.warn(msg, FutureWarning, stacklevel=0)
                     self.decode_vlen_strings = True
