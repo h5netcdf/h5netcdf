@@ -500,14 +500,15 @@ def test_repr(tmp_local_or_remote_netcdf):
 def test_attrs_api(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf) as ds:
         ds.attrs["conventions"] = "CF"
+        ds.attrs["empty_string"] = h5py.Empty(dtype=np.dtype("|S1"))
         ds.dimensions["x"] = 1
         v = ds.create_variable("x", ("x",), "i4")
         v.attrs.update({"units": "meters", "foo": "bar"})
     assert ds._closed
     with h5netcdf.File(tmp_local_or_remote_netcdf) as ds:
-        assert len(ds.attrs) == 1
-        assert dict(ds.attrs) == {"conventions": "CF"}
-        assert list(ds.attrs) == ["conventions"]
+        assert len(ds.attrs) == 2
+        assert dict(ds.attrs) == {"conventions": "CF", "empty_string": b""}
+        assert list(ds.attrs) == ["conventions", "empty_string"]
         assert dict(ds["x"].attrs) == {"units": "meters", "foo": "bar"}
         assert len(ds["x"].attrs) == 2
         assert sorted(ds["x"].attrs) == ["foo", "units"]
