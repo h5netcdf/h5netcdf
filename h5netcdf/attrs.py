@@ -26,6 +26,7 @@ class Attributes(MutableMapping):
 
         if key in _HIDDEN_ATTRS:
             raise KeyError(key)
+        # see https://github.com/h5netcdf/h5netcdf/issues/94 for details
         if isinstance(self._h5attrs[key], h5py.Empty):
             string_info = h5py.check_string_dtype(self._h5attrs[key].dtype)
             if string_info and string_info.length == 1:
