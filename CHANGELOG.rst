@@ -8,6 +8,8 @@ Development Version:
 - Added automatic PyPI upload on creation of github release.
 - Moved Changelog to CHANGELOG.rst.
 - Updated ``decode_vlen_strings`` ``FutureWarning``
+- Support for ``h5py.Empty`` strings
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 0.10.0 (February 11, 2021):
 
