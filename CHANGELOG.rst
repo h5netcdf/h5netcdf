@@ -7,6 +7,7 @@ Development Version:
   By `Aleksandar Jelenak <https://github.com/ajelenak>`_.
 - Added automatic PyPI upload on creation of github release.
 - Moved Changelog to CHANGELOG.rst.
+- Updated ``decode_vlen_strings`` ``FutureWarning``
 
 Version 0.10.0 (February 11, 2021):
 
