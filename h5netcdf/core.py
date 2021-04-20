@@ -689,7 +689,7 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(self, path, mode="a", invalid_netcdf=None, phony_dims=None, **kwargs):
+    def __init__(self, path, mode="r", invalid_netcdf=None, phony_dims=None, **kwargs):
         if h5py.__version__ >= LooseVersion("3.0.0"):
             self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         try:
