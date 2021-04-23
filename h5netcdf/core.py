@@ -691,7 +691,7 @@ class Group(Mapping):
 class File(Group):
     def __init__(self, path, mode=None, invalid_netcdf=None, phony_dims=None, **kwargs):
         # Deprecating mode='a' in favor of mode='r'
-        # If mode None default to 'a' and issue warning
+        # If mode is None default to 'a' and issue a warning
         if mode is None:
             msg = (
                 "Falling back to mode='a'. "
