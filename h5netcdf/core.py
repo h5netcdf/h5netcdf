@@ -694,9 +694,9 @@ class File(Group):
         # If mode None default to 'a' and issue warning
         if mode is None:
             msg = (
-                "Falling back to mode='a'."
-                "In future versions, mode will default to read-only."
-                "It is recommended to explicitly set mode='r' to prevent any unintended"
+                "Falling back to mode='a'. "
+                "In future versions, mode will default to read-only. "
+                "It is recommended to explicitly set mode='r' to prevent any unintended "
                 "changes to the file."
             )
             warnings.warn(msg, FutureWarning, stacklevel=2)
