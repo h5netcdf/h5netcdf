@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development Version:
+
+- Added ``FutureWarning`` to use ``mode='r'`` as default when opening files.
+  By `Ryan Grout <https://github.com/groutr>`_.
+
 Version 0.11.0 (April 20, 2021):
 
 - Included ``h5pyd.Dataset`` objects as netCDF variables.
