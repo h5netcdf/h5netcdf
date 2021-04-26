@@ -576,7 +576,7 @@ def test_decode_string_error(tmp_local_or_remote_netcdf):
 
 def test_mode_warning(tmp_local_or_remote_netcdf):
     with pytest.warns(FutureWarning):
-        with h5netcdf.File(tmp_local_or_remote_netcdf) as ds:
+        with h5netcdf.File(tmp_local_or_remote_netcdf):
             pass
 
 
