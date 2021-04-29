@@ -480,11 +480,6 @@ class Group(Mapping):
                 stacklevel=stacklevel,
             )
 
-        if name in self.dimensions and name not in dimensions:
-            h5name = "_nc4_non_coord_" + name
-        else:
-            h5name = name
-
         shape = tuple(self._current_dim_sizes[d] for d in dimensions)
         maxshape = tuple(self._dim_sizes[d] for d in dimensions)
 
@@ -493,25 +488,87 @@ class Group(Mapping):
         if shape != maxshape:
             kwargs["maxshape"] = maxshape
 
-        # Clear dummy HDF5 datasets with this name that were created for a
-        # dimension scale without a corresponding variable.
-        if name in self.dimensions and name in self._h5group:
-            h5ds = self._h5group[name]
-            if _netcdf_dimension_but_not_variable(h5ds):
-                self._detach_dim_scale(name)
-                del self._h5group[name]
-
-        self._h5group.create_dataset(
-            h5name, shape, dtype=dtype, data=data, fillvalue=fillvalue, **kwargs
-        )
-
-        self._variables[h5name] = self._variable_cls(self, h5name, dimensions)
-        variable = self._variables[h5name]
-
-        if fillvalue is not None:
+        def _set_fillvalue(variable, fillvalue):
             value = variable.dtype.type(fillvalue)
             variable.attrs._h5attrs["_FillValue"] = value
-        return variable
+
+        def _create_h5netcdf_variable(grp, name, dimensions, shape, dtype, data, fillvalue, **kwargs):
+            grp._h5group.create_dataset(
+                name, shape, dtype=dtype, data=data, fillvalue=fillvalue,
+                **kwargs
+            )
+            grp._variables[name] = grp._variable_cls(grp, name, dimensions)
+
+            if fillvalue is not None:
+                _set_fillvalue(grp._variables[name], fillvalue)
+
+            return grp._variables[name]
+
+        def _create_coordinate_variable_on_existing_dimension(name, dimensions, shape, dtype, data, fillvalue,
+                **kwargs):
+            if name in self._h5group:
+                h5ds = self._h5group[name]
+                if _netcdf_dimension_but_not_variable(h5ds):
+                    h5ds.attrs["NAME"] = name
+                    try:
+                       self._detach_dim_scale(name)
+                    except RuntimeError:
+                       pass
+                    del self._h5group[name]
+
+            return _create_h5netcdf_variable(self, name, dimensions, shape, dtype, data, fillvalue, **kwargs)
+
+        def _create_data_variable(name, dimensions, shape, dtype, data, fillvalue, **kwargs):
+            return _create_h5netcdf_variable(self, name, dimensions, shape, dtype, data, fillvalue, **kwargs)
+
+        def _create_data_variable_colliding_with_dimension_not_in_var_dimensions(name, dimensions, shape, dtype, data, fillvalue, **kwargs):
+            name = "_nc4_non_coord_" + name
+            return _create_h5netcdf_variable(self, name, dimensions, shape, dtype, data, fillvalue, **kwargs)
+
+        def _create_data_variable_colliding_with_dimension_in_var_dimensions(name, dimensions, shape, dtype, data, fillvalue, **kwargs):
+            name = "_nc4_non_coord_" + name
+            return _create_h5netcdf_variable(self, name, dimensions, shape, dtype, data, fillvalue, **kwargs)
+
+        def _create_2d_coordinate_variable_on_existing_dimension(name, dimensions, shape, dtype, data, fillvalue,
+                **kwargs):
+            if name in self.dimensions and name in self._h5group:
+                h5ds = self._h5group[name]
+                if _netcdf_dimension_but_not_variable(h5ds):
+                    try:
+                       self._detach_dim_scale(name)
+                    except RuntimeError:
+                       pass
+                    del self._h5group[name]
+
+            return _create_h5netcdf_variable(self, name, dimensions, shape, dtype, data, fillvalue, **kwargs)
+
+        # 1D coordinate variable on existing dimensions
+        if name in self.dimensions and name in dimensions and len(dimensions) == 1:
+            return _create_coordinate_variable_on_existing_dimension(name, dimensions, shape, dtype, data, fillvalue,
+                **kwargs)
+
+        # data variable colliding with dimension name not in variable dimensions
+        if name in self.dimensions and name not in dimensions:
+            return _create_data_variable_colliding_with_dimension_not_in_var_dimensions(name, dimensions, shape, dtype, data, fillvalue, **kwargs)
+
+        # 2D coordinate variable (char)
+        if (name in self.dimensions and name in dimensions and
+                len(dimensions) == 2 and name == dimensions[0] and
+                dimensions[1] not in self.variables and
+                dimensions[1] in self.dimensions):
+            return _create_2d_coordinate_variable_on_existing_dimension(name, dimensions, shape, dtype, data, fillvalue, **kwargs)
+
+        # data variable colliding with dimension name in variable dimensions
+        if name in self.dimensions and name in dimensions and len(dimensions) > 1:
+            return _create_data_variable_colliding_with_dimension_in_var_dimensions(
+                name, dimensions, shape, dtype, data, fillvalue, **kwargs)
+
+        # data variable
+        if name not in self.dimensions and name not in dimensions:
+            return _create_data_variable(name, dimensions, shape, dtype, data, fillvalue,
+                **kwargs)
+
+        raise RuntimeError(f"can't create variable {name}")
 
     def create_variable(
         self, name, dimensions=(), dtype=None, data=None, fillvalue=None, **kwargs
