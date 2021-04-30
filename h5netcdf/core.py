@@ -146,7 +146,7 @@ def _check_var_with_coords(grp, name, dimensions):
     name_in_dims = name in grp.dimensions
     name_in_var_dims = name in dimensions
     return (
-        (not name_in_dims and name_in_var_dims)
+        (not name_in_dims and not name_in_var_dims)
         or (name_in_dims and name_in_var_dims and len(dimensions) > 1)
     ) and (not _check_coord_var(grp, name, dimensions))
 
