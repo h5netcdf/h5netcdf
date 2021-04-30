@@ -404,8 +404,6 @@ class Group(Mapping):
         self._variables = _LazyObjectLookup(self, self._variable_cls)
         self._groups = _LazyObjectLookup(self, self._group_cls)
 
-        self._data_written = False
-
         # # initialize phony dimension counter
         if self._root._phony_dims_mode is not None:
             self._phony_dims = {}
