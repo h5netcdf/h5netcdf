@@ -906,7 +906,7 @@ class File(Group):
             self._closed = False
 
         self._mode = mode
-        self._writable = not (mode == "r")
+        self._writable = mode != "r"
         self._root = self
         self._h5path = "/"
         self.invalid_netcdf = invalid_netcdf
