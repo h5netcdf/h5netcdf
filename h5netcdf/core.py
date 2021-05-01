@@ -218,10 +218,9 @@ class BaseVariable(object):
         if len(coord_ids) > 1:
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
-    def _maybe_resize_dimensions(self, key):
+    def _maybe_resize_dimensions(self, key, value):
         """Resize according to given key with respect to variable dimensions"""
         key = _expanded_indexer(key, self.ndim)
-
         # resize unlimited dimensions before setting values
         new_shape = ()
         for i, dim in enumerate(self.dimensions):
@@ -232,8 +231,10 @@ class BaseVariable(object):
                 if type(dim_key) is int:
                     dim_key = slice(None, dim_key + 1, None)
                 # calculate max dim range
-                start = 0 if dim_key.start is None else dim_key.start
+                start = 0
                 stop = self.shape[i] if dim_key.stop is None else dim_key.stop
+                if stop == 0:
+                    stop = np.asarray(value).shape[i]
                 diff = stop - start
                 # resize unlimited dimension if needed but no variables
                 if self._parent._current_dim_sizes[dim] < diff:
@@ -287,7 +288,7 @@ class BaseVariable(object):
         return self._h5ds[key]
 
     def __setitem__(self, key, value):
-        self._maybe_resize_dimensions(key)
+        self._maybe_resize_dimensions(key, value)
         self._h5ds[key] = value
 
     @property
