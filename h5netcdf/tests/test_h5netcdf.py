@@ -1082,7 +1082,7 @@ def test_resize_dimensions(tmp_local_netcdf):
         f.resize_dimension("x", 3, resize_vars=False)
 
         # This will only resize the dimension, but variables keep untouched.
-        assert f.dimensions["x"] == None
+        assert f.dimensions["x"] is None
         assert f._current_dim_sizes["x"] == 3
         assert f.variables["dummy"].shape == (0, 2)
         assert f.variables["dummy"]._h5ds.maxshape == (None, 2)
