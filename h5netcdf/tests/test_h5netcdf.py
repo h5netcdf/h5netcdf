@@ -765,7 +765,10 @@ def test_Netcdf4Dimid(tmp_local_netcdf):
 
     with h5py.File(tmp_local_netcdf, "r") as f:
         # all dimension IDs should be present exactly once
-        dim_ids = {f[name].attrs["_Netcdf4Dimid"] for name in ["x", "foo/x", "foo/y", "x1", "foo/x1", "foo/y1"]}
+        dim_ids = {
+            f[name].attrs["_Netcdf4Dimid"]
+            for name in ["x", "foo/x", "foo/y", "x1", "foo/x1", "foo/y1"]
+        }
         assert dim_ids == {0, 1, 2, 3, 4, 5}
 
 
