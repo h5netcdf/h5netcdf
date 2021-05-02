@@ -623,11 +623,6 @@ class Group(Mapping):
         self._variables[name] = self._variable_cls(self, name, dimensions)
         variable = self._variables[name]
 
-        # This is a bit of a hack, netCDF4 attaches _Netcdf4Dimid to every variable
-        # in the moment when a variable is first written to, after variable creation.
-        # Here we just attach it to every variable on creation.
-        variable._ensure_dim_id()
-
         if fillvalue is not None:
             value = variable.dtype.type(fillvalue)
             variable.attrs._h5attrs["_FillValue"] = value
@@ -659,6 +654,11 @@ class Group(Mapping):
         variable = self._create_h5netcdf_variable(
             name, dimensions, dtype, data, fillvalue, **kwargs
         )
+
+        # This is a bit of a hack, netCDF4 attaches _Netcdf4Dimid to every variable
+        # in the moment when a variable is first written to, after variable creation.
+        # Here we just attach it to every variable on creation.
+        variable._ensure_dim_id()
 
         if _check_coord_var(self, name, dimensions):
             self._create_dim_scale(name)

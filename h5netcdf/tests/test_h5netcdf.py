@@ -923,6 +923,35 @@ def test_invalid_then_valid_no_ncproperties(tmp_local_or_remote_netcdf):
         assert "_NCProperties" not in f.attrs
 
 
+def test_variable_attach_coords(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 15
+        # create variable
+        f._create_h5netcdf_variable("dummy", dimensions=("x", "y"), dtype=np.int64,
+                                    data=None, fillvalue=None)
+        assert f["dummy"]._h5ds.attrs.get("_Netcdf4Coordinates", None) is None
+
+        # attach coordinates
+        f["dummy"]._attach_coords()
+        assert array_equal(f["dummy"]._h5ds.attrs.get("_Netcdf4Coordinates", None),
+                           np.array([0, 1]))
+
+
+def test_ensure_dim_id(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 15
+        # create variable
+        f._create_h5netcdf_variable("dummy", dimensions=("x", "y"), dtype=np.int64,
+                                    data=None, fillvalue=None)
+        assert f["dummy"]._h5ds.attrs.get("_Netcdf4Dimid", None) is None
+
+        # add dimid
+        f["dummy"]._ensure_dim_id()
+        assert f["dummy"]._h5ds.attrs.get("_Netcdf4Dimid", None) == 0
+
+
 def test_variable_attach_dim_scales(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
         f.dimensions["x"] = None
