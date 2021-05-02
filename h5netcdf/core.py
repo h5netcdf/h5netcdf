@@ -689,7 +689,19 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(self, path, mode="a", invalid_netcdf=None, phony_dims=None, **kwargs):
+    def __init__(self, path, mode=None, invalid_netcdf=None, phony_dims=None, **kwargs):
+        # Deprecating mode='a' in favor of mode='r'
+        # If mode is None default to 'a' and issue a warning
+        if mode is None:
+            msg = (
+                "Falling back to mode='a'. "
+                "In future versions, mode will default to read-only. "
+                "It is recommended to explicitly set mode='r' to prevent any unintended "
+                "changes to the file."
+            )
+            warnings.warn(msg, FutureWarning, stacklevel=2)
+            mode = "a"
+
         if h5py.__version__ >= LooseVersion("3.0.0"):
             self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         try:
@@ -766,7 +778,7 @@ class File(Group):
                         "warning set kwarg ``decode_vlen_strings=False``. Setting "
                         "``decode_vlen_strings=True`` forces vlen string decoding."
                     )
-                    warnings.warn(msg, FutureWarning, stacklevel=0)
+                    warnings.warn(msg, FutureWarning, stacklevel=2)
                     self.decode_vlen_strings = True
 
         # These maps keep track of dimensions in terms of size (might be
