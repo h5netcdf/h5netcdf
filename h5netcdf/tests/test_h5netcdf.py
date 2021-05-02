@@ -923,6 +923,34 @@ def test_invalid_then_valid_no_ncproperties(tmp_local_or_remote_netcdf):
         assert "_NCProperties" not in f.attrs
 
 
+def test_variable_attach_dim_scales(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 15
+        # create variable
+        f._create_h5netcdf_variable("dummy", dimensions=("x", "y"), dtype=np.int64,
+                                    data=None, fillvalue=None)
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is None
+        # attach dimension scales
+        f["dummy"]._attach_dim_scales()
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is not None
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None).shape == (2,)
+
+        # detach first scale: results in empty DIMENSION_LIST entry
+        refs = f._get_dim_scale_refs('x')
+        f._detach_dim_scale('x', refs)
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is not None
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None).shape == (2,)
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None)[0].any() is False
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None)[1].any()
+
+        # detach second scale: results in complete removal of DIMENSION_LIST
+        refs = f._get_dim_scale_refs('y')
+        f._detach_dim_scale('y', refs)
+        print(f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None))
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is None
+
+
 def test_creating_and_resizing_unlimited_dimensions(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
         f.dimensions["x"] = None
