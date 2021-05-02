@@ -108,7 +108,7 @@ _vlen_string = "foo"
 def is_h5py_char_working(tmp_netcdf, name):
     h5 = get_hdf5_module(tmp_netcdf)
     # https://github.com/Unidata/netcdf-c/issues/298
-    with h5.File(tmp_netcdf) as ds:
+    with h5.File(tmp_netcdf, "r") as ds:
         v = ds[name]
         try:
             assert array_equal(v, _char_array)
@@ -794,7 +794,6 @@ def test_failed_read_open_and_clean_delete(tmpdir):
     # A file that does not exist but is opened for
     # reading should only raise an IOError and
     # no AttributeError at garbage collection.
-    # gc.collect()
     path = str(tmpdir.join("this_file_does_not_exist.nc"))
     try:
         with h5netcdf.File(path, "r") as ds:
