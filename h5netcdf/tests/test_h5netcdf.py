@@ -923,6 +923,23 @@ def test_invalid_then_valid_no_ncproperties(tmp_local_or_remote_netcdf):
         assert "_NCProperties" not in f.attrs
 
 
+def test_nc4_non_coord(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 15
+        # create variable
+        f._create_h5netcdf_variable("_nc4_non_coord_x", dimensions=("y"), dtype=np.int64,
+                                    data=None, fillvalue=None)
+        print(f["x"])
+        assert f["x"]
+        assert f["x"].dimensions == "y"
+        assert f["x"]._h5ds.name == "/_nc4_non_coord_x"
+
+    h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
+    with h5.File(tmp_local_or_remote_netcdf, "r") as f:
+        assert f["_nc4_non_coord_x"]
+
+
 def test_variable_attach_coords(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
         f.dimensions["x"] = None
