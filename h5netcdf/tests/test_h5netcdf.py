@@ -928,8 +928,13 @@ def test_nc4_non_coord(tmp_local_or_remote_netcdf):
         f.dimensions["x"] = None
         f.dimensions["y"] = 15
         # create variable
-        f._create_h5netcdf_variable("_nc4_non_coord_x", dimensions=("y"), dtype=np.int64,
-                                    data=None, fillvalue=None)
+        f._create_h5netcdf_variable(
+            "_nc4_non_coord_x",
+            dimensions=("y"),
+            dtype=np.int64,
+            data=None,
+            fillvalue=None,
+        )
         print(f["x"])
         assert f["x"]
         assert f["x"].dimensions == "y"
@@ -945,14 +950,16 @@ def test_variable_attach_coords(tmp_local_or_remote_netcdf):
         f.dimensions["x"] = None
         f.dimensions["y"] = 15
         # create variable
-        f._create_h5netcdf_variable("dummy", dimensions=("x", "y"), dtype=np.int64,
-                                    data=None, fillvalue=None)
+        f._create_h5netcdf_variable(
+            "dummy", dimensions=("x", "y"), dtype=np.int64, data=None, fillvalue=None
+        )
         assert f["dummy"]._h5ds.attrs.get("_Netcdf4Coordinates", None) is None
 
         # attach coordinates
         f["dummy"]._attach_coords()
-        assert array_equal(f["dummy"]._h5ds.attrs.get("_Netcdf4Coordinates", None),
-                           np.array([0, 1]))
+        assert array_equal(
+            f["dummy"]._h5ds.attrs.get("_Netcdf4Coordinates", None), np.array([0, 1])
+        )
 
 
 def test_ensure_dim_id(tmp_local_or_remote_netcdf):
@@ -960,8 +967,9 @@ def test_ensure_dim_id(tmp_local_or_remote_netcdf):
         f.dimensions["x"] = None
         f.dimensions["y"] = 15
         # create variable
-        f._create_h5netcdf_variable("dummy", dimensions=("x", "y"), dtype=np.int64,
-                                    data=None, fillvalue=None)
+        f._create_h5netcdf_variable(
+            "dummy", dimensions=("x", "y"), dtype=np.int64, data=None, fillvalue=None
+        )
         assert f["dummy"]._h5ds.attrs.get("_Netcdf4Dimid", None) is None
 
         # add dimid
@@ -974,8 +982,9 @@ def test_variable_attach_dim_scales(tmp_local_or_remote_netcdf):
         f.dimensions["x"] = None
         f.dimensions["y"] = 15
         # create variable
-        f._create_h5netcdf_variable("dummy", dimensions=("x", "y"), dtype=np.int64,
-                                    data=None, fillvalue=None)
+        f._create_h5netcdf_variable(
+            "dummy", dimensions=("x", "y"), dtype=np.int64, data=None, fillvalue=None
+        )
         assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is None
         # attach dimension scales
         f["dummy"]._attach_dim_scales()
@@ -983,16 +992,16 @@ def test_variable_attach_dim_scales(tmp_local_or_remote_netcdf):
         assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None).shape == (2,)
 
         # detach first scale: results in empty DIMENSION_LIST entry
-        refs = f._get_dim_scale_refs('x')
-        f._detach_dim_scale('x', refs)
+        refs = f._get_dim_scale_refs("x")
+        f._detach_dim_scale("x", refs)
         assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is not None
         assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None).shape == (2,)
         assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None)[0].any() is False
         assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None)[1].any()
 
         # detach second scale: results in complete removal of DIMENSION_LIST
-        refs = f._get_dim_scale_refs('y')
-        f._detach_dim_scale('y', refs)
+        refs = f._get_dim_scale_refs("y")
+        f._detach_dim_scale("y", refs)
         print(f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None))
         assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is None
 
