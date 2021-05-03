@@ -1019,17 +1019,23 @@ def test_group_dimension_scales(tmp_local_or_remote_netcdf):
         f.dimensions["y"] = 15
 
         assert f._h5group["x"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
-        assert f._h5group["x"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(f"{0:10}", "ascii")
+        assert f._h5group["x"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
+            f"{0:10}", "ascii"
+        )
 
         assert f._h5group["y"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
-        assert f._h5group["y"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(f"{15:10}", "ascii")
+        assert f._h5group["y"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
+            f"{15:10}", "ascii"
+        )
 
         # delete x-scale (completely remove hdf5 dataset)
         f._delete_dim_scale("x")
 
         assert "x" not in f._h5group
         assert f._h5group["y"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
-        assert f._h5group["y"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(f"{15:10}", "ascii")
+        assert f._h5group["y"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
+            f"{15:10}", "ascii"
+        )
 
         # delete y-scale (completely remove hdf5 dataset)
         f._delete_dim_scale("y")
@@ -1042,11 +1048,13 @@ def test_group_dimension_scales(tmp_local_or_remote_netcdf):
         f._create_dim_scale("y")
         assert f._h5group["x"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
         assert f._h5group["x"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
-            f"{0:10}", "ascii")
+            f"{0:10}", "ascii"
+        )
 
         assert f._h5group["y"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
         assert f._h5group["y"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
-            f"{15:10}", "ascii")
+            f"{15:10}", "ascii"
+        )
 
 
 def test_creating_and_resizing_unlimited_dimensions(tmp_local_or_remote_netcdf):
