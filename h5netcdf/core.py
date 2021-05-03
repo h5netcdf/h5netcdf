@@ -737,10 +737,10 @@ class Group(Mapping):
             coord_ids = np.array([dim_order[d] for d in dims], "int32")
             h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
-        dimlen = bytes(f"{self._current_dim_sizes[dim]:10}", "ascii")
-        scale_name = dim if dim in self.variables else NOT_A_VARIABLE + dimlen
         # don't re-create scales if they already exist.
         if not h5py.h5ds.is_scale(h5ds.id):
+            dimlen = bytes(f"{self._current_dim_sizes[dim]:10}", "ascii")
+            scale_name = dim if dim in self.variables else NOT_A_VARIABLE + dimlen
             if h5py.__version__ < LooseVersion("2.10.0"):
                 h5ds.dims.create_scale(h5ds, scale_name)
             else:
