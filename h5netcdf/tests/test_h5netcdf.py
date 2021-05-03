@@ -962,7 +962,7 @@ def test_variable_attach_coords(tmp_local_or_remote_netcdf):
         )
 
 
-def test_ensure_dim_id(tmp_local_or_remote_netcdf):
+def test_variable_ensure_dim_id(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
         f.dimensions["x"] = None
         f.dimensions["y"] = 15
@@ -1004,6 +1004,12 @@ def test_variable_attach_dim_scales(tmp_local_or_remote_netcdf):
         f._detach_dim_scale("y", refs)
         print(f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None))
         assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is None
+
+        # attach one dim scale by name, second dimension get's empty entry
+        f["dummy"]._attach_dim_scale("x")
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is not None
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None).shape == (2,)
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None)[1].any() is False
 
 
 def test_creating_and_resizing_unlimited_dimensions(tmp_local_or_remote_netcdf):
@@ -1161,10 +1167,8 @@ def test_resize_dimensions(tmp_local_netcdf):
         assert f.variables["dummy"]._h5ds.maxshape == (None, 2)
 
         # Resize dimension but no variables
-        assert f.variables["dummy"].shape == (0, 2)
-        f.resize_dimension("x", 3, resize_vars=False)
-
         # This will only resize the dimension, but variables keep untouched.
+        f.resize_dimension("x", 3, resize_vars=False)
         assert f.dimensions["x"] is None
         assert f._current_dim_sizes["x"] == 3
         assert f.variables["dummy"].shape == (0, 2)

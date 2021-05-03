@@ -207,12 +207,19 @@ class BaseVariable(object):
         return tuple(dims)
 
     def _attach_dim_scales(self):
-        """Attach dimension scales"""
+        """Attach dimension scales for all dimensions"""
         if self._root._writable:
-            for n, dim in enumerate(self.dimensions):
-                self._h5ds.dims[n].attach_scale(self._parent._all_h5groups[dim])
+            for dim in self.dimensions:
+                self._attach_dim_scale(dim)
+
+    def _attach_dim_scale(self, dim):
+        """Attach dimension scales for dimension `dim`"""
+        if self._root._writable:
+            n = self.dimensions.index(dim)
+            self._h5ds.dims[n].attach_scale(self._parent._all_h5groups[dim])
 
     def _attach_coords(self):
+        """Attach _Netcdf4Coordinates attribute"""
         dims = self.dimensions
         coord_ids = np.array([self._parent._dim_order[d] for d in dims], "int32")
         if len(coord_ids) > 1:
