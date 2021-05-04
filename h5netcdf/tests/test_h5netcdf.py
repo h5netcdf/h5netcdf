@@ -762,6 +762,21 @@ def test_Netcdf4Dimid(tmp_local_netcdf):
         dim_ids = {f[name].attrs["_Netcdf4Dimid"] for name in ["x", "foo/x", "foo/y"]}
         assert dim_ids == {0, 1, 2}
 
+    # adding new dimensions after reopening for append will continue with last dimid + 1
+    with h5netcdf.File(tmp_local_netcdf, "a") as f:
+        f.dimensions["x1"] = 1
+        g = f["foo"]
+        g.dimensions["x1"] = 2
+        g.dimensions["y1"] = 3
+
+    with h5py.File(tmp_local_netcdf, "r") as f:
+        # all dimension IDs should be present exactly once
+        dim_ids = {
+            f[name].attrs["_Netcdf4Dimid"]
+            for name in ["x", "foo/x", "foo/y", "x1", "foo/x1", "foo/y1"]
+        }
+        assert dim_ids == {0, 1, 2, 3, 4, 5}
+
 
 def test_reading_str_array_from_netCDF4(tmp_local_netcdf, decode_vlen_strings):
     # This tests reading string variables created by netCDF4
@@ -914,6 +929,140 @@ def test_invalid_then_valid_no_ncproperties(tmp_local_or_remote_netcdf):
         assert "_NCProperties" not in f.attrs
 
 
+def test_nc4_non_coord(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 15
+        # create variable
+        f._create_h5netcdf_variable(
+            "_nc4_non_coord_x",
+            dimensions=("y"),
+            dtype=np.int64,
+            data=None,
+            fillvalue=None,
+        )
+        print(f["x"])
+        assert f["x"]
+        assert f["x"].dimensions == "y"
+        assert f["x"]._h5ds.name == "/_nc4_non_coord_x"
+
+    h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
+    with h5.File(tmp_local_or_remote_netcdf, "r") as f:
+        assert f["_nc4_non_coord_x"]
+
+
+def test_variable_attach_coords(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 15
+        # create variable
+        f._create_h5netcdf_variable(
+            "dummy", dimensions=("x", "y"), dtype=np.int64, data=None, fillvalue=None
+        )
+        assert f["dummy"]._h5ds.attrs.get("_Netcdf4Coordinates", None) is None
+
+        # attach coordinates
+        f["dummy"]._attach_coords()
+        assert array_equal(
+            f["dummy"]._h5ds.attrs.get("_Netcdf4Coordinates", None), np.array([0, 1])
+        )
+
+
+def test_variable_ensure_dim_id(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 15
+        # create variable
+        f._create_h5netcdf_variable(
+            "dummy", dimensions=("x", "y"), dtype=np.int64, data=None, fillvalue=None
+        )
+        assert f["dummy"]._h5ds.attrs.get("_Netcdf4Dimid", None) is None
+
+        # add dimid
+        f["dummy"]._ensure_dim_id()
+        assert f["dummy"]._h5ds.attrs.get("_Netcdf4Dimid", None) == 0
+
+
+def test_variable_attach_dim_scales(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 15
+        # create variable
+        f._create_h5netcdf_variable(
+            "dummy", dimensions=("x", "y"), dtype=np.int64, data=None, fillvalue=None
+        )
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is None
+        # attach dimension scales
+        f["dummy"]._attach_dim_scales()
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is not None
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None).shape == (2,)
+
+        # detach first scale: results in empty DIMENSION_LIST entry
+        refs = f._get_dim_scale_refs("x")
+        f._detach_dim_scale("x", refs)
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is not None
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None).shape == (2,)
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None)[0].any() is False
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None)[1].any()
+
+        # detach second scale: results in complete removal of DIMENSION_LIST
+        refs = f._get_dim_scale_refs("y")
+        f._detach_dim_scale("y", refs)
+        print(f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None))
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is None
+
+        # attach one dim scale by name, second dimension get's empty entry
+        f["dummy"]._attach_dim_scale("x")
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None) is not None
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None).shape == (2,)
+        assert f["dummy"]._h5ds.attrs.get("DIMENSION_LIST", None)[1].any() is False
+
+
+def test_group_dimension_scales(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
+        # create dimensions (and dimension scales)
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 15
+
+        assert f._h5group["x"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
+        assert f._h5group["x"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
+            f"{0:10}", "ascii"
+        )
+
+        assert f._h5group["y"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
+        assert f._h5group["y"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
+            f"{15:10}", "ascii"
+        )
+
+        # delete x-scale (completely remove hdf5 dataset)
+        f._delete_dim_scale("x")
+
+        assert "x" not in f._h5group
+        assert f._h5group["y"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
+        assert f._h5group["y"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
+            f"{15:10}", "ascii"
+        )
+
+        # delete y-scale (completely remove hdf5 dataset)
+        f._delete_dim_scale("y")
+
+        assert "x" not in f._h5group
+        assert "y" not in f._h5group
+
+        # re-create dimension and scales
+        f._create_dim_scale("x")
+        f._create_dim_scale("y")
+        assert f._h5group["x"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
+        assert f._h5group["x"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
+            f"{0:10}", "ascii"
+        )
+
+        assert f._h5group["y"].attrs.get("CLASS", None) == b"DIMENSION_SCALE"
+        assert f._h5group["y"].attrs.get("NAME", None) == NOT_A_VARIABLE + bytes(
+            f"{15:10}", "ascii"
+        )
+
+
 def test_creating_and_resizing_unlimited_dimensions(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
         f.dimensions["x"] = None
@@ -1020,6 +1169,83 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
 
         f.variables["dummy3"][...] = [[1, 2, 3], [5, 6, 7]]
         np.testing.assert_allclose(f.variables["dummy3"], [[1, 2, 3], [5, 6, 7]])
+
+
+def test_writing_to_an_unlimited_dimension_2(tmp_local_or_remote_netcdf):
+    with h5netcdf.File(tmp_local_or_remote_netcdf) as f:
+        # Two dimensions, only one is unlimited.
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 3
+
+        # Without data.
+        f.create_variable("dummy1", dimensions=("x", "y"), dtype=np.int64)
+        f.create_variable("dummy2", dimensions=("x", "y"), dtype=np.int64)
+        f.create_variable("dummy3", dimensions=("x", "y"), dtype=np.int64)
+        g = f.create_group("test")
+        g.create_variable("dummy4", dimensions=("y", "x", "x"), dtype=np.int64)
+        g.create_variable("dummy5", dimensions=("y", "y"), dtype=np.int64)
+
+        assert f.variables["dummy1"].shape == (0, 3)
+        assert f.variables["dummy2"].shape == (0, 3)
+        assert f.variables["dummy3"].shape == (0, 3)
+        assert g.variables["dummy4"].shape == (3, 0, 0)
+        assert g.variables["dummy5"].shape == (3, 3)
+
+        # variables and their unlimited dimensions are resized on the fly
+        f.variables["dummy2"][:] = [[1, 2, 3], [5, 6, 7]]
+        np.testing.assert_allclose(f.variables["dummy2"], [[1, 2, 3], [5, 6, 7]])
+
+        f.variables["dummy3"][...] = [[1, 2, 3], [5, 6, 7]]
+        np.testing.assert_allclose(f.variables["dummy3"], [[1, 2, 3], [5, 6, 7]])
+
+        # other variables are not affected
+        assert f.variables["dummy1"].shape == (0, 3)
+        assert f.variables["dummy2"].shape == (2, 3)
+        assert f.variables["dummy3"].shape == (2, 3)
+        assert g.variables["dummy4"].shape == (3, 0, 0)
+        assert g.variables["dummy5"].shape == (3, 3)
+
+
+def test_resize_dimensions(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf) as f:
+        f.dimensions["x"] = None
+        f.dimensions["y"] = 2
+
+        # Creating a variable without data will initialize an array with zero
+        # length.
+        f.create_variable("dummy", dimensions=("x", "y"), dtype=np.int64)
+        assert f.variables["dummy"].shape == (0, 2)
+        assert f.variables["dummy"]._h5ds.maxshape == (None, 2)
+
+        # Resize dimension but no variables
+        # This will only resize the dimension, but variables keep untouched.
+        f.resize_dimension("x", 3, resize_vars=False)
+        assert f.dimensions["x"] is None
+        assert f._current_dim_sizes["x"] == 3
+        assert f.variables["dummy"].shape == (0, 2)
+        assert f.variables["dummy"]._h5ds.maxshape == (None, 2)
+
+        # Creating another variable with no data will now take the shape
+        # of the current dimensions.
+        f.create_variable("dummy3", dimensions=("x", "y"), dtype=np.int64)
+        assert f.variables["dummy3"].shape == (3, 2)
+        assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
+
+        # writing to a variable with an unlimited dimension
+        # will resize dimension and variable if necessary
+        # but will not change any other variables
+        f.variables["dummy"][3:4] = np.ones((1, 2))
+        assert f.variables["dummy"].shape == (4, 2)
+        assert f.variables["dummy"]._h5ds.maxshape == (None, 2)
+        assert f.variables["dummy3"].shape == (3, 2)
+        assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
+
+        f.variables["dummy"][4] = np.ones((1, 2))
+        assert f._current_dim_sizes["x"] == 5
+        assert f.variables["dummy"].shape == (5, 2)
+        assert f.variables["dummy"]._h5ds.maxshape == (None, 2)
+        assert f.variables["dummy3"].shape == (3, 2)
+        assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
 
 
 def test_c_api_can_read_unlimited_dimensions(tmp_local_netcdf):
