@@ -104,51 +104,30 @@ def _expanded_indexer(key, ndim):
     return tuple(new_key)
 
 
-def _check_coord_var(grp, name, dimensions):
-    """Check for coordinate variable"""
-    name_in_dims = name in grp.dimensions
-    name_in_var_dims = name in dimensions
-    # 1d coordinate
+def _check_netcdf4_variable_type(grp, name, dimensions):
+    """Return tuple with variable types."""
+    grp_dims = name in grp.dimensions
+    var_dims = name in dimensions
+
     _1d = len(dimensions) == 1
-    # 2d coordinate
     _2d = (
         len(dimensions) == 2
         and name == dimensions[0]
         and dimensions[1] not in grp.variables
         and dimensions[1] in grp.dimensions
     )
-    return name_in_dims and name_in_var_dims and (_1d or _2d)
 
-
-def _check_non_coord_var(grp, name, dimensions):
-    """Check for _nc4_non_coord_"""
-    name_in_dims = name in grp.dimensions
-    name_in_var_dims = name in dimensions
-    return (
-        (name_in_dims and not name_in_var_dims)
-        or (name_in_dims and name_in_var_dims and len(dimensions) > 1)
-    ) and (not _check_coord_var(grp, name, dimensions))
-
-
-def _check_data_var(grp, name, dimensions):
-    """Check for data variable"""
-    name_in_dims = name in grp.dimensions
-    name_in_var_dims = name in dimensions
-    return (
-        (name_in_dims and not name_in_var_dims)
-        or (name_in_dims and name_in_var_dims and len(dimensions) > 1)
-        or (not name_in_dims and not name_in_var_dims)
-    ) and (not _check_coord_var(grp, name, dimensions))
-
-
-def _check_var_with_coords(grp, name, dimensions):
-    """Check for variable with coordinates"""
-    name_in_dims = name in grp.dimensions
-    name_in_var_dims = name in dimensions
-    return (
-        (not name_in_dims and not name_in_var_dims)
-        or (name_in_dims and name_in_var_dims and len(dimensions) > 1)
-    ) and (not _check_coord_var(grp, name, dimensions))
+    nc4_var_type = ()
+    # either coord variable
+    if grp_dims and var_dims and (_1d or _2d):
+        nc4_var_type += ("coord",)
+    # or data variable
+    else:
+        if not var_dims or (var_dims and len(dimensions) > 1):
+            nc4_var_type += ("data",)
+            if grp_dims:
+                nc4_var_type += ("non_coord",)
+    return nc4_var_type
 
 
 class BaseVariable(object):
@@ -650,12 +629,15 @@ class Group(Mapping):
                 if d not in self.dimensions:
                     self.dimensions[d] = s
 
+        # get netcdf4 variable types
+        nc4_var_type = _check_netcdf4_variable_type(self, name, dimensions)
         refs = None
-        if _check_coord_var(self, name, dimensions):
+
+        if "coord" in nc4_var_type:
             refs = self._get_dim_scale_refs(name)
             self._delete_dim_scale(name)
 
-        if _check_non_coord_var(self, name, dimensions):
+        if "non_coord" in nc4_var_type:
             name = "_nc4_non_coord_" + name
 
         variable = self._create_h5netcdf_variable(
@@ -663,19 +645,17 @@ class Group(Mapping):
         )
 
         # This is a bit of a hack, netCDF4 attaches _Netcdf4Dimid to every variable
-        # in the moment when a variable is first written to, after variable creation.
+        # when a variable is first written to, after variable creation.
         # Here we just attach it to every variable on creation.
         variable._ensure_dim_id()
 
-        if _check_coord_var(self, name, dimensions):
+        if "coord" in nc4_var_type:
             self._create_dim_scale(name)
             if refs is not None:
                 self._attach_dim_scale(name, refs)
 
-        if _check_data_var(self, name, dimensions):
+        if "data" in nc4_var_type:
             variable._attach_dim_scales()
-
-        if _check_var_with_coords(self, name, dimensions):
             variable._attach_coords()
 
         return variable
