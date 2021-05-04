@@ -97,6 +97,8 @@ def _expanded_indexer(key, ndim):
             else:
                 new_key.append(slice(None))
         else:
+            if isinstance(k, int):
+                k = slice(k, k + 1, None)
             new_key.append(k)
     if len(new_key) > ndim:
         raise IndexError("too many indices")
@@ -212,19 +214,14 @@ class BaseVariable(object):
         for i, dim in enumerate(self.dimensions):
             # is unlimited dimensions
             if not self._parent._dim_sizes[dim]:
-                dim_key = key[i]
-                # convert int to slice
-                if type(dim_key) is int:
-                    dim_key = slice(None, dim_key + 1, None)
-                # calculate max dim range
-                start = 0
-                stop = self.shape[i] if dim_key.stop is None else dim_key.stop
-                if stop == 0:
-                    stop = np.asarray(value).shape[i]
-                diff = stop - start
+                new_max = (
+                    (self.shape[i] or np.asarray(value).shape[i])
+                    if key[i].stop is None
+                    else key[i].stop
+                )
                 # resize unlimited dimension if needed but no variables
-                if self._parent._current_dim_sizes[dim] < diff:
-                    self._parent.resize_dimension(dim, diff, resize_vars=False)
+                if self._parent._current_dim_sizes[dim] < new_max:
+                    self._parent.resize_dimension(dim, new_max, resize_vars=False)
             new_shape += (self._parent._current_dim_sizes[dim],)
 
         # resize variable if needed before setting values

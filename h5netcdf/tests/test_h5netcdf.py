@@ -1228,7 +1228,13 @@ def test_resize_dimensions(tmp_local_netcdf):
         # writing to a variable with an unlimited dimension
         # will resize dimension and variable if necessary
         # but will not change any other variables
-        f.variables["dummy"][3:5] = np.ones((2, 2))
+        f.variables["dummy"][3:4] = np.ones((1, 2))
+        assert f.variables["dummy"].shape == (4, 2)
+        assert f.variables["dummy"]._h5ds.maxshape == (None, 2)
+        assert f.variables["dummy3"].shape == (3, 2)
+        assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
+
+        f.variables["dummy"][4] = np.ones((1, 2))
         assert f._current_dim_sizes["x"] == 5
         assert f.variables["dummy"].shape == (5, 2)
         assert f.variables["dummy"]._h5ds.maxshape == (None, 2)
