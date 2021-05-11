@@ -1110,4 +1110,4 @@ def test_nc4_non_coord(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "r") as f:
         assert f.dimensions == {"x": None, "y": 2}
         assert list(f.variables) == ["y", "test"]
-        assert list(f._h5group.keys()) == ['_nc4_non_coord_y', "test", "x", "y"]
+        assert list(f._h5group.keys()) == ["_nc4_non_coord_y", "test", "x", "y"]
