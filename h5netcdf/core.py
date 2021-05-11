@@ -73,6 +73,32 @@ def _invalid_netcdf_feature(feature, allow, file, stacklevel=0):
         raise CompatibilityError(msg)
 
 
+def _check_netcdf4_variable_type(grp, name, dimensions):
+    """Return tuple with variable types."""
+    grp_dims = name in grp.dimensions
+    var_dims = name in dimensions
+
+    _1d = len(dimensions) == 1
+    _2d = (
+        len(dimensions) == 2
+        and name == dimensions[0]
+        and dimensions[1] not in grp.variables
+        and dimensions[1] in grp.dimensions
+    )
+
+    nc4_var_type = ()
+    # either coord variable
+    if grp_dims and var_dims and (_1d or _2d):
+        nc4_var_type += ("coord",)
+    # or data variable
+    else:
+        if not var_dims or (var_dims and len(dimensions) > 1):
+            nc4_var_type += ("data",)
+            if grp_dims:
+                nc4_var_type += ("non_coord",)
+    return nc4_var_type
+
+
 class BaseVariable(object):
     def __init__(self, parent, name, dimensions=None):
         self._parent = parent
@@ -440,21 +466,12 @@ class Group(Mapping):
             group = group._require_child_group(k)
         return group._create_child_group(keys[-1])
 
-    def _create_child_variable(
+    def _create_h5netcdf_variable(
         self, name, dimensions, dtype, data, fillvalue, **kwargs
     ):
+        """Create hdf5 dataset and h5netcdf variable"""
+
         stacklevel = 4  # correct if name does not start with '/'
-
-        if name in self:
-            raise ValueError(
-                "unable to create variable %r " "(name already exists)" % name
-            )
-
-        if data is not None:
-            data = np.asarray(data)
-            for d, s in zip(dimensions, data.shape):
-                if d not in self.dimensions:
-                    self.dimensions[d] = s
 
         if dtype is None:
             dtype = data.dtype
@@ -478,37 +495,64 @@ class Group(Mapping):
                 stacklevel=stacklevel,
             )
 
-        if name in self.dimensions and name not in dimensions:
-            h5name = "_nc4_non_coord_" + name
-        else:
-            h5name = name
-
         shape = tuple(self._current_dim_sizes[d] for d in dimensions)
         maxshape = tuple(self._dim_sizes[d] for d in dimensions)
 
         # If it is passed directly it will change the default compression
         # settings.
-        if shape != maxshape:
+        if shape != maxshape and 0 not in shape:
+            kwargs["chunks"] = shape
+
+        maxshape = [sh if sh else None for sh in maxshape]
+        # variable needs chunking if at least one dimension is unlimited
+        if None in maxshape:
             kwargs["maxshape"] = maxshape
+
+        self._h5group.create_dataset(
+            name, shape, dtype=dtype, data=data, fillvalue=fillvalue, **kwargs
+        )
+        self._variables[name] = self._variable_cls(self, name, dimensions)
+        variable = self._variables[name]
+
+        if fillvalue is not None:
+            value = variable.dtype.type(fillvalue)
+            variable.attrs._h5attrs["_FillValue"] = value
+
+        return self._variables[name]
+
+    def _create_child_variable(
+        self, name, dimensions, dtype, data, fillvalue, **kwargs
+    ):
+        if name in self:
+            raise ValueError(
+                "unable to create variable %r " "(name already exists)" % name
+            )
+
+        if data is not None:
+            data = np.asarray(data)
+            for d, s in zip(dimensions, data.shape):
+                if d not in self.dimensions:
+                    self.dimensions[d] = s
+
+        # get netcdf4 variable types
+        nc4_var_type = _check_netcdf4_variable_type(self, name, dimensions)
+        if "non_coord" in nc4_var_type:
+            h5name = "_nc4_non_coord_" + name
+        else:
+            h5name = name
 
         # Clear dummy HDF5 datasets with this name that were created for a
         # dimension scale without a corresponding variable.
-        if name in self.dimensions and name in self._h5group:
+        if "coord" in nc4_var_type and name in self._h5group:
             h5ds = self._h5group[name]
             if _netcdf_dimension_but_not_variable(h5ds):
                 self._detach_dim_scale(name)
                 del self._h5group[name]
 
-        self._h5group.create_dataset(
-            h5name, shape, dtype=dtype, data=data, fillvalue=fillvalue, **kwargs
+        variable = self._create_h5netcdf_variable(
+            h5name, dimensions, dtype, data, fillvalue, **kwargs
         )
 
-        self._variables[h5name] = self._variable_cls(self, h5name, dimensions)
-        variable = self._variables[h5name]
-
-        if fillvalue is not None:
-            value = variable.dtype.type(fillvalue)
-            variable.attrs._h5attrs["_FillValue"] = value
         return variable
 
     def create_variable(
