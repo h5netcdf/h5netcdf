@@ -556,6 +556,12 @@ class Group(Mapping):
         """Create all necessary HDF5 dimension scale."""
         dim_order = self._dim_order.maps[0]
         for dim in sorted(dim_order, key=lambda d: dim_order[d]):
+            dimlen = bytes(f"{self._current_dim_sizes[dim]:10}", "ascii")
+            scale_name = (
+                dim
+                if dim in self._variables and dim in self._h5group
+                else NOT_A_VARIABLE + dimlen
+            )
             if dim not in self._h5group:
                 size = self._current_dim_sizes[dim]
                 kwargs = {}
@@ -576,8 +582,6 @@ class Group(Mapping):
             # TODO: don't re-create scales if they already exist. With the
             # current version of h5py, this would require using the low-level
             # h5py.h5ds.is_scale interface to detect pre-existing scales.
-            dimlen = bytes(f"{self._current_dim_sizes[dim]:10}", "ascii")
-            scale_name = dim if dim in self.variables else NOT_A_VARIABLE + dimlen
             if h5py.__version__ < LooseVersion("2.10.0"):
                 h5ds.dims.create_scale(h5ds, scale_name)
             else:
