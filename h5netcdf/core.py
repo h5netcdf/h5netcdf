@@ -64,6 +64,43 @@ def _invalid_netcdf_feature(feature, allow):
         raise CompatibilityError(msg)
 
 
+def _expanded_indexer(key, ndim):
+    """Expand indexing key to tuple of slices with length equal the number of dimensions."""
+    # always return tuple and force colons to slices
+    key = np.index_exp[key]
+
+    # dimensions
+    len_key = len(key)
+
+    # find Ellipsis
+    ellipsis = [i for i, k in enumerate(key) if k is Ellipsis]
+    if len(ellipsis) > 1:
+        raise IndexError(
+            f"an index can only have a single ellipsis ('...'), {len(ellipsis)} given"
+        )
+    else:
+        # expand Ellipsis wherever it is
+        len_key -= len(ellipsis)
+        res_dim_cnt = ndim - len_key
+        res_dims = res_dim_cnt * (slice(None),)
+        ellipsis = ellipsis[0] if ellipsis else None
+
+    # check for correct dimensionality
+    if ndim and res_dim_cnt < 0:
+        raise IndexError(
+            f"too many indices for array: array is {ndim}-dimensional, but {len_key} were indexed"
+        )
+
+    # convert integer indices to slices
+    key = tuple([slice(k, k + 1) if isinstance(k, int) else k for k in key])
+
+    # slices to build resulting key
+    k1 = slice(ellipsis)
+    k2 = slice(len_key, None) if ellipsis is None else slice(ellipsis + 1, None)
+
+    return key[k1] + res_dims + key[k2]
+
+
 class BaseVariable(object):
     def __init__(self, parent, name, dimensions=None):
         self._parent_ref = weakref.ref(parent)
@@ -148,6 +185,42 @@ class BaseVariable(object):
             if "_Netcdf4Dimid" in dim.attrs:
                 self._h5ds.attrs["_Netcdf4Dimid"] = dim.attrs["_Netcdf4Dimid"]
 
+    def _maybe_resize_dimensions(self, key, value):
+        """Resize according to given key with respect to variable dimensions"""
+        # expand key to slices
+        key = _expanded_indexer(key, self.ndim)
+        new_shape = ()
+        v = None
+        for i, dim in enumerate(self.dimensions):
+            # is unlimited dimensions
+            if not self._parent._dim_sizes[dim]:
+                if key[i].stop is None:
+                    # if stop is None, get dimensions from value,
+                    # they must match with variable dimension
+                    if v is None:
+                        v = np.asarray(value)
+                    if v.ndim == self.ndim:
+                        new_max = max(v.shape[i], self.shape[i])
+                    elif v.ndim == 0:
+                        # for scalars we take the current dimension size
+                        new_max = self._parent._current_dim_sizes[dim]
+                    else:
+                        raise IndexError("shape of data does not conform to slice")
+                else:
+                    new_max = max(key[i].stop, self.shape[i])
+                # resize unlimited dimension if needed and all connected variables
+                # this is not in lign with `netcdf4-python` which only resizes
+                # the dimension and this variable
+                if self._parent._current_dim_sizes[dim] < new_max:
+                    self._parent.resize_dimension(dim, new_max)
+                new_shape += (new_max,)
+            else:
+                new_shape += (self._parent._current_dim_sizes[dim],)
+
+        # increase variable size if shape is changing
+        if self.shape != new_shape:
+            self._h5ds.resize(new_shape)
+
     @property
     def dimensions(self):
         if self._dimensions is None:
@@ -180,6 +253,7 @@ class BaseVariable(object):
         return self._h5ds[key]
 
     def __setitem__(self, key, value):
+        self._maybe_resize_dimensions(key, value)
         self._h5ds[key] = value
 
     @property
@@ -751,37 +825,34 @@ class Group(Mapping):
         header = "<%s %r (%s members)>" % (self._cls_name, self.name, len(self))
         return "\n".join([header] + self._repr_body())
 
-    def resize_dimension(self, dimension, size, resize_vars=True):
-        """
-        Resize a dimension to a certain size.
+    def resize_dimension(self, dim, size, resize_vars=True):
+        """Resize a dimension to a certain size.
 
         It will pad with the underlying HDF5 data sets' fill values (usually
         zero) where necessary.
         """
-        if self.dimensions[dimension] is not None:
+        if self.dimensions[dim] is not None:
             raise ValueError(
-                "Dimension '%s' is not unlimited and thus "
-                "cannot be resized." % dimension
+                "Dimension '%s' is not unlimited and thus cannot be resized." % dim
             )
 
         # Resize the dimension.
-        self._current_dim_sizes[dimension] = size
+        self._current_dim_sizes[dim] = size
 
-        # Resize dimension in file
-        if dimension in self._h5group:
-            self._h5group[dimension].resize((size,))
+        # Needs resize in any case, if variable, if dimensions and if coordinate
+        if dim in self._h5group:
+            self._h5group[dim].resize((size,))
 
         # Adapt recursively to all variables
         if resize_vars:
-            self._resize_variables(dimension, size)
+            self._resize_variables(dim, size)
 
-    def _resize_variables(self, dimension, size, recurse=True):
+    def _resize_variables(self, dim, size, recurse=True):
         """Resize variables"""
-        # Adapt to all variables
         for var in self.variables.values():
             new_shape = list(var.shape)
             for i, d in enumerate(var.dimensions):
-                if d == dimension:
+                if d == dim:
                     new_shape[i] = size
             new_shape = tuple(new_shape)
             if new_shape != var.shape:
@@ -790,7 +861,7 @@ class Group(Mapping):
         # Recurse as dimensions are visible to this group and all child groups.
         if recurse:
             for i in self.groups.values():
-                i._resize_variables(dimension, size)
+                i._resize_variables(dim, size)
 
 
 class File(Group):

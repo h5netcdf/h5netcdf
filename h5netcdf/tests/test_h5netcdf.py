@@ -937,11 +937,15 @@ def test_creating_variables_with_unlimited_dimensions(tmp_local_or_remote_netcdf
             )
         assert e.value.args[0] == "Shape tuple is incompatible with data"
 
+        # Creating a coordinate variable
+        f.create_variable("x", dimensions=("x",), dtype=np.int64)
+
         # Resize data.
         assert f.variables["dummy"].shape == (0, 2)
         f.resize_dimension("x", 3)
         # This will also force a resize of the existing variables and it will
         # be padded with zeros..
+        assert f._current_dim_sizes["x"] == 3
         np.testing.assert_allclose(f.variables["dummy"], np.zeros((3, 2)))
 
         # Creating another variable with no data will now also take the shape
@@ -949,13 +953,22 @@ def test_creating_variables_with_unlimited_dimensions(tmp_local_or_remote_netcdf
         f.create_variable("dummy3", dimensions=("x", "y"), dtype=np.int64)
         assert f.variables["dummy3"].shape == (3, 2)
         assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
+        np.testing.assert_allclose(f.variables["dummy3"], np.zeros((3, 2)))
+
+        # Writing to a variable with an unlimited dimension will resize
+        f.variables["dummy3"][:] = np.ones((5, 2))
+        assert f.variables["dummy3"].shape == (5, 2)
+        assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
+        assert f["x"].shape == (5,)
+        assert f._current_dim_sizes["x"] == 5
+        np.testing.assert_allclose(f.variables["dummy3"], np.ones((5, 2)))
 
     # Close and read again to also test correct parsing of unlimited
     # dimensions.
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as f:
         assert f.dimensions["x"] is None
         assert f._h5file["x"].maxshape == (None,)
-        assert f._h5file["x"].shape == (3,)
+        assert f._h5file["x"].shape == (5,)
 
         assert f.dimensions["y"] == 2
         assert f._h5file["y"].maxshape == (2,)
@@ -967,6 +980,7 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
         # Two dimensions, only one is unlimited.
         f.dimensions["x"] = None
         f.dimensions["y"] = 3
+        f.dimensions["z"] = None
 
         # Cannot create it without first resizing it.
         with pytest.raises(ValueError) as e:
@@ -979,6 +993,7 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
         f.create_variable("dummy1", dimensions=("x", "y"), dtype=np.int64)
         f.create_variable("dummy2", dimensions=("x", "y"), dtype=np.int64)
         f.create_variable("dummy3", dimensions=("x", "y"), dtype=np.int64)
+        f.create_variable("dummyX", dimensions=("x", "y", "z"), dtype=np.int64)
         g = f.create_group("test")
         g.create_variable("dummy4", dimensions=("y", "x", "x"), dtype=np.int64)
         g.create_variable("dummy5", dimensions=("y", "y"), dtype=np.int64)
@@ -986,20 +1001,45 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
         assert f.variables["dummy1"].shape == (0, 3)
         assert f.variables["dummy2"].shape == (0, 3)
         assert f.variables["dummy3"].shape == (0, 3)
+        assert f.variables["dummyX"].shape == (0, 3, 0)
         assert g.variables["dummy4"].shape == (3, 0, 0)
         assert g.variables["dummy5"].shape == (3, 3)
+
+        # resize dimensions and all connected variables
         f.resize_dimension("x", 2)
         assert f.variables["dummy1"].shape == (2, 3)
         assert f.variables["dummy2"].shape == (2, 3)
         assert f.variables["dummy3"].shape == (2, 3)
+        assert f.variables["dummyX"].shape == (2, 3, 0)
         assert g.variables["dummy4"].shape == (3, 2, 2)
         assert g.variables["dummy5"].shape == (3, 3)
 
-        f.variables["dummy2"][:] = [[1, 2, 3], [5, 6, 7]]
-        np.testing.assert_allclose(f.variables["dummy2"], [[1, 2, 3], [5, 6, 7]])
+        # write to variable resizes accordingly
+        f.variables["dummyX"][:] = [
+            [[1, 2], [2, 3], [3, 4]],
+            [[5, 6], [6, 7], [7, 8]],
+            [[9, 9], [9, 10], [10, 11]],
+        ]
+        assert f.variables["dummy1"].shape == (3, 3)
+        assert f.variables["dummy2"].shape == (3, 3)
+        assert f.variables["dummy3"].shape == (3, 3)
+        assert f.variables["dummyX"].shape == (3, 3, 2)
+        assert g.variables["dummy4"].shape == (3, 3, 3)
+        assert g.variables["dummy5"].shape == (3, 3)
+        np.testing.assert_allclose(
+            f.variables["dummyX"],
+            [
+                [[1, 2], [2, 3], [3, 4]],
+                [[5, 6], [6, 7], [7, 8]],
+                [[9, 9], [9, 10], [10, 11]],
+            ],
+        )
 
-        f.variables["dummy3"][...] = [[1, 2, 3], [5, 6, 7]]
-        np.testing.assert_allclose(f.variables["dummy3"], [[1, 2, 3], [5, 6, 7]])
+        # broadcast writing
+        f.variables["dummy3"][...] = [[1, 2, 3]]
+        np.testing.assert_allclose(
+            f.variables["dummy3"], [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
+        )
 
 
 def test_c_api_can_read_unlimited_dimensions(tmp_local_netcdf):
