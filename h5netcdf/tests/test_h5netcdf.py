@@ -1099,3 +1099,15 @@ def test_reading_special_datatype_created_with_c_api(tmp_local_netcdf):
         f.createCompoundType(complex128, "complex128")
     with h5netcdf.File(tmp_local_netcdf, "r") as f:
         pass
+
+
+def test_nc4_non_coord(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions = {"x": None, "y": 2}
+        f.create_variable("test", dimensions=("x",), dtype=np.int64)
+        f.create_variable("y", dimensions=("x",), dtype=np.int64)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f.dimensions == {"x": None, "y": 2}
+        assert list(f.variables) == ["y", "test"]
+        assert list(f._h5group.keys()) == ["_nc4_non_coord_y", "test", "x", "y"]

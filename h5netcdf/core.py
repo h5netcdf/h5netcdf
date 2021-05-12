@@ -89,7 +89,8 @@ class BaseVariable(object):
 
     @property
     def name(self):
-        return self._h5ds.name
+        # fix name if _nc4_non_coord_
+        return self._h5ds.name.replace("_nc4_non_coord_", "")
 
     def _lookup_dimensions(self):
         attrs = self._h5ds.attrs
@@ -220,12 +221,16 @@ class _LazyObjectLookup(Mapping):
 
     def __iter__(self):
         for name in self._objects:
-            yield name
+            # fix variable name for variable which clashes with dim name
+            yield name.replace("_nc4_non_coord_", "")
 
     def __len__(self):
         return len(self._objects)
 
     def __getitem__(self, key):
+        # check for _nc4_non_coord_ variable
+        if key not in self._objects and "_nc4_non_coord_" + key in self._objects:
+            key = "_nc4_non_coord_" + key
         if self._objects[key] is not None:
             return self._objects[key]
         else:
@@ -324,10 +329,7 @@ class Group(Mapping):
 
                 if not _netcdf_dimension_but_not_variable(v):
                     if isinstance(v, h5_dataset_types):
-                        var_name = k
-                        if k.startswith("_nc4_non_coord_"):
-                            var_name = k[len("_nc4_non_coord_") :]
-                        self._variables.add(var_name)
+                        self._variables.add(k)
 
         # iterate over found phony dimensions and create them
         if self._root._phony_dims_mode is not None:
@@ -554,6 +556,12 @@ class Group(Mapping):
         """Create all necessary HDF5 dimension scale."""
         dim_order = self._dim_order.maps[0]
         for dim in sorted(dim_order, key=lambda d: dim_order[d]):
+            dimlen = bytes(f"{self._current_dim_sizes[dim]:10}", "ascii")
+            scale_name = (
+                dim
+                if dim in self._variables and dim in self._h5group
+                else NOT_A_VARIABLE + dimlen
+            )
             if dim not in self._h5group:
                 size = self._current_dim_sizes[dim]
                 kwargs = {}
@@ -574,8 +582,6 @@ class Group(Mapping):
             # TODO: don't re-create scales if they already exist. With the
             # current version of h5py, this would require using the low-level
             # h5py.h5ds.is_scale interface to detect pre-existing scales.
-            dimlen = bytes(f"{self._current_dim_sizes[dim]:10}", "ascii")
-            scale_name = dim if dim in self.variables else NOT_A_VARIABLE + dimlen
             if h5py.__version__ < LooseVersion("2.10.0"):
                 h5ds.dims.create_scale(h5ds, scale_name)
             else:
