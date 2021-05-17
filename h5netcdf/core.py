@@ -145,7 +145,7 @@ class BaseVariable(object):
         phony_dims = defaultdict(int)
         for axis, dim in enumerate(self._h5ds.dims):
             # get current dimension
-            dimsize = self.shape[axis]
+            dimsize = self._h5ds.shape[axis]
             phony_dims[dimsize] += 1
             if len(dim):
                 name = _name_from_dimension(dim)
@@ -200,25 +200,25 @@ class BaseVariable(object):
                     if v is None:
                         v = np.asarray(value)
                     if v.ndim == self.ndim:
-                        new_max = max(v.shape[i], self.shape[i])
+                        new_max = max(v.shape[i], self._h5ds.shape[i])
                     elif v.ndim == 0:
                         # for scalars we take the current dimension size
                         new_max = self._parent._current_dim_sizes[dim]
                     else:
                         raise IndexError("shape of data does not conform to slice")
                 else:
-                    new_max = max(key[i].stop, self.shape[i])
-                # resize unlimited dimension if needed and all connected variables
-                # this is not in lign with `netcdf4-python` which only resizes
+                    new_max = max(key[i].stop, self._h5ds.shape[i])
+                # resize unlimited dimension if needed but no other variables
+                # this is in line with `netcdf4-python` which only resizes
                 # the dimension and this variable
                 if self._parent._current_dim_sizes[dim] < new_max:
-                    self._parent.resize_dimension(dim, new_max)
+                    self._parent.resize_dimension(dim, new_max, resize_vars=False)
                 new_shape += (new_max,)
             else:
                 new_shape += (self._parent._current_dim_sizes[dim],)
 
         # increase variable size if shape is changing
-        if self.shape != new_shape:
+        if self._h5ds.shape != new_shape:
             self._h5ds.resize(new_shape)
 
     @property
@@ -229,7 +229,8 @@ class BaseVariable(object):
 
     @property
     def shape(self):
-        return self._h5ds.shape
+        # return actual dimensions sizes, this is in line with netcdf4-python
+        return tuple([self._parent._current_dim_sizes[d] for d in self.dimensions])
 
     @property
     def ndim(self):
@@ -250,10 +251,28 @@ class BaseVariable(object):
             string_info = h5py.check_string_dtype(self._h5ds.dtype)
             if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
+
+        # return array padded with fillvalue
+        if self.dtype != str and self.dtype.kind in ["f", "i", "u"]:
+            sdiff = [d0 - d1 for d0, d1 in zip(self.shape, self._h5ds.shape)]
+            if sum(sdiff):
+                fv = self.dtype.type(self._h5ds.fillvalue)
+                padding = [(0, s) for s in sdiff]
+                return np.pad(
+                    self._h5ds,
+                    pad_width=padding,
+                    mode="constant",
+                    constant_values=fv,
+                )[key]
+
         return self._h5ds[key]
 
     def __setitem__(self, key, value):
-        self._maybe_resize_dimensions(key, value)
+        from .legacyapi import Dataset
+
+        # resize on write only for legacy API
+        if isinstance(self._parent._root, Dataset):
+            self._maybe_resize_dimensions(key, value)
         self._h5ds[key] = value
 
     @property
@@ -850,12 +869,12 @@ class Group(Mapping):
     def _resize_variables(self, dim, size, recurse=True):
         """Resize variables"""
         for var in self.variables.values():
-            new_shape = list(var.shape)
+            new_shape = list(var._h5ds.shape)
             for i, d in enumerate(var.dimensions):
                 if d == dim:
                     new_shape[i] = size
             new_shape = tuple(new_shape)
-            if new_shape != var.shape:
+            if new_shape != var._h5ds.shape:
                 var._h5ds.resize(new_shape)
 
         # Recurse as dimensions are visible to this group and all child groups.

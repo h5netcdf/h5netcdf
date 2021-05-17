@@ -125,10 +125,12 @@ exact match. Here is an incomplete list of functionality we don't include:
   for writing netCDF files.
 - h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
-  (e.g., xarray_), which can implement their exact desired scaling behavior.
-- No support yet for automatic resizing of unlimited dimensions with array
-  indexing. This would be a welcome pull request. For now, dimensions can be
-  manually resized with ``Group.resize_dimension(dimension, size)``.
+  (e.g., xarray_), which can implement their exact desired scaling behavior. Nevertheless both
+  legacy API and new API return arrays padded with ``fillvalue`` up to current size of
+  variable's dimensions.
+- In the legacy API automatic resizing of unlimited dimensions with array indexing is available.
+  In the new API dimensions need to be manually resized with
+  ``Group.resize_dimension(dimension, size)``.
 
 .. _GitHub issue: https://github.com/h5netcdf/h5netcdf/issues/15
 
