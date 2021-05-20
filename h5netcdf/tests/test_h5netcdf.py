@@ -836,28 +836,6 @@ def test_create_variable_matching_saved_dimension(tmp_local_or_remote_netcdf):
         assert f["y"].dims[0].keys() == ["x"]
 
 
-def test_invalid_netcdf_warns(tmp_local_or_remote_netcdf):
-    if tmp_local_or_remote_netcdf.startswith(remote_h5):
-        pytest.skip("h5pyd does not support NumPy complex dtype yet")
-    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
-        # valid
-        with pytest.warns(None) as record:
-            f.create_variable(
-                "lzf_compressed", data=[1], dimensions=("x"), compression="lzf"
-            )
-        assert not record.list
-        # invalid
-        with pytest.warns(FutureWarning):
-            f.create_variable("complex", data=1j)
-        with pytest.warns(FutureWarning):
-            f.attrs["complex_attr"] = 1j
-        with pytest.warns(FutureWarning):
-            f.create_variable("scaleoffset", data=[1], dimensions=("x",), scaleoffset=0)
-    h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
-    with h5.File(tmp_local_or_remote_netcdf, "r") as f:
-        assert "_NCProperties" not in f.attrs
-
-
 def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w", invalid_netcdf=False) as f:
         # valid

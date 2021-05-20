@@ -9,7 +9,6 @@ from distutils.version import LooseVersion
 import h5py
 import numpy as np
 
-# from .compat import ChainMap, OrderedDict, unicode
 from .attrs import Attributes
 from .dimensions import Dimensions
 from .utils import Frozen
@@ -55,17 +54,8 @@ class CompatibilityError(Exception):
     """Raised when using features that are not part of the NetCDF4 API."""
 
 
-def _invalid_netcdf_feature(feature, allow, file, stacklevel=0):
-    if allow is None:
-        msg = (
-            "{} are supported by h5py, but not part of the NetCDF API. "
-            "You are writing an HDF5 file that is not a valid NetCDF file! "
-            "In the future, this will be an error, unless you set "
-            "invalid_netcdf=True.".format(feature)
-        )
-        warnings.warn(msg, FutureWarning, stacklevel=stacklevel)
-        file._write_ncproperties = False
-    elif not allow:
+def _invalid_netcdf_feature(feature, allow):
+    if not allow:
         msg = (
             "{} are not a supported NetCDF feature, and are not allowed by "
             "h5netcdf unless invalid_netcdf=True.".format(feature)
@@ -445,8 +435,6 @@ class Group(Mapping):
     def _create_child_variable(
         self, name, dimensions, dtype, data, fillvalue, **kwargs
     ):
-        stacklevel = 4  # correct if name does not start with '/'
-
         if name in self:
             raise ValueError(
                 "unable to create variable %r " "(name already exists)" % name
@@ -465,19 +453,15 @@ class Group(Mapping):
             # never warn since h5netcdf has always errored here
             _invalid_netcdf_feature(
                 "boolean dtypes",
-                allow=bool(self._root.invalid_netcdf),
-                file=self._root,
-                stacklevel=stacklevel,
+                self._root.invalid_netcdf,
             )
         else:
-            self._root._check_valid_netcdf_dtype(dtype, stacklevel=stacklevel)
+            self._root._check_valid_netcdf_dtype(dtype)
 
         if "scaleoffset" in kwargs:
             _invalid_netcdf_feature(
                 "scale-offset filters",
-                allow=self._root.invalid_netcdf,
-                file=self._root,
-                stacklevel=stacklevel,
+                self._root.invalid_netcdf,
             )
 
         # variable <-> dimension name clash
@@ -705,7 +689,9 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(self, path, mode=None, invalid_netcdf=None, phony_dims=None, **kwargs):
+    def __init__(
+        self, path, mode=None, invalid_netcdf=False, phony_dims=None, **kwargs
+    ):
         # Deprecating mode='a' in favor of mode='r'
         # If mode is None default to 'a' and issue a warning
         if mode is None:
@@ -757,9 +743,6 @@ class File(Group):
         self._root = self
         self._h5path = "/"
         self.invalid_netcdf = invalid_netcdf
-        # If invalid_netcdf is None, we'll disable writing _NCProperties only
-        # if we actually use invalid NetCDF features.
-        self._write_ncproperties = invalid_netcdf is not True
 
         # phony dimension handling
         self._phony_dims_mode = phony_dims
@@ -826,7 +809,7 @@ class File(Group):
         self._labeled_dim_count = get_labeled_dimension_count(self)
         create_phony_dimensions(self)
 
-    def _check_valid_netcdf_dtype(self, dtype, stacklevel=3):
+    def _check_valid_netcdf_dtype(self, dtype):  # , stacklevel=3):
         dtype = np.dtype(dtype)
 
         if dtype == bool:
@@ -845,9 +828,9 @@ class File(Group):
         if description is not None:
             _invalid_netcdf_feature(
                 "{} dtypes".format(description),
-                allow=self.invalid_netcdf,
-                file=self,
-                stacklevel=stacklevel + 1,
+                self.invalid_netcdf,
+                # file=self,
+                # stacklevel=stacklevel + 1,
             )
 
     @property
@@ -891,7 +874,7 @@ class File(Group):
             self._set_unassigned_dimension_ids()
             self._create_dim_scales()
             self._attach_dim_scales()
-            if not self._preexisting_file and self._write_ncproperties:
+            if not self._preexisting_file and not self.invalid_netcdf:
                 self.attrs._h5attrs["_NCProperties"] = np.array(
                     _NC_PROPERTIES,
                     dtype=h5py.string_dtype(
