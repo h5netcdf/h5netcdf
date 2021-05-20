@@ -1159,3 +1159,59 @@ def test_scales_on_append(tmp_local_netcdf):
     # check scales
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
         assert ds.variables["test1"].attrs._h5attrs.get("DIMENSION_LIST", False)
+
+
+def test_create_attach_scales(tmp_local_netcdf):
+    # create file with netCDF4
+    with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("x", 0)
+        ds.createVariable("test", "i4", ("x",))
+        ds.variables["test"] = np.ones((10,))
+
+    # append file with netCDF4
+    with netCDF4.Dataset(tmp_local_netcdf, "a") as ds:
+        ds.createVariable("test1", "i4", ("x",))
+
+    # check scales
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        refs = ds._h5group["x"].attrs.get("REFERENCE_LIST", False)
+        assert len(refs) == 2
+        for (ref, dim), name in zip(refs, ["/test", "/test1"]):
+            assert dim == 0
+            assert ds._root._h5file[ref].name == name
+
+    # create file with netCDF4
+    with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("x", 0)
+        ds.createVariable("test", "i4", ("x",))
+        ds.variables["test"] = np.ones((10,))
+
+    # append file with legacyapi
+    with legacyapi.Dataset(tmp_local_netcdf, "a") as ds:
+        ds.createVariable("test1", "i4", ("x",))
+
+    # check scales
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        refs = ds._h5group["x"].attrs.get("REFERENCE_LIST", False)
+        assert len(refs) == 2
+        for (ref, dim), name in zip(refs, ["/test", "/test1"]):
+            assert dim == 0
+            assert ds._root._h5file[ref].name == name
+
+
+def test_detach_scale(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions["x"] = 2
+        ds.dimensions["y"] = 2
+
+    with h5netcdf.File(tmp_local_netcdf, "a") as ds:
+        ds.create_variable("test", dimensions=("x",), dtype=np.int64)
+        # this forces detach and re-creation
+        ds.create_variable("x", dimensions=("y",), dtype=np.int64)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        refs = ds._h5group["x"].attrs.get("REFERENCE_LIST", False)
+        assert len(refs) == 1
+        for (ref, dim), name in zip(refs, ["/test"]):
+            assert dim == 0
+            assert ds._root._h5file[ref].name == name

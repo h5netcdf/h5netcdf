@@ -579,13 +579,11 @@ class Group(Mapping):
                 coord_ids = np.array([dim_order[d] for d in dims], "int32")
                 h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
-            # TODO: don't re-create scales if they already exist. With the
-            # current version of h5py, this would require using the low-level
-            # h5py.h5ds.is_scale interface to detect pre-existing scales.
-            if h5py.__version__ < LooseVersion("2.10.0"):
-                h5ds.dims.create_scale(h5ds, scale_name)
-            else:
-                h5ds.make_scale(scale_name)
+            if not h5py.h5ds.is_scale(h5ds.id):
+                if h5py.__version__ < LooseVersion("2.10.0"):
+                    h5ds.dims.create_scale(h5ds, scale_name)
+                else:
+                    h5ds.make_scale(scale_name)
 
         for subgroup in self.groups.values():
             subgroup._create_dim_scales()
@@ -595,7 +593,11 @@ class Group(Mapping):
         for name, var in self.variables.items():
             if name not in self.dimensions:
                 for n, dim in enumerate(var.dimensions):
-                    var._h5ds.dims[n].attach_scale(self._all_h5groups[dim])
+                    vards = var._h5ds
+                    scale = self._all_h5groups[dim]
+                    # attach only, if not already attached
+                    if not h5py.h5ds.is_attached(vards.id, scale.id, n):
+                        vards.dims[n].attach_scale(scale)
 
         for subgroup in self.groups.values():
             subgroup._attach_dim_scales()
@@ -605,7 +607,11 @@ class Group(Mapping):
         for var in self.variables.values():
             for n, dim in enumerate(var.dimensions):
                 if dim == name:
-                    var._h5ds.dims[n].detach_scale(self._all_h5groups[dim])
+                    vards = var._h5ds
+                    scale = self._all_h5groups[dim]
+                    # only detach if attached
+                    if h5py.h5ds.is_attached(vards.id, scale.id, n):
+                        vards.dims[n].detach_scale(scale)
 
         for subgroup in self.groups.values():
             if dim not in subgroup._h5group:
