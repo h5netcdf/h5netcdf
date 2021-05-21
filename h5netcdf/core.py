@@ -809,7 +809,7 @@ class File(Group):
         self._labeled_dim_count = get_labeled_dimension_count(self)
         create_phony_dimensions(self)
 
-    def _check_valid_netcdf_dtype(self, dtype):  # , stacklevel=3):
+    def _check_valid_netcdf_dtype(self, dtype):
         dtype = np.dtype(dtype)
 
         if dtype == bool:
