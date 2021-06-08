@@ -1165,36 +1165,40 @@ def test_create_attach_scales(tmp_local_netcdf):
     # create file with netCDF4
     with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
         ds.createDimension("x", 0)
+        ds.createDimension("y", 1)
         ds.createVariable("test", "i4", ("x",))
         ds.variables["test"] = np.ones((10,))
 
     # append file with netCDF4
     with netCDF4.Dataset(tmp_local_netcdf, "a") as ds:
         ds.createVariable("test1", "i4", ("x",))
+        ds.createVariable("y", "i4", ("x", "y"))
 
     # check scales
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
         refs = ds._h5group["x"].attrs.get("REFERENCE_LIST", False)
-        assert len(refs) == 2
-        for (ref, dim), name in zip(refs, ["/test", "/test1"]):
+        assert len(refs) == 3
+        for (ref, dim), name in zip(refs, ["/test", "/test1", "/_nc4_non_coord_y"]):
             assert dim == 0
             assert ds._root._h5file[ref].name == name
 
     # create file with netCDF4
     with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
         ds.createDimension("x", 0)
+        ds.createDimension("y", 1)
         ds.createVariable("test", "i4", ("x",))
         ds.variables["test"] = np.ones((10,))
 
     # append file with legacyapi
     with legacyapi.Dataset(tmp_local_netcdf, "a") as ds:
         ds.createVariable("test1", "i4", ("x",))
+        ds.createVariable("y", "i4", ("x", "y"))
 
     # check scales
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
         refs = ds._h5group["x"].attrs.get("REFERENCE_LIST", False)
-        assert len(refs) == 2
-        for (ref, dim), name in zip(refs, ["/test", "/test1"]):
+        assert len(refs) == 3
+        for (ref, dim), name in zip(refs, ["/test", "/test1", "/_nc4_non_coord_y"]):
             assert dim == 0
             assert ds._root._h5file[ref].name == name
 

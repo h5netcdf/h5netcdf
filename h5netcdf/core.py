@@ -480,7 +480,10 @@ class Group(Mapping):
                 stacklevel=stacklevel,
             )
 
-        if name in self.dimensions and name not in dimensions:
+        # variable <-> dimension name clash
+        if name in self.dimensions and (
+            name not in dimensions or (len(dimensions) > 1 and dimensions[0] != name)
+        ):
             h5name = "_nc4_non_coord_" + name
         else:
             h5name = name
@@ -495,11 +498,11 @@ class Group(Mapping):
 
         # Clear dummy HDF5 datasets with this name that were created for a
         # dimension scale without a corresponding variable.
-        if name in self.dimensions and name in self._h5group:
-            h5ds = self._h5group[name]
+        if h5name in self.dimensions and h5name in self._h5group:
+            h5ds = self._h5group[h5name]
             if _netcdf_dimension_but_not_variable(h5ds):
-                self._detach_dim_scale(name)
-                del self._h5group[name]
+                self._detach_dim_scale(h5name)
+                del self._h5group[h5name]
 
         self._h5group.create_dataset(
             h5name, shape, dtype=dtype, data=data, fillvalue=fillvalue, **kwargs
@@ -591,7 +594,8 @@ class Group(Mapping):
     def _attach_dim_scales(self):
         """Attach dimension scales to all variables."""
         for name, var in self.variables.items():
-            if name not in self.dimensions:
+            # also attach for _nc4_non_coord_ variables
+            if name not in self.dimensions or "_nc4_non_coord_" in var._h5ds.name:
                 for n, dim in enumerate(var.dimensions):
                     vards = var._h5ds
                     scale = self._all_h5groups[dim]
