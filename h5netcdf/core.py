@@ -726,7 +726,7 @@ class File(Group):
                         self._preexisting_file = False
                     self._h5file = h5pyd.File(path, mode, **kwargs)
                 else:
-                    self._preexisting_file = os.path.exists(path)
+                    self._preexisting_file = os.path.exists(path) and mode != "w"
                     self._h5file = h5py.File(path, mode, **kwargs)
             else:  # file-like object
                 if h5py.__version__ < LooseVersion("2.9.0"):
