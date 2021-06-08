@@ -877,7 +877,7 @@ class File(Group):
             groups.extend(group._groups.values())
 
     def flush(self):
-        if "r" not in self._mode:
+        if self._mode != "r":
             self._set_unassigned_dimension_ids()
             self._create_dim_scales()
             self._attach_dim_scales()
