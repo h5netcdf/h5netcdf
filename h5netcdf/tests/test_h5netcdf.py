@@ -1159,3 +1159,51 @@ def test_scales_on_append(tmp_local_netcdf):
     # check scales
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
         assert ds.variables["test1"].attrs._h5attrs.get("DIMENSION_LIST", False)
+
+
+def create_attach_scales(filename, append_module):
+    # create file with netCDF4
+    with netCDF4.Dataset(filename, "w") as ds:
+        ds.createDimension("x", 0)
+        ds.createDimension("y", 1)
+        ds.createVariable("test", "i4", ("x",))
+        ds.variables["test"] = np.ones((10,))
+
+    # append file with netCDF4
+    with append_module.Dataset(filename, "a") as ds:
+        ds.createVariable("test1", "i4", ("x",))
+        ds.createVariable("y", "i4", ("x", "y"))
+
+    # check scales
+    with h5netcdf.File(filename, "r") as ds:
+        refs = ds._h5group["x"].attrs.get("REFERENCE_LIST", False)
+        assert len(refs) == 3
+        for (ref, dim), name in zip(refs, ["/test", "/test1", "/_nc4_non_coord_y"]):
+            assert dim == 0
+            assert ds._root._h5file[ref].name == name
+
+
+def test_create_attach_scales_netcdf4(tmp_local_netcdf):
+    create_attach_scales(tmp_local_netcdf, netCDF4)
+
+
+def test_create_attach_scales_legacyapi(tmp_local_netcdf):
+    create_attach_scales(tmp_local_netcdf, legacyapi)
+
+
+def test_detach_scale(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions["x"] = 2
+        ds.dimensions["y"] = 2
+
+    with h5netcdf.File(tmp_local_netcdf, "a") as ds:
+        ds.create_variable("test", dimensions=("x",), dtype=np.int64)
+        # this forces detach and re-creation
+        ds.create_variable("x", dimensions=("y",), dtype=np.int64)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        refs = ds._h5group["x"].attrs.get("REFERENCE_LIST", False)
+        assert len(refs) == 1
+        for (ref, dim), name in zip(refs, ["/test"]):
+            assert dim == 0
+            assert ds._root._h5file[ref].name == name
