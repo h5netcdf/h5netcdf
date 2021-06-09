@@ -164,9 +164,7 @@ when creating a file:
   ds = h5netcdf.legacyapi.Dataset('mydata.h5', invalid_netcdf=True)
   ...
 
-.. [*] Currently, we only issue a warning, but in a future version of h5netcdf,
-       we will raise ``h5netcdf.CompatibilityError``. Use
-       ``invalid_netcdf=False`` to switch to the new behavior now.
+.. [*] h5netcdf we will raise ``h5netcdf.CompatibilityError``.
 
 Decoding variable length strings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
