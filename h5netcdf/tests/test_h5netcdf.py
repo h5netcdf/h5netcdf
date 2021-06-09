@@ -1161,46 +1161,34 @@ def test_scales_on_append(tmp_local_netcdf):
         assert ds.variables["test1"].attrs._h5attrs.get("DIMENSION_LIST", False)
 
 
-def test_create_attach_scales(tmp_local_netcdf):
+def create_attach_scales(filename, append_module):
     # create file with netCDF4
-    with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
+    with netCDF4.Dataset(filename, "w") as ds:
         ds.createDimension("x", 0)
         ds.createDimension("y", 1)
         ds.createVariable("test", "i4", ("x",))
         ds.variables["test"] = np.ones((10,))
 
     # append file with netCDF4
-    with netCDF4.Dataset(tmp_local_netcdf, "a") as ds:
+    with append_module.Dataset(filename, "a") as ds:
         ds.createVariable("test1", "i4", ("x",))
         ds.createVariable("y", "i4", ("x", "y"))
 
     # check scales
-    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+    with h5netcdf.File(filename, "r") as ds:
         refs = ds._h5group["x"].attrs.get("REFERENCE_LIST", False)
         assert len(refs) == 3
         for (ref, dim), name in zip(refs, ["/test", "/test1", "/_nc4_non_coord_y"]):
             assert dim == 0
             assert ds._root._h5file[ref].name == name
 
-    # create file with netCDF4
-    with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
-        ds.createDimension("x", 0)
-        ds.createDimension("y", 1)
-        ds.createVariable("test", "i4", ("x",))
-        ds.variables["test"] = np.ones((10,))
 
-    # append file with legacyapi
-    with legacyapi.Dataset(tmp_local_netcdf, "a") as ds:
-        ds.createVariable("test1", "i4", ("x",))
-        ds.createVariable("y", "i4", ("x", "y"))
+def test_create_attach_scales_netcdf4(tmp_local_netcdf):
+    create_attach_scales(tmp_local_netcdf, netCDF4)
 
-    # check scales
-    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
-        refs = ds._h5group["x"].attrs.get("REFERENCE_LIST", False)
-        assert len(refs) == 3
-        for (ref, dim), name in zip(refs, ["/test", "/test1", "/_nc4_non_coord_y"]):
-            assert dim == 0
-            assert ds._root._h5file[ref].name == name
+
+def test_create_attach_scales_legacyapi(tmp_local_netcdf):
+    create_attach_scales(tmp_local_netcdf, legacyapi)
 
 
 def test_detach_scale(tmp_local_netcdf):
