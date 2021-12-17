@@ -2,6 +2,7 @@
 # http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
 import os.path
 import warnings
+import weakref
 from collections import ChainMap, OrderedDict, defaultdict
 from collections.abc import Mapping
 from distutils.version import LooseVersion
@@ -65,11 +66,19 @@ def _invalid_netcdf_feature(feature, allow):
 
 class BaseVariable(object):
     def __init__(self, parent, name, dimensions=None):
-        self._parent = parent
-        self._root = parent._root
+        self._parent_ref = weakref.ref(parent)
+        self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
         self._dimensions = dimensions
         self._initialized = True
+
+    @property
+    def _parent(self):
+        return self._parent_ref()
+
+    @property
+    def _root(self):
+        return self._root_ref()
 
     @property
     def _h5ds(self):
@@ -199,9 +208,13 @@ class Variable(BaseVariable):
 
 class _LazyObjectLookup(Mapping):
     def __init__(self, parent, object_cls):
-        self._parent = parent
+        self._parent_ref = weakref.ref(parent)
         self._object_cls = object_cls
         self._objects = OrderedDict()
+
+    @property
+    def _parent(self):
+        return self._parent_ref()
 
     def __setitem__(self, name, obj):
         self._objects[name] = obj
@@ -253,8 +266,8 @@ class Group(Mapping):
         return Group
 
     def __init__(self, parent, name):
-        self._parent = parent
-        self._root = parent._root
+        self._parent_ref = weakref.ref(parent)
+        self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
 
         if parent is not self:
@@ -337,6 +350,14 @@ class Group(Mapping):
             self._root._phony_dim_count += grp_phony_count
 
         self._initialized = True
+
+    @property
+    def _root(self):
+        return self._root_ref()
+
+    @property
+    def _parent(self):
+        return self._parent_ref()
 
     def _create_phony_dimensions(self):
         # this is for 'sort' naming
@@ -740,7 +761,7 @@ class File(Group):
             self._closed = False
 
         self._mode = mode
-        self._root = self
+        self._root_ref = weakref.ref(self)
         self._h5path = "/"
         self.invalid_netcdf = invalid_netcdf
 
