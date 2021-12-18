@@ -1185,3 +1185,14 @@ def test_detach_scale(tmp_local_netcdf):
         for (ref, dim), name in zip(refs, ["/test"]):
             assert dim == 0
             assert ds._root._h5file[ref].name == name
+
+
+def test_no_circular_references(tmp_local_netcdf):
+    # https://github.com/h5py/h5py/issues/2019
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions["x"] = 2
+        ds.dimensions["y"] = 2
+
+    gc.collect()
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        assert len(gc.get_referrers(ds)) == 1
