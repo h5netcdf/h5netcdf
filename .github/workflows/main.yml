@@ -55,9 +55,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Set up conda environment
       run: |
-        # pinned netCDF4==1.5.3 to avoid an issue when trying to import newer netCDF4 versions
+        # pinned netCDF4==1.5.5.1 to avoid an issue when trying to import newer netCDF4 versions
         # ImportError: /.../lib/python3.9/site-packages/netCDF4/../../../libnetcdf.so.19: undefined symbol: H5Pset_fapl_ros3
-        mamba install pip wheel pytest h5py==2.10.0 netCDF4==1.5.3
+        # 1.5.5.1 is the first netCDF4 version to support py39 and not have this ImportError.
+        mamba install pip wheel pytest h5py==2.10.0 netCDF4==1.5.5.1
         conda list
     - name: Install h5netcdf
       run: |
