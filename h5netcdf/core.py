@@ -25,7 +25,7 @@ else:
     h5_group_types = (h5py.Group, h5pyd.Group)
     h5_dataset_types = (h5py.Dataset, h5pyd.Dataset)
 
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 
 _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5py=%s" % (

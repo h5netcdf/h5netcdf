@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development Version:
+Version 0.12.0 (December 20, 2021):
 
 - Added ``FutureWarning`` to use ``mode='r'`` as default when opening files.
   By `Ryan Grout <https://github.com/groutr>`_.
@@ -15,6 +15,8 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Switch warning into error when using invalid netCDF features.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Avoid circular references to objects referencing h5py objects.
+  By `Tom Augspurger <https://github.com/TomAugspurger>`_.
 
 Version 0.11.0 (April 20, 2021):
 

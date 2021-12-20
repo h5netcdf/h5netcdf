@@ -27,7 +27,7 @@ setup(
     long_description=(
         open("README.rst").read() if os.path.exists("README.rst") else ""
     ),
-    version="0.11.0",
+    version="0.12.0",
     license="BSD",
     classifiers=CLASSIFIERS,
     author="Stephan Hoyer",
