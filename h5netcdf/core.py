@@ -376,11 +376,6 @@ class Group(Mapping):
         if self.dimensions[dim_name] is not None:
             return max_size
 
-        def _find_dim(h5group, dim):
-            if dim not in h5group:
-                return _find_dim(h5group.parent, dim)
-            return h5group[dim]
-
         dim_variable = _find_dim(self._h5group, dim_name)
 
         if "REFERENCE_LIST" not in dim_variable.attrs:
@@ -928,3 +923,11 @@ class File(Group):
             self.mode,
         )
         return "\n".join([header] + self._repr_body())
+
+
+def _find_dim(h5group, dim):
+    if dim not in h5group:
+        return _find_dim(h5group.parent, dim)
+    return h5group[dim]
+
+

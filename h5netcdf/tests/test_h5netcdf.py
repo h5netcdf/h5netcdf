@@ -1189,6 +1189,8 @@ def test_detach_scale(tmp_local_netcdf):
 
 def test_no_circular_references(tmp_local_netcdf):
     # https://github.com/h5py/h5py/issues/2019
+    # Note: this test won't necessarily find all cycles
+    # (e.g. those created by closures defined within a method)
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions["x"] = 2
         ds.dimensions["y"] = 2
