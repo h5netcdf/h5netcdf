@@ -5,6 +5,9 @@ Development Version:
 
 - Assign dimensions at creation time, instead of at sync/flush (file-close).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Create/attach dimension scales on the fly, instead of at sync/flush (file-close).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+
 
 Version 0.12.0 (December 20, 2021):
 
