@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development Version:
+
+- Assign dimensions at creation time, instead of at sync/flush (file-close).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+
 Version 0.12.0 (December 20, 2021):
 
 - Added ``FutureWarning`` to use ``mode='r'`` as default when opening files.
