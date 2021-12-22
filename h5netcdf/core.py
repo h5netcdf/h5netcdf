@@ -5,10 +5,10 @@ import warnings
 import weakref
 from collections import ChainMap, OrderedDict, defaultdict
 from collections.abc import Mapping
-from distutils.version import LooseVersion
 
 import h5py
 import numpy as np
+from packaging import version
 
 from .attrs import Attributes
 from .dimensions import Dimensions
@@ -628,7 +628,7 @@ class Group(Mapping):
         scale_name = dim if dim in self.variables else NOT_A_VARIABLE + dimlen
         # don't re-create scales if they already exist.
         if not h5py.h5ds.is_scale(h5ds.id):
-            if h5py.__version__ < LooseVersion("2.10.0"):
+            if version.parse(h5py.__version__) < version.parse("2.10.0"):
                 h5ds.dims.create_scale(h5ds, scale_name)
             else:
                 h5ds.make_scale(scale_name)
@@ -778,7 +778,7 @@ class File(Group):
             warnings.warn(msg, FutureWarning, stacklevel=2)
             mode = "a"
 
-        if h5py.__version__ >= LooseVersion("3.0.0"):
+        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
             self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         try:
             if isinstance(path, str):
@@ -799,7 +799,7 @@ class File(Group):
                     self._preexisting_file = os.path.exists(path) and mode != "w"
                     self._h5file = h5py.File(path, mode, **kwargs)
             else:  # file-like object
-                if h5py.__version__ < LooseVersion("2.9.0"):
+                if version.parse(h5py.__version__) < version.parse("2.9.0"):
                     raise TypeError(
                         "h5py version ({}) must be greater than 2.9.0 to load "
                         "file-like objects.".format(h5py.__version__)
@@ -832,7 +832,7 @@ class File(Group):
                 )
 
         # string decoding
-        if h5py.__version__ >= LooseVersion("3.0.0"):
+        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
             if "legacy" in self._cls_name:
                 if self.decode_vlen_strings is not None:
                     msg = (
