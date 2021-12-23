@@ -1,6 +1,26 @@
+import sys
+
 import h5py
+import numpy as np
 
 from . import core
+
+
+def _check_return_dtype_endianess(endian="native"):
+    little_endian = sys.byteorder == "little"
+    endianess = "="
+    if endian == "little":
+        endianess = little_endian and endianess or "<"
+    elif endian == "big":
+        endianess = not little_endian and endianess or ">"
+    elif endian == "native":
+        pass
+    else:
+        raise ValueError(
+            "'endian' keyword argument must be 'little','big' or 'native', got '%s'"
+            % endian
+        )
+    return endianess
 
 
 class HasAttributesMixin(object):
@@ -79,6 +99,7 @@ class Group(core.Group, HasAttributesMixin):
         fletcher32=False,
         chunksizes=None,
         fill_value=None,
+        endian="native",
     ):
         if len(dimensions) == 0:  # it's a scalar
             # rip off chunk and filter options for consistency with netCDF4-python
@@ -98,6 +119,15 @@ class Group(core.Group, HasAttributesMixin):
             kwds["compression"] = "gzip"
             kwds["compression_opts"] = complevel
             kwds["shuffle"] = shuffle
+
+        # control endian-ess
+        endianess = _check_return_dtype_endianess(endian)
+        # needs swapping?
+        if endianess != "=":
+            # transform to numpy dtype and swap endianess
+            dtype = np.dtype(datatype)
+            if dtype.byteorder != "|":
+                datatype = dtype.newbyteorder("S")
 
         return super(Group, self).create_variable(
             varname,
