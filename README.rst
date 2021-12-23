@@ -123,7 +123,6 @@ exact match. Here is an incomplete list of functionality we don't include:
 
 - Utility functions ``chartostring``, ``num2date``, etc., that are not directly necessary
   for writing netCDF files.
-- We don't support the ``endian`` argument to ``createVariable`` yet (see `GitHub issue`_).
 - h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
   (e.g., xarray_), which can implement their exact desired scaling behavior.
