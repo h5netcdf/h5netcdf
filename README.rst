@@ -48,7 +48,7 @@ Usage
 
 h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
 reproduce most of the features of the netCDF interface, with the notable
-exception of support for operations the rename or delete existing objects.
+exception of support for operations that rename or delete existing objects.
 We simply haven't gotten around to implementing this yet. Patches
 would be very welcome.
 
@@ -90,6 +90,14 @@ design is an adaptation of h5py to the netCDF data model. For example:
         # explicitly resize a dimension and all variables using it
         f.resize_dimension('z', 3)
 
+Note:
+
+- Automatic resizing of unlimited dimensions with array indexing is not available.
+- Dimensions need to be manually resized with ``Group.resize_dimension(dimension, size)``.
+- Arrays are returned padded with ``fillvalue`` (taken from underlying hdf5 dataset) up to
+  current size of variable's dimensions. The behaviour is equivalent to netCDF4-python's
+  ``Dataset.set_auto_mask(False)``.
+
 Legacy API
 ~~~~~~~~~~
 
@@ -125,14 +133,10 @@ exact match. Here is an incomplete list of functionality we don't include:
   for writing netCDF files.
 - h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
-  (e.g., xarray_), which can implement their exact desired scaling behavior. Nevertheless both
-  legacy API and new API return arrays padded with ``fillvalue`` up to current size of
-  variable's dimensions.
-- In the legacy API automatic resizing of unlimited dimensions with array indexing is available.
-  In the new API dimensions need to be manually resized with
-  ``Group.resize_dimension(dimension, size)``.
-
-.. _GitHub issue: https://github.com/h5netcdf/h5netcdf/issues/15
+  (e.g., xarray_), which can implement their exact desired scaling behavior. Nevertheless
+  arrays are returned padded with ``fillvalue`` (taken from underlying hdf5 dataset) up to
+  current size of variable's dimensions. The behaviour is equivalent to netCDF4-python's
+  ``Dataset.set_auto_mask(False)``.
 
 Invalid netCDF files
 ~~~~~~~~~~~~~~~~~~~~
