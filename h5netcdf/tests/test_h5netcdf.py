@@ -4,13 +4,13 @@ import random
 import re
 import string
 import tempfile
-from distutils.version import LooseVersion
 from os import environ as env
 
 import h5py
 import netCDF4
 import numpy as np
 import pytest
+from packaging import version
 from pytest import raises
 
 import h5netcdf
@@ -62,7 +62,7 @@ def tmp_local_or_remote_netcdf(request, tmpdir, restapi):
 
 @pytest.fixture(params=[True, False])
 def decode_vlen_strings(request):
-    if h5py.__version__ >= LooseVersion("3.0.0"):
+    if version.parse(h5py.__version__) >= version.parse("3.0.0"):
         return dict(decode_vlen_strings=request.param)
     else:
         return {}
@@ -450,7 +450,7 @@ def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):
 
 
 def test_fileobj(decode_vlen_strings):
-    if h5py.__version__ < LooseVersion("2.9.0"):
+    if version.parse(h5py.__version__) < version.parse("2.9.0"):
         pytest.skip("h5py > 2.9.0 required to test file-like objects")
     fileobj = tempfile.TemporaryFile()
     write_h5netcdf(fileobj)
@@ -521,7 +521,7 @@ def test_optional_netcdf4_attrs(tmp_local_or_remote_netcdf):
         f.create_dataset("foo", data=foo_data)
         f.create_dataset("x", data=np.arange(5))
         f.create_dataset("y", data=np.arange(10))
-        if h5py.__version__ < LooseVersion("2.10.0"):
+        if version.parse(h5py.__version__) < version.parse("2.10.0"):
             f["foo"].dims.create_scale(f["x"])
             f["foo"].dims.create_scale(f["y"])
         else:
@@ -553,7 +553,8 @@ def test_error_handling(tmp_local_or_remote_netcdf):
 
 
 @pytest.mark.skipif(
-    h5py.__version__ < LooseVersion("3.0.0"), reason="not needed with h5py < 3.0"
+    version.parse(h5py.__version__) < version.parse("3.0.0"),
+    reason="not needed with h5py < 3.0",
 )
 def test_decode_string_warning(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)
@@ -563,7 +564,8 @@ def test_decode_string_warning(tmp_local_or_remote_netcdf):
 
 
 @pytest.mark.skipif(
-    h5py.__version__ < LooseVersion("3.0.0"), reason="not needed with h5py < 3.0"
+    version.parse(h5py.__version__) < version.parse("3.0.0"),
+    reason="not needed with h5py < 3.0",
 )
 def test_decode_string_error(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)
@@ -681,7 +683,7 @@ def test_invalid_netcdf4_mixed(tmp_local_or_remote_netcdf):
         for k, v in var2.items():
             f.create_dataset(k, data=np.arange(v))
 
-        if h5py.__version__ < LooseVersion("2.10.0"):
+        if version.parse(h5py.__version__) < version.parse("2.10.0"):
             f["foo2"].dims.create_scale(f["x1"])
             f["foo2"].dims.create_scale(f["y1"])
             f["foo2"].dims.create_scale(f["z1"])
@@ -719,7 +721,7 @@ def test_invalid_netcdf_malformed_dimension_scales(tmp_local_or_remote_netcdf):
         f.create_dataset("y", data=np.arange(5))
         f.create_dataset("z", data=np.arange(5))
 
-        if h5py.__version__ < LooseVersion("2.10.0"):
+        if version.parse(h5py.__version__) < version.parse("2.10.0"):
             f["foo1"].dims.create_scale(f["x"])
             f["foo1"].dims.create_scale(f["y"])
             f["foo1"].dims.create_scale(f["z"])
@@ -1239,7 +1241,7 @@ def create_netcdf_dimensions(ds, idx):
     collide[...] = np.arange(5 + idx)
     non_collide[...] = np.arange(5 + idx) + 10
     sample[0 : 2 + idx, : 2 + idx] = np.ones((2 + idx, 2 + idx))
-    if h5py.__version__ >= LooseVersion("3.0.0"):
+    if version.parse(h5py.__version__) >= version.parse("3.0.0"):
         ship[0] = list("Skiff     ")
     else:
         ship[0] = string_to_char(np.array("Skiff     ", dtype="|S1"))
@@ -1271,7 +1273,7 @@ def create_h5netcdf_dimensions(ds, idx):
     g.variables["collide"][...] = np.arange(5 + idx)
     g.variables["non_collide"][...] = np.arange(5 + idx) + 10
     g.variables["sample"][0 : 2 + idx, : 2 + idx] = np.ones((2 + idx, 2 + idx))
-    if h5py.__version__ >= LooseVersion("3.0.0"):
+    if version.parse(h5py.__version__) >= version.parse("3.0.0"):
         g.variables["ship"][0] = list("Skiff     ")
     else:
         g.variables["ship"][0] = string_to_char(np.array("Skiff     ", dtype="|S1"))
