@@ -1439,3 +1439,31 @@ def test_monitor_netcdf4_requirement_for_track_order(tmp_local_netcdf):
     with pytest.raises(OSError):
         with netCDF4.Dataset(tmp_local_netcdf, mode="a"):
             pass
+
+
+def test_group_names(tmp_local_netcdf):
+    # https://github.com/h5netcdf/h5netcdf/issues/68
+    with netCDF4.Dataset(tmp_local_netcdf, mode="w") as ds:
+        for i in range(10):
+            ds = ds.createGroup(f"group{i:02d}")
+
+    with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+        assert ds.name == "/"
+        name = ""
+        for i in range(10):
+            name = "/".join([name, f"group{i:02d}"])
+            assert ds[name].name == name.split("/")[-1]
+
+    with legacyapi.Dataset(tmp_local_netcdf, "r") as ds:
+        assert ds.name == "/"
+        name = ""
+        for i in range(10):
+            name = "/".join([name, f"group{i:02d}"])
+            assert ds[name].name == name.split("/")[-1]
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        assert ds.name == "/"
+        name = ""
+        for i in range(10):
+            name = "/".join([name, f"group{i:02d}"])
+            assert ds[name].name == name

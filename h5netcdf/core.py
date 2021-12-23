@@ -289,7 +289,7 @@ class Group(Mapping):
     def __init__(self, parent, name):
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
-        self._h5path = _join_h5paths(parent.name, name)
+        self._h5path = _join_h5paths(parent._h5path, name)
 
         if parent is not self:
             self._dim_sizes = parent._dim_sizes.new_child()
@@ -441,7 +441,13 @@ class Group(Mapping):
 
     @property
     def name(self):
-        return self._h5group.name
+        from .legacyapi import Dataset
+
+        name = self._h5group.name
+        # get group name only instead of full path for legacyapi
+        if isinstance(self._parent._root, Dataset) and len(name) > 1:
+            name = name.split("/")[-1]
+        return name
 
     def _create_dimension(self, name, size=None):
         if name in self._dim_sizes.maps[0]:
