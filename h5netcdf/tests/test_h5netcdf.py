@@ -251,7 +251,10 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.ndim == 1
     assert v.ncattrs() == ["_FillValue"]
     assert v.getncattr("_FillValue") == -1
-    assert v.chunking() == "contiguous"
+    if write_module is legacyapi:
+        assert tuple(v.chunking()) == (5,)
+    else:
+        assert v.chunking() == "contiguous"
     assert v.filters() == {
         "complevel": 0,
         "fletcher32": False,
@@ -348,7 +351,10 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     assert list(v.attrs) == ["_FillValue"]
     assert v.attrs["_FillValue"] == -1
     if not remote_file:
-        assert v.chunks is None
+        if write_module is legacyapi:
+            assert v.chunks == (5,)
+        else:
+            assert v.chunks is None
     assert v.compression is None
     assert v.compression_opts is None
     assert not v.fletcher32

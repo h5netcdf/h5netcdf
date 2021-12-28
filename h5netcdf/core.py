@@ -482,7 +482,7 @@ class Group(Mapping):
         return group._create_child_group(keys[-1])
 
     def _create_child_variable(
-        self, name, dimensions, dtype, data, fillvalue, chunks, **kwargs
+        self, name, dimensions, dtype, data, fillvalue, **kwargs
     ):
         if name in self:
             raise ValueError(
@@ -529,10 +529,6 @@ class Group(Mapping):
         if shape != maxshape:
             kwargs["maxshape"] = maxshape
 
-        # Determine default chunksize if not given
-        if chunks is None:
-            chunks = self._get_default_chunksize(dimensions, dtype)
-
         # Clear dummy HDF5 datasets with this name that were created for a
         # dimension scale without a corresponding variable.
         # Keep the references, to re-attach later
@@ -544,7 +540,7 @@ class Group(Mapping):
                 self._delete_dim_scale(name)
 
         self._h5group.create_dataset(
-            h5name, shape, dtype=dtype, data=data, fillvalue=fillvalue, chunks=chunks, **kwargs
+            h5name, shape, dtype=dtype, data=data, fillvalue=fillvalue, **kwargs
         )
 
         self._variables[h5name] = self._variable_cls(self, h5name, dimensions)
@@ -571,84 +567,19 @@ class Group(Mapping):
             variable.attrs._h5attrs["_FillValue"] = value
         return variable
 
-    def _get_default_chunksize(self, dimensions, dtype):
-        # This is ported from
-        # https://github.com/Unidata/netcdf-c/blob/a57101d4b7dcabf7d477c08eee9a5a126732f702/libhdf5/hdf5var.c#L104-L225
-        # (published under BSD-3-Clause)
-
-        DEFAULT_CHUNK_SIZE = 16_777_216
-        DEFAULT_1D_UNLIM_SIZE = 4096
-
-        ndims = len(dimensions)
-        chunks = [None] * ndims
-
-        num_values = 1
-        num_unlimited = 0
-
-        type_size = np.dtype(dtype).itemsize
-
-        # How many values in the variable (or one record, if there are unlimited dimensions).
-        for i, d in enumerate(dimensions):
-            dimsize = self.dimensions[d]
-            if dimsize is not None:
-                num_values *= dimsize
-            else:
-                num_unlimited += 1
-                chunks[i] = 1
-
-        # Special case to avoid 1D vars with unlim dim taking huge amount
-        # of space (DEFAULT_CHUNK_SIZE bytes). Instead we limit to about
-        # 4KB.
-        if ndims == num_unlimited == 1:
-            suggested_size = max(1, min(DEFAULT_1D_UNLIM_SIZE, DEFAULT_CHUNK_SIZE // type_size))
-            chunks[0] = suggested_size
-
-        elif ndims == num_unlimited > 1:
-            # all dims unlimited
-            suggested_size = int((DEFAULT_CHUNK_SIZE / type_size) ** (1 / ndims))
-            chunks = [suggested_size] * ndims
-
-        # Pick a chunk length for each dimension, if one has not already been picked above.
-        for i, d in enumerate(dimensions):
-            if chunks[i] is not None:
-                continue
-
-            dimsize = self.dimensions[d]
-            suggested_size = min(
-                (DEFAULT_CHUNK_SIZE / (num_values * type_size)) ** (1 / (ndims - num_unlimited))
-                * dimsize - 0.5,
-                dimsize
-            )
-            chunks[i] = int(suggested_size)
-
-        # Do we have any big data overhangs? They can be dangerous to
-        # babies, the elderly, or confused campers who have had too much
-        # beer.
-        for i, d in enumerate(dimensions):
-            dimsize = self.dimensions[d]
-            if dimsize is None:
-                continue
-
-            chunksize = chunks[i]
-            num_chunks = (dimsize + chunksize - 1) // chunksize
-            overhang = num_chunks * chunksize - dimsize
-            chunks[i] -= overhang // num_chunks
-
-        return tuple(chunks)
-
     def create_variable(
-        self, name, dimensions=(), dtype=None, data=None, fillvalue=None, chunks=None, **kwargs
+        self, name, dimensions=(), dtype=None, data=None, fillvalue=None, **kwargs
     ):
         if name.startswith("/"):
             return self._root.create_variable(
-                name[1:], dimensions, dtype, data, fillvalue, chunks, **kwargs
+                name[1:], dimensions, dtype, data, fillvalue, **kwargs
             )
         keys = name.split("/")
         group = self
         for k in keys[:-1]:
             group = group._require_child_group(k)
         return group._create_child_variable(
-            keys[-1], dimensions, dtype, data, fillvalue, chunks, **kwargs
+            keys[-1], dimensions, dtype, data, fillvalue, **kwargs
         )
 
     def _get_child(self, key):
@@ -1037,3 +968,83 @@ class File(Group):
             self.mode,
         )
         return "\n".join([header] + self._repr_body())
+
+
+def _get_default_chunksizes(dimsizes, dtype):
+    # This is ported from
+    # https://github.com/Unidata/netcdf-c/blob/a57101d4b7dcabf7d477c08eee9a5a126732f702/libhdf5/hdf5var.c#L104-L225
+    # (published under BSD-3-Clause)
+
+    DEFAULT_CHUNK_SIZE = 16_777_216
+    DEFAULT_1D_UNLIM_SIZE = 4096
+    H5_MAX_CHUNK_SIZE = 4_294_967_295
+
+    ndims = len(dimsizes)
+    chunks = [None] * ndims
+
+    num_values = 1
+    num_unlimited = 0
+
+    type_size = np.dtype(dtype).itemsize
+
+    # How many values in the variable (or one record, if there are unlimited dimensions).
+    for i, dimsize in enumerate(dimsizes):
+        if dimsize is not None:
+            num_values *= dimsize
+        else:
+            num_unlimited += 1
+            chunks[i] = 1
+
+    # Special case to avoid 1D vars with unlim dim taking huge amount
+    # of space (DEFAULT_CHUNK_SIZE bytes). Instead we limit to about
+    # 4KB.
+    if ndims == num_unlimited == 1:
+        suggested_size = max(
+            1, min(DEFAULT_1D_UNLIM_SIZE, DEFAULT_CHUNK_SIZE // type_size)
+        )
+        chunks[0] = suggested_size
+
+    elif ndims == num_unlimited > 1:
+        # all dims unlimited
+        suggested_size = int((DEFAULT_CHUNK_SIZE / type_size) ** (1 / ndims))
+        chunks = [suggested_size] * ndims
+
+    # Pick a chunk length for each dimension, if one has not already been picked above.
+    for i, dimsize in enumerate(dimsizes):
+        if chunks[i] is not None:
+            continue
+
+        suggested_size = min(
+            (DEFAULT_CHUNK_SIZE / (num_values * type_size))
+            ** (1 / (ndims - num_unlimited))
+            * dimsize
+            - 0.5,
+            dimsize,
+        )
+        chunks[i] = int(suggested_size)
+
+    # But did this result in a chunk that is too big?
+    def check_chunksizes(chunks):
+        total_chunksize = type_size
+        for c in chunks:
+            total_chunksize *= c
+
+        return total_chunksize <= H5_MAX_CHUNK_SIZE
+
+    while not check_chunksizes(chunks):
+        # Chunk is too big! Reduce each dimension by half and try again.
+        chunks = [max(1, c // 2) for c in chunks]
+
+    # Do we have any big data overhangs? They can be dangerous to
+    # babies, the elderly, or confused campers who have had too much
+    # beer.
+    for i, dimsize in enumerate(dimsizes):
+        if dimsize is None:
+            continue
+
+        chunksize = chunks[i]
+        num_chunks = (dimsize + chunksize - 1) // chunksize
+        overhang = num_chunks * chunksize - dimsize
+        chunks[i] -= overhang // num_chunks
+
+    return tuple(chunks)
