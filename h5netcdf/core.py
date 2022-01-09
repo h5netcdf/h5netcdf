@@ -427,6 +427,19 @@ class Group(Mapping):
         return self._root._h5file[self._h5path]
 
     @property
+    def _track_order(self):
+        # TODO: make a suggestion to upstream to create a property
+        # for files to get if they track the order
+        # As of version 3.6.0 this property did not exist
+        from h5py.h5p import CRT_ORDER_INDEXED, CRT_ORDER_TRACKED
+
+        gcpl = self._h5group.id.get_create_plist()
+        attr_creation_order = gcpl.get_attr_creation_order()
+        order_tracked = bool(attr_creation_order & CRT_ORDER_TRACKED)
+        order_indexed = bool(attr_creation_order & CRT_ORDER_INDEXED)
+        return order_tracked and order_indexed
+
+    @property
     def name(self):
         return self._h5group.name
 
@@ -462,7 +475,7 @@ class Group(Mapping):
     def _create_child_group(self, name):
         if name in self:
             raise ValueError("unable to create group %r (name already exists)" % name)
-        self._h5group.create_group(name)
+        self._h5group.create_group(name, track_order=self._track_order)
         self._groups[name] = self._group_cls(self, name)
         return self._groups[name]
 
@@ -540,7 +553,13 @@ class Group(Mapping):
                 self._delete_dim_scale(name)
 
         self._h5group.create_dataset(
-            h5name, shape, dtype=dtype, data=data, fillvalue=fillvalue, **kwargs
+            h5name,
+            shape,
+            dtype=dtype,
+            data=data,
+            fillvalue=fillvalue,
+            track_order=self._track_order,
+            **kwargs,
         )
 
         self._variables[h5name] = self._variable_cls(self, h5name, dimensions)
@@ -614,7 +633,13 @@ class Group(Mapping):
             kwargs = {}
             if self._dim_sizes[dim] is None:
                 kwargs["maxshape"] = (None,)
-            self._h5group.create_dataset(name=dim, shape=(size,), dtype=">f4", **kwargs)
+            self._h5group.create_dataset(
+                name=dim,
+                shape=(size,),
+                dtype=">f4",
+                track_order=self._track_order,
+                **kwargs,
+            )
 
         h5ds = self._h5group[dim]
         h5ds.attrs["_Netcdf4Dimid"] = np.array(dim_order[dim], dtype=np.int32)
@@ -766,6 +791,59 @@ class File(Group):
     def __init__(
         self, path, mode=None, invalid_netcdf=False, phony_dims=None, **kwargs
     ):
+        """NetCDF4 file constructor.
+
+        Parameters
+        ----------
+        path: path-like
+            Location of the netCDF4 file to be accessed.
+
+        mode: "r", "r+", "a", "w"
+            A valid file access mode. See
+
+        invalid_netcdf: bool
+            Allow writing netCDF4 with data types and attributes that would
+            otherwise not generate netCDF4 files that can be read by other
+            applications. See
+            https://github.com/h5netcdf/h5netcdf#invalid-netcdf-files
+            for more details.
+
+        phony_dims: 'sort', 'access'
+            See:
+            https://github.com/h5netcdf/h5netcdf#datasets-with-missing-dimension-scales
+
+        **kwargs:
+            Additional keyword arguments to be passed to the ``h5py.File``
+            constructor.
+
+        Notes
+        -----
+        In h5netcdf version 0.12.0 and earlier, order tracking was disabled in
+        HDF5 file. As this is a requirement for the current netCDF4 standard,
+        it has been enabled without deprecation in later versions [1]_.
+
+        Datasets created with h5netcdf version 0.12.0 that are opened with
+        newer versions of h5netcdf will continue to disable order tracker.
+
+        .. [1] https://github.com/h5netcdf/h5netcdf/issues/128
+
+        """
+        # 2022/01/09
+        # netCDF4 wants the track_order parameter to be true
+        # through this might be getting relaxed in a more recent version of the
+        # standard
+        # https://github.com/Unidata/netcdf-c/issues/2054
+        # https://github.com/h5netcdf/h5netcdf/issues/128
+        track_order = kwargs.pop("track_order", True)
+
+        if not track_order:
+            raise ValueError(
+                f"track_order, if specified must be set to to True (got {track_order})"
+                "to conform to the netCDF4 file format. Please see "
+                "https://github.com/h5netcdf/h5netcdf/issues/130 "
+                "for more details"
+            )
+
         # Deprecating mode='a' in favor of mode='r'
         # If mode is None default to 'a' and issue a warning
         if mode is None:
@@ -794,10 +872,14 @@ class File(Group):
                         self._preexisting_file = True
                     except IOError:
                         self._preexisting_file = False
-                    self._h5file = h5pyd.File(path, mode, **kwargs)
+                    self._h5file = h5pyd.File(
+                        path, mode, track_order=track_order, **kwargs
+                    )
                 else:
                     self._preexisting_file = os.path.exists(path) and mode != "w"
-                    self._h5file = h5py.File(path, mode, **kwargs)
+                    self._h5file = h5py.File(
+                        path, mode, track_order=track_order, **kwargs
+                    )
             else:  # file-like object
                 if version.parse(h5py.__version__) < version.parse("2.9.0"):
                     raise TypeError(
@@ -806,7 +888,9 @@ class File(Group):
                     )
                 else:
                     self._preexisting_file = mode in {"r", "r+", "a"}
-                    self._h5file = h5py.File(path, mode, **kwargs)
+                    self._h5file = h5py.File(
+                        path, mode, track_order=track_order, **kwargs
+                    )
         except Exception:
             self._closed = True
             raise

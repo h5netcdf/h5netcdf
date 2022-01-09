@@ -1082,6 +1082,10 @@ def test_reading_special_datatype_created_with_c_api(tmp_local_netcdf):
 
 
 def test_nc4_non_coord(tmp_local_netcdf):
+    # Track order True is the new default for versions after 0.12.0
+    # 0.12.0 defaults to `track_order=False`
+    # Ensure that the tests order the variables in their creation order
+    # not alphabetical order
     with h5netcdf.File(tmp_local_netcdf, "w") as f:
         f.dimensions = {"x": None, "y": 2}
         f.create_variable("test", dimensions=("x",), dtype=np.int64)
@@ -1089,8 +1093,8 @@ def test_nc4_non_coord(tmp_local_netcdf):
 
     with h5netcdf.File(tmp_local_netcdf, "r") as f:
         assert f.dimensions == {"x": None, "y": 2}
-        assert list(f.variables) == ["y", "test"]
-        assert list(f._h5group.keys()) == ["_nc4_non_coord_y", "test", "x", "y"]
+        assert list(f.variables) == ["test", "y"]
+        assert list(f._h5group.keys()) == ["x", "y", "test", "_nc4_non_coord_y"]
 
 
 def test_overwrite_existing_file(tmp_local_netcdf):
@@ -1387,3 +1391,42 @@ def test_no_circular_references(tmp_local_netcdf):
     gc.collect()
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
         assert len(gc.get_referrers(ds)) == 1
+
+
+def test_creation_with_h5netcdf_edit_with_netcdf4(tmp_local_netcdf):
+    # In version 0.12.0, the wrong file creation attributes were used
+    # making netcdf4 unable to open files created by h5netcdf
+    # https://github.com/h5netcdf/h5netcdf/issues/128
+    with h5netcdf.File(tmp_local_netcdf, "w") as the_file:
+        the_file.dimensions = {"x": 5}
+        variable = the_file.create_variable("hello", ("x",), float)
+        variable[...] = 5
+
+    with netCDF4.Dataset(tmp_local_netcdf, mode="a") as the_file:
+        variable = the_file["hello"]
+        np.testing.assert_array_equal(variable[...].data, 5)
+        # Edit an existing variable
+        variable[:3] = 2
+
+        # Create a new variable
+        variable = the_file.createVariable("goodbye", float, ("x",))
+        variable[...] = 10
+
+    with h5netcdf.File(tmp_local_netcdf, "a") as the_file:
+        # Ensure edited variable is consistent with the expected data
+        variable = the_file["hello"]
+        np.testing.assert_array_equal(variable[...].data, [2, 2, 2, 5, 5])
+
+        # Ensure new variable is accessible
+        variable = the_file["goodbye"]
+        np.testing.assert_array_equal(variable[...].data, 10)
+
+
+def test_track_order_false(tmp_local_netcdf):
+    # track_order must be specified as True or not specified at all
+    # https://github.com/h5netcdf/h5netcdf/issues/130
+    with pytest.raises(ValueError):
+        h5netcdf.File(tmp_local_netcdf, "w", track_order=False)
+
+    with h5netcdf.File(tmp_local_netcdf, "w", track_order=True):
+        pass
