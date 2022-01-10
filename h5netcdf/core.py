@@ -820,7 +820,7 @@ class File(Group):
         -----
         In h5netcdf version 0.12.0 and earlier, order tracking was disabled in
         HDF5 file. As this is a requirement for the current netCDF4 standard,
-        it has been enabled without deprecation in later versions [1]_.
+        it has been enabled without deprecation as of version 0.13.0 [1]_.
 
         Datasets created with h5netcdf version 0.12.0 that are opened with
         newer versions of h5netcdf will continue to disable order tracker.
@@ -841,7 +841,7 @@ class File(Group):
                 f"track_order, if specified must be set to to True (got {track_order})"
                 "to conform to the netCDF4 file format. Please see "
                 "https://github.com/h5netcdf/h5netcdf/issues/130 "
-                "for more details"
+                "for more details."
             )
 
         # Deprecating mode='a' in favor of mode='r'
