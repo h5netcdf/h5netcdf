@@ -1430,3 +1430,12 @@ def test_track_order_false(tmp_local_netcdf):
 
     with h5netcdf.File(tmp_local_netcdf, "w", track_order=True):
         pass
+
+
+def test_monitor_netcdf4_requirement_for_track_order(tmp_local_netcdf):
+    # https://github.com/h5netcdf/h5netcdf/issues/130
+    with h5py.File(tmp_local_netcdf, "w", track_order=False):
+        pass
+    with pytest.raises(OSError):
+        with netCDF4.Dataset(tmp_local_netcdf, mode="a"):
+            pass
