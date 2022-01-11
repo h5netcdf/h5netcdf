@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Version 0.13.0 (January 12, 2022)::
+Version 0.13.0 (January 12, 2022):
 
 - Assign dimensions at creation time, instead of at sync/flush (file-close).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
@@ -9,8 +9,8 @@ Version 0.13.0 (January 12, 2022)::
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Ensure order tracking is true for newly created netcdf4 files as required
   by the netcdf4 standard. This enables files created by h5netcdf to be
-  appended to by netCDF4 library users. (Closes Issue #128)
-  By: `Mark Harfouche <https://github.com/hmaarrfk>`
+  appended to by netCDF4 library users (Closes Issue #128).
+  By `Mark Harfouche <https://github.com/hmaarrfk>`_.
 
 Version 0.12.0 (December 20, 2021):
 
