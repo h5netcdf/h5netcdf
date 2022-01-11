@@ -212,6 +212,19 @@ to group access time. The created phony dimension naming will differ from
 .. _netCDF: https://www.unidata.ucar.edu/software/netcdf/docs/interoperability_hdf5.html
 .. [*] Keyword default setting ``phony_dims=None`` for backwards compatibility.
 
+Track Order
+~~~~~~~~~~~
+
+In h5netcdf version 0.12.0 and earlier, `order tracking`_ was disabled in
+HDF5 file. As this is a requirement for the current netCDF4 standard,
+it has been enabled without deprecation as of version 0.13.0 [*]_.
+
+Datasets created with h5netcdf version 0.12.0 that are opened with
+newer versions of h5netcdf will continue to disable order tracker.
+
+.. _order tracking: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#creation_order
+.. [*] https://github.com/h5netcdf/h5netcdf/issues/128
+
 Changelog
 ---------
 
