@@ -5,6 +5,8 @@ Development Version:
 
 - Return group name instead of full group path for legacy API.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Add ``endian`` keyword argument ``legacyapi.Dataset.createVariable``.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 0.13.0 (January 12, 2022):
 
