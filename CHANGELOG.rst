@@ -7,6 +7,8 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Add ``endian`` keyword argument ``legacyapi.Dataset.createVariable``.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Resize Dimensions when writing to variables (legacy API only), return padded arrays.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 0.13.0 (January 12, 2022):
 
