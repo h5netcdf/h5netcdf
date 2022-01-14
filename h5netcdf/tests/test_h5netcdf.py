@@ -1595,3 +1595,30 @@ def test_legacyapi_endianess(tmp_local_netcdf):
         assert ds["big"].dtype.byteorder == big
         assert ds["little"].dtype.byteorder == little
         assert ds["native"].dtype.byteorder == native
+
+
+def test_bool_slicing_length_one_dim(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 1, "y": 2}
+        v = ds.create_variable("hello", ("x", "y"), "float")
+        v[:] = np.ones((1, 2))
+
+    bool_slice = np.array([1], dtype=bool)
+
+    # works for legacy API
+    with legacyapi.Dataset(tmp_local_netcdf, "a") as ds:
+        data = ds["hello"][bool_slice, :]
+        np.testing.assert_equal(data, np.ones((1, 2)))
+        ds["hello"][bool_slice, :] = np.zeros((1, 2))
+        data = ds["hello"][bool_slice, :]
+        np.testing.assert_equal(data, np.zeros((1, 2)))
+
+    # should raise for h5py >= 3.0.0
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
+            error = "Indexing arrays must have integer dtypes"
+            with pytest.raises(TypeError) as e:
+                ds["hello"][bool_slice, :]
+            assert error == str(e.value)
+        else:
+            ds["hello"][bool_slice, :]

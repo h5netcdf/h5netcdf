@@ -64,8 +64,24 @@ def _invalid_netcdf_feature(feature, allow):
         raise CompatibilityError(msg)
 
 
+def _transform_1d_boolean_indexers(key):
+    """Find and transform 1D boolean indexers to int"""
+    key = [
+        np.asanyarray(k).nonzero()[0]
+        if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
+        else k
+        for k in key
+    ]
+    return tuple(key)
+
+
 def _expanded_indexer(key, ndim):
-    """Expand indexing key to tuple of slices with length equal the number of dimensions."""
+    """Expand indexing key to tuple with length equal the number of dimensions."""
+    # ToDo: restructure this routine to gain more performance
+    # short circuit, if we have only slice
+    if key is tuple and all(isinstance(k, slice) for k in key):
+        return key
+
     # always return tuple and force colons to slices
     key = np.index_exp[key]
 
@@ -91,13 +107,12 @@ def _expanded_indexer(key, ndim):
             f"too many indices for array: array is {ndim}-dimensional, but {len_key} were indexed"
         )
 
-    # convert integer indices to slices
+    # convert remaining integer indices to slices
     key = tuple([slice(k, k + 1) if isinstance(k, int) else k for k in key])
 
     # slices to build resulting key
     k1 = slice(ellipsis)
     k2 = slice(len_key, None) if ellipsis is None else slice(ellipsis + 1, None)
-
     return key[k1] + res_dims + key[k2]
 
 
@@ -186,9 +201,7 @@ class BaseVariable(object):
                 self._h5ds.attrs["_Netcdf4Dimid"] = dim.attrs["_Netcdf4Dimid"]
 
     def _maybe_resize_dimensions(self, key, value):
-        """Resize according to given key with respect to variable dimensions"""
-        # expand key to slices
-        key = _expanded_indexer(key, self.ndim)
+        """Resize according to given (expanded) key with respect to variable dimensions"""
         new_shape = ()
         v = None
         for i, dim in enumerate(self.dimensions):
@@ -247,6 +260,12 @@ class BaseVariable(object):
         return self._h5ds.__array__(*args, **kwargs)
 
     def __getitem__(self, key):
+        from .legacyapi import Dataset
+
+        if isinstance(self._parent._root, Dataset):
+            key = _expanded_indexer(key, self.ndim)
+            key = _transform_1d_boolean_indexers(key)
+
         if getattr(self._root, "decode_vlen_strings", False):
             string_info = h5py.check_string_dtype(self._h5ds.dtype)
             if string_info and string_info.length is None:
@@ -270,8 +289,10 @@ class BaseVariable(object):
     def __setitem__(self, key, value):
         from .legacyapi import Dataset
 
-        # resize on write only for legacy API
         if isinstance(self._parent._root, Dataset):
+            key = _expanded_indexer(key, self.ndim)
+            key = _transform_1d_boolean_indexers(key)
+            # resize on write only for legacy API
             self._maybe_resize_dimensions(key, value)
         self._h5ds[key] = value
 
