@@ -76,7 +76,7 @@ def _transform_1d_boolean_indexers(key):
 
 
 def _expanded_indexer(key, ndim):
-    """Expand indexing key to tuple (slices, np.ndarray of ints) with length equal the number of dimensions."""
+    """Expand indexing key to tuple with length equal the number of dimensions."""
     # ToDo: restructure this routine to gain more performance
     # short circuit, if we have only slice
     if key is tuple and all(isinstance(k, slice) for k in key):
