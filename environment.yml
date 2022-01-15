@@ -1,0 +1,7 @@
+name: h5netcdf
+channels:
+- conda-forge
+dependencies:
+  - python>=3.7
+  - h5py
+  - packaging
