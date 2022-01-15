@@ -84,6 +84,7 @@ jobs:
           pip
           pytest
           wheel
+          netCDF4
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
