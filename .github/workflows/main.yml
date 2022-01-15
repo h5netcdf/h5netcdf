@@ -45,7 +45,7 @@ jobs:
         python-version: ["3.7", "3.8", "3.9"]
     steps:
     - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: mamba-org/provision-with-micromamba@main
       with:
         channels: conda-forge
         mamba-version: "*"
@@ -65,7 +65,7 @@ jobs:
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
     - name: Test with pytest
       run: |
-        pytest -v h5netcdf/
+        pytest -v --durations=0 h5netcdf/
 
   build_1:
     name: h5py3 tests
@@ -79,7 +79,7 @@ jobs:
         python-version: ["3.7", "3.8", "3.9", "3.10"]
     steps:
     - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: mamba-org/provision-with-micromamba@main
       with:
         channels: conda-forge
         mamba-version: "*"
@@ -96,7 +96,7 @@ jobs:
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
     - name: Test with pytest
       run: |
-        pytest -v h5netcdf/
+        pytest -v --durations=0 h5netcdf/
 
   upload-pypi:
     if: github.event_name == 'release'
