@@ -34,7 +34,7 @@ setup(
     author_email="shoyer@gmail.com",
     url="https://github.com/h5netcdf/h5netcdf",
     python_requires=">=3.6",
-    install_requires=["h5py"],
+    install_requires=["h5py", "packaging"],
     tests_require=["netCDF4", "pytest"],
     packages=find_packages(),
 )
