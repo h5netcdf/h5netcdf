@@ -112,10 +112,6 @@ class Group(core.Group, HasAttributesMixin):
         if datatype is str:
             datatype = h5py.special_dtype(vlen=str)
 
-        if chunksizes is None:
-            dimsizes = [self.dimensions[d] for d in dimensions]
-            chunksizes = core._get_default_chunksizes(dimsizes, datatype)
-
         kwds = {}
         if zlib:
             # only add compression related keyword arguments if relevant (h5py

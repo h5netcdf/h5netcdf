@@ -134,6 +134,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.createDimension("z", 6)
     ds.createDimension("empty", 0)
     ds.createDimension("string3", 3)
+    ds.createDimension("unlimited", None)
 
     v = ds.createVariable("foo", float, ("x", "y"), chunksizes=(4, 5), zlib=True)
     v[...] = 1
@@ -151,6 +152,9 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     # test creating a scalar with compression option (with should be ignored)
     v = ds.createVariable("intscalar", np.int64, (), zlib=6, fill_value=None)
     v[...] = 2
+
+    v = ds.createVariable("foo_unlimited", float, ("x", "unlimited"))
+    v[...] = 1
 
     with raises((h5netcdf.CompatibilityError, TypeError)):
         ds.createVariable("boolean", np.bool_, ("x"))
@@ -175,7 +179,7 @@ def write_h5netcdf(tmp_netcdf):
     ds = h5netcdf.File(tmp_netcdf, "w")
     ds.attrs["global"] = 42
     ds.attrs["other_attr"] = "yes"
-    ds.dimensions = {"x": 4, "y": 5, "z": 6, "empty": 0}
+    ds.dimensions = {"x": 4, "y": 5, "z": 6, "empty": 0, "unlimited": None}
 
     v = ds.create_variable(
         "foo", ("x", "y"), float, chunks=(4, 5), compression="gzip", shuffle=True
@@ -191,6 +195,9 @@ def write_h5netcdf(tmp_netcdf):
     v = ds.create_variable("scalar", data=np.float32(2.0))
 
     v = ds.create_variable("intscalar", data=np.int64(2))
+
+    v = ds.create_variable("foo_unlimited", ("x", "unlimited"), float)
+    v[...] = 1
 
     with raises((h5netcdf.CompatibilityError, TypeError)):
         ds.create_variable("boolean", data=True)
@@ -226,10 +233,10 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     with pytest.raises(AttributeError):
         ds.does_not_exist
     assert set(ds.dimensions) == set(
-        ["x", "y", "z", "empty", "string3", "mismatched_dim"]
+        ["x", "y", "z", "empty", "string3", "mismatched_dim", "unlimited"]
     )
     assert set(ds.variables) == set(
-        ["foo", "y", "z", "intscalar", "scalar", "var_len_str", "mismatched_dim"]
+        ["foo", "y", "z", "intscalar", "scalar", "var_len_str", "mismatched_dim", "foo_unlimited"]
     )
     assert set(ds.groups) == set(["subgroup"])
     assert ds.parent is None
@@ -256,10 +263,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.ndim == 1
     assert v.ncattrs() == ["_FillValue"]
     assert v.getncattr("_FillValue") == -1
-    if write_module is legacyapi:
-        assert tuple(v.chunking()) == (5,)
-    else:
-        assert v.chunking() == "contiguous"
+    assert v.chunking() == "contiguous"
     assert v.filters() == {
         "complevel": 0,
         "fletcher32": False,
@@ -325,10 +329,10 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs["other_attr"] == "yes"
     assert set(ds.dimensions) == set(
-        ["x", "y", "z", "empty", "string3", "mismatched_dim"]
+        ["x", "y", "z", "empty", "string3", "mismatched_dim", "unlimited"]
     )
     assert set(ds.variables) == set(
-        ["foo", "y", "z", "intscalar", "scalar", "var_len_str", "mismatched_dim"]
+        ["foo", "y", "z", "intscalar", "scalar", "var_len_str", "mismatched_dim", "foo_unlimited"]
     )
     assert set(ds.groups) == set(["subgroup"])
     assert ds.parent is None
@@ -356,10 +360,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     assert list(v.attrs) == ["_FillValue"]
     assert v.attrs["_FillValue"] == -1
     if not remote_file:
-        if write_module is legacyapi:
-            assert v.chunks == (5,)
-        else:
-            assert v.chunks is None
+        assert v.chunks is None
     assert v.compression is None
     assert v.compression_opts is None
     assert not v.fletcher32
@@ -591,6 +592,13 @@ def test_mode_warning(tmp_local_or_remote_netcdf):
     with pytest.warns(FutureWarning):
         with h5netcdf.File(tmp_local_or_remote_netcdf):
             pass
+
+
+def test_unlimited_chunk_warning(tmp_local_or_remote_netcdf):
+    with pytest.warns(FutureWarning):
+        with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
+            ds.dimensions = {"x": None}
+            ds.create_variable("foo", ("x",), float)
 
 
 def create_invalid_netcdf_data():
@@ -1628,3 +1636,32 @@ def test_bool_slicing_length_one_dim(tmp_local_netcdf):
             assert error == str(e.value)
         else:
             ds["hello"][bool_slice, :]
+
+
+def test_default_chunking(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
+        v = ds.create_variable("hello", ("x", "y", "z", "t"), "float", chunks="h5py")
+        chunks_h5py = v.chunks
+
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
+        v = ds.create_variable("hello", ("x", "y", "z", "t"), "float", chunks="h5py")
+        chunks_default = v.chunks
+
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
+        v = ds.create_variable("hello", ("x", "y", "z", "t"), "float", chunks="h5py")
+        chunks_true = v.chunks
+
+    assert chunks_h5py == chunks_default
+    assert chunks_true == chunks_default
+
+
+def test_h5netcdf_chunking(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
+        v = ds.create_variable("hello2", ("x", "y", "z", "t"), "float", chunks="h5netcdf")
+        chunks_h5netcdf = v.chunks
+
+    assert chunks_h5netcdf == (10, 10, 10, 1)
