@@ -25,7 +25,7 @@ else:
     h5_group_types = (h5py.Group, h5pyd.Group)
     h5_dataset_types = (h5py.Dataset, h5pyd.Dataset)
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 
 _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5py=%s" % (
@@ -62,6 +62,58 @@ def _invalid_netcdf_feature(feature, allow):
             "h5netcdf unless invalid_netcdf=True.".format(feature)
         )
         raise CompatibilityError(msg)
+
+
+def _transform_1d_boolean_indexers(key):
+    """Find and transform 1D boolean indexers to int"""
+    key = [
+        np.asanyarray(k).nonzero()[0]
+        if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
+        else k
+        for k in key
+    ]
+    return tuple(key)
+
+
+def _expanded_indexer(key, ndim):
+    """Expand indexing key to tuple with length equal the number of dimensions."""
+    # ToDo: restructure this routine to gain more performance
+    # short circuit, if we have only slice
+    if key is tuple and all(isinstance(k, slice) for k in key):
+        return key
+
+    # always return tuple and force colons to slices
+    key = np.index_exp[key]
+
+    # dimensions
+    len_key = len(key)
+
+    # find Ellipsis
+    ellipsis = [i for i, k in enumerate(key) if k is Ellipsis]
+    if len(ellipsis) > 1:
+        raise IndexError(
+            f"an index can only have a single ellipsis ('...'), {len(ellipsis)} given"
+        )
+    else:
+        # expand Ellipsis wherever it is
+        len_key -= len(ellipsis)
+        res_dim_cnt = ndim - len_key
+        res_dims = res_dim_cnt * (slice(None),)
+        ellipsis = ellipsis[0] if ellipsis else None
+
+    # check for correct dimensionality
+    if ndim and res_dim_cnt < 0:
+        raise IndexError(
+            f"too many indices for array: array is {ndim}-dimensional, but {len_key} were indexed"
+        )
+
+    # convert remaining integer indices to slices
+    key = tuple([slice(k, k + 1) if isinstance(k, int) else k for k in key])
+
+    # slices to build resulting key
+    k1 = slice(ellipsis)
+    k2 = slice(len_key, None) if ellipsis is None else slice(ellipsis + 1, None)
+    return key[k1] + res_dims + key[k2]
 
 
 class BaseVariable(object):
@@ -108,7 +160,7 @@ class BaseVariable(object):
         phony_dims = defaultdict(int)
         for axis, dim in enumerate(self._h5ds.dims):
             # get current dimension
-            dimsize = self.shape[axis]
+            dimsize = self._h5ds.shape[axis]
             phony_dims[dimsize] += 1
             if len(dim):
                 name = _name_from_dimension(dim)
@@ -148,6 +200,40 @@ class BaseVariable(object):
             if "_Netcdf4Dimid" in dim.attrs:
                 self._h5ds.attrs["_Netcdf4Dimid"] = dim.attrs["_Netcdf4Dimid"]
 
+    def _maybe_resize_dimensions(self, key, value):
+        """Resize according to given (expanded) key with respect to variable dimensions"""
+        new_shape = ()
+        v = None
+        for i, dim in enumerate(self.dimensions):
+            # is unlimited dimensions
+            if not self._parent._dim_sizes[dim]:
+                if key[i].stop is None:
+                    # if stop is None, get dimensions from value,
+                    # they must match with variable dimension
+                    if v is None:
+                        v = np.asarray(value)
+                    if v.ndim == self.ndim:
+                        new_max = max(v.shape[i], self._h5ds.shape[i])
+                    elif v.ndim == 0:
+                        # for scalars we take the current dimension size
+                        new_max = self._parent._current_dim_sizes[dim]
+                    else:
+                        raise IndexError("shape of data does not conform to slice")
+                else:
+                    new_max = max(key[i].stop, self._h5ds.shape[i])
+                # resize unlimited dimension if needed but no other variables
+                # this is in line with `netcdf4-python` which only resizes
+                # the dimension and this variable
+                if self._parent._current_dim_sizes[dim] < new_max:
+                    self._parent.resize_dimension(dim, new_max, resize_vars=False)
+                new_shape += (new_max,)
+            else:
+                new_shape += (self._parent._current_dim_sizes[dim],)
+
+        # increase variable size if shape is changing
+        if self._h5ds.shape != new_shape:
+            self._h5ds.resize(new_shape)
+
     @property
     def dimensions(self):
         if self._dimensions is None:
@@ -156,7 +242,8 @@ class BaseVariable(object):
 
     @property
     def shape(self):
-        return self._h5ds.shape
+        # return actual dimensions sizes, this is in line with netcdf4-python
+        return tuple([self._parent._current_dim_sizes[d] for d in self.dimensions])
 
     @property
     def ndim(self):
@@ -173,13 +260,40 @@ class BaseVariable(object):
         return self._h5ds.__array__(*args, **kwargs)
 
     def __getitem__(self, key):
+        from .legacyapi import Dataset
+
+        if isinstance(self._parent._root, Dataset):
+            key = _expanded_indexer(key, self.ndim)
+            key = _transform_1d_boolean_indexers(key)
+
         if getattr(self._root, "decode_vlen_strings", False):
             string_info = h5py.check_string_dtype(self._h5ds.dtype)
             if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
+
+        # return array padded with fillvalue
+        if self.dtype != str and self.dtype.kind in ["f", "i", "u"]:
+            sdiff = [d0 - d1 for d0, d1 in zip(self.shape, self._h5ds.shape)]
+            if sum(sdiff):
+                fv = self.dtype.type(self._h5ds.fillvalue)
+                padding = [(0, s) for s in sdiff]
+                return np.pad(
+                    self._h5ds,
+                    pad_width=padding,
+                    mode="constant",
+                    constant_values=fv,
+                )[key]
+
         return self._h5ds[key]
 
     def __setitem__(self, key, value):
+        from .legacyapi import Dataset
+
+        if isinstance(self._parent._root, Dataset):
+            key = _expanded_indexer(key, self.ndim)
+            key = _transform_1d_boolean_indexers(key)
+            # resize on write only for legacy API
+            self._maybe_resize_dimensions(key, value)
         self._h5ds[key] = value
 
     @property
@@ -289,7 +403,7 @@ class Group(Mapping):
     def __init__(self, parent, name):
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
-        self._h5path = _join_h5paths(parent.name, name)
+        self._h5path = _join_h5paths(parent._h5path, name)
 
         if parent is not self:
             self._dim_sizes = parent._dim_sizes.new_child()
@@ -427,8 +541,27 @@ class Group(Mapping):
         return self._root._h5file[self._h5path]
 
     @property
+    def _track_order(self):
+        # TODO: make a suggestion to upstream to create a property
+        # for files to get if they track the order
+        # As of version 3.6.0 this property did not exist
+        from h5py.h5p import CRT_ORDER_INDEXED, CRT_ORDER_TRACKED
+
+        gcpl = self._h5group.id.get_create_plist()
+        attr_creation_order = gcpl.get_attr_creation_order()
+        order_tracked = bool(attr_creation_order & CRT_ORDER_TRACKED)
+        order_indexed = bool(attr_creation_order & CRT_ORDER_INDEXED)
+        return order_tracked and order_indexed
+
+    @property
     def name(self):
-        return self._h5group.name
+        from .legacyapi import Dataset
+
+        name = self._h5group.name
+        # get group name only instead of full path for legacyapi
+        if isinstance(self._parent._root, Dataset) and len(name) > 1:
+            name = name.split("/")[-1]
+        return name
 
     def _create_dimension(self, name, size=None):
         if name in self._dim_sizes.maps[0]:
@@ -462,7 +595,7 @@ class Group(Mapping):
     def _create_child_group(self, name):
         if name in self:
             raise ValueError("unable to create group %r (name already exists)" % name)
-        self._h5group.create_group(name)
+        self._h5group.create_group(name, track_order=self._track_order)
         self._groups[name] = self._group_cls(self, name)
         return self._groups[name]
 
@@ -540,7 +673,13 @@ class Group(Mapping):
                 self._delete_dim_scale(name)
 
         self._h5group.create_dataset(
-            h5name, shape, dtype=dtype, data=data, fillvalue=fillvalue, **kwargs
+            h5name,
+            shape,
+            dtype=dtype,
+            data=data,
+            fillvalue=fillvalue,
+            track_order=self._track_order,
+            **kwargs,
         )
 
         self._variables[h5name] = self._variable_cls(self, h5name, dimensions)
@@ -614,7 +753,13 @@ class Group(Mapping):
             kwargs = {}
             if self._dim_sizes[dim] is None:
                 kwargs["maxshape"] = (None,)
-            self._h5group.create_dataset(name=dim, shape=(size,), dtype=">f4", **kwargs)
+            self._h5group.create_dataset(
+                name=dim,
+                shape=(size,),
+                dtype=">f4",
+                track_order=self._track_order,
+                **kwargs,
+            )
 
         h5ds = self._h5group[dim]
         h5ds.attrs["_Netcdf4Dimid"] = np.array(dim_order[dim], dtype=np.int32)
@@ -720,52 +865,102 @@ class Group(Mapping):
         header = "<%s %r (%s members)>" % (self._cls_name, self.name, len(self))
         return "\n".join([header] + self._repr_body())
 
-    def resize_dimension(self, dimension, size, resize_vars=True):
-        """
-        Resize a dimension to a certain size.
+    def resize_dimension(self, dim, size, resize_vars=True):
+        """Resize a dimension to a certain size.
 
         It will pad with the underlying HDF5 data sets' fill values (usually
         zero) where necessary.
         """
-        if self.dimensions[dimension] is not None:
+        if self.dimensions[dim] is not None:
             raise ValueError(
-                "Dimension '%s' is not unlimited and thus "
-                "cannot be resized." % dimension
+                "Dimension '%s' is not unlimited and thus cannot be resized." % dim
             )
 
         # Resize the dimension.
-        self._current_dim_sizes[dimension] = size
+        self._current_dim_sizes[dim] = size
 
-        # Resize dimension in file
-        if dimension in self._h5group:
-            self._h5group[dimension].resize((size,))
+        # Needs resize in any case, if variable, if dimensions and if coordinate
+        if dim in self._h5group:
+            self._h5group[dim].resize((size,))
 
         # Adapt recursively to all variables
         if resize_vars:
-            self._resize_variables(dimension, size)
+            self._resize_variables(dim, size)
 
-    def _resize_variables(self, dimension, size, recurse=True):
+    def _resize_variables(self, dim, size, recurse=True):
         """Resize variables"""
-        # Adapt to all variables
         for var in self.variables.values():
-            new_shape = list(var.shape)
+            new_shape = list(var._h5ds.shape)
             for i, d in enumerate(var.dimensions):
-                if d == dimension:
+                if d == dim:
                     new_shape[i] = size
             new_shape = tuple(new_shape)
-            if new_shape != var.shape:
+            if new_shape != var._h5ds.shape:
                 var._h5ds.resize(new_shape)
 
         # Recurse as dimensions are visible to this group and all child groups.
         if recurse:
             for i in self.groups.values():
-                i._resize_variables(dimension, size)
+                i._resize_variables(dim, size)
 
 
 class File(Group):
     def __init__(
         self, path, mode=None, invalid_netcdf=False, phony_dims=None, **kwargs
     ):
+        """NetCDF4 file constructor.
+
+        Parameters
+        ----------
+        path: path-like
+            Location of the netCDF4 file to be accessed.
+
+        mode: "r", "r+", "a", "w"
+            A valid file access mode. See
+
+        invalid_netcdf: bool
+            Allow writing netCDF4 with data types and attributes that would
+            otherwise not generate netCDF4 files that can be read by other
+            applications. See
+            https://github.com/h5netcdf/h5netcdf#invalid-netcdf-files
+            for more details.
+
+        phony_dims: 'sort', 'access'
+            See:
+            https://github.com/h5netcdf/h5netcdf#datasets-with-missing-dimension-scales
+
+        **kwargs:
+            Additional keyword arguments to be passed to the ``h5py.File``
+            constructor.
+
+        Notes
+        -----
+        In h5netcdf version 0.12.0 and earlier, order tracking was disabled in
+        HDF5 file. As this is a requirement for the current netCDF4 standard,
+        it has been enabled without deprecation as of version 0.13.0 [1]_.
+
+        Datasets created with h5netcdf version 0.12.0 that are opened with
+        newer versions of h5netcdf will continue to disable order tracker.
+
+        .. [1] https://github.com/h5netcdf/h5netcdf/issues/128
+
+        """
+        # 2022/01/09
+        # netCDF4 wants the track_order parameter to be true
+        # through this might be getting relaxed in a more recent version of the
+        # standard
+        # https://github.com/Unidata/netcdf-c/issues/2054
+        # https://github.com/h5netcdf/h5netcdf/issues/128
+        track_order = kwargs.pop("track_order", True)
+
+        if not track_order:
+            raise ValueError(
+                f"track_order, if specified must be set to to True (got {track_order})"
+                "to conform to the netCDF4 file format. Please see "
+                "https://github.com/h5netcdf/h5netcdf/issues/130 "
+                "for more details."
+            )
+
         # Deprecating mode='a' in favor of mode='r'
         # If mode is None default to 'a' and issue a warning
         if mode is None:
@@ -794,10 +989,14 @@ class File(Group):
                         self._preexisting_file = True
                     except IOError:
                         self._preexisting_file = False
-                    self._h5file = h5pyd.File(path, mode, **kwargs)
+                    self._h5file = h5pyd.File(
+                        path, mode, track_order=track_order, **kwargs
+                    )
                 else:
                     self._preexisting_file = os.path.exists(path) and mode != "w"
-                    self._h5file = h5py.File(path, mode, **kwargs)
+                    self._h5file = h5py.File(
+                        path, mode, track_order=track_order, **kwargs
+                    )
             else:  # file-like object
                 if version.parse(h5py.__version__) < version.parse("2.9.0"):
                     raise TypeError(
@@ -806,7 +1005,9 @@ class File(Group):
                     )
                 else:
                     self._preexisting_file = mode in {"r", "r+", "a"}
-                    self._h5file = h5py.File(path, mode, **kwargs)
+                    self._h5file = h5py.File(
+                        path, mode, track_order=track_order, **kwargs
+                    )
         except Exception:
             self._closed = True
             raise
@@ -845,12 +1046,15 @@ class File(Group):
                 if self.decode_vlen_strings is None:
                     msg = (
                         "String decoding changed with h5py >= 3.0. "
-                        "See https://docs.h5py.org/en/latest/strings.html for more details. "
+                        "See https://docs.h5py.org/en/latest/strings.html and "
+                        "https://github.com/h5netcdf/h5netcdf/issues/132 for more details. "
                         "Currently backwards compatibility with h5py < 3.0 is kept by "
                         "decoding vlen strings per default. This will change in future "
                         "versions for consistency with h5py >= 3.0. To silence this "
-                        "warning set kwarg ``decode_vlen_strings=False``. Setting "
-                        "``decode_vlen_strings=True`` forces vlen string decoding."
+                        "warning set kwarg ``decode_vlen_strings=False`` which will "
+                        "return Python bytes from variables containing vlen strings. Setting "
+                        "``decode_vlen_strings=True`` forces vlen string decoding which returns "
+                        "Python strings from variables containing vlen strings."
                     )
                     warnings.warn(msg, FutureWarning, stacklevel=2)
                     self.decode_vlen_strings = True

@@ -48,7 +48,7 @@ Usage
 
 h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
 reproduce most of the features of the netCDF interface, with the notable
-exception of support for operations the rename or delete existing objects.
+exception of support for operations that rename or delete existing objects.
 We simply haven't gotten around to implementing this yet. Patches
 would be very welcome.
 
@@ -90,6 +90,14 @@ design is an adaptation of h5py to the netCDF data model. For example:
         # explicitly resize a dimension and all variables using it
         f.resize_dimension('z', 3)
 
+Note:
+
+- Automatic resizing of unlimited dimensions with array indexing is not available.
+- Dimensions need to be manually resized with ``Group.resize_dimension(dimension, size)``.
+- Arrays are returned padded with ``fillvalue`` (taken from underlying hdf5 dataset) up to
+  current size of variable's dimensions. The behaviour is equivalent to netCDF4-python's
+  ``Dataset.set_auto_mask(False)``.
+
 Legacy API
 ~~~~~~~~~~
 
@@ -123,15 +131,12 @@ exact match. Here is an incomplete list of functionality we don't include:
 
 - Utility functions ``chartostring``, ``num2date``, etc., that are not directly necessary
   for writing netCDF files.
-- We don't support the ``endian`` argument to ``createVariable`` yet (see `GitHub issue`_).
 - h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
   the ``_FillValue`` attribute). We prefer to leave this functionality to client libraries
-  (e.g., xarray_), which can implement their exact desired scaling behavior.
-- No support yet for automatic resizing of unlimited dimensions with array
-  indexing. This would be a welcome pull request. For now, dimensions can be
-  manually resized with ``Group.resize_dimension(dimension, size)``.
-
-.. _GitHub issue: https://github.com/h5netcdf/h5netcdf/issues/15
+  (e.g., xarray_), which can implement their exact desired scaling behavior. Nevertheless
+  arrays are returned padded with ``fillvalue`` (taken from underlying hdf5 dataset) up to
+  current size of variable's dimensions. The behaviour is equivalent to netCDF4-python's
+  ``Dataset.set_auto_mask(False)``.
 
 Invalid netCDF files
 ~~~~~~~~~~~~~~~~~~~~
@@ -211,6 +216,19 @@ to group access time. The created phony dimension naming will differ from
 
 .. _netCDF: https://www.unidata.ucar.edu/software/netcdf/docs/interoperability_hdf5.html
 .. [*] Keyword default setting ``phony_dims=None`` for backwards compatibility.
+
+Track Order
+~~~~~~~~~~~
+
+In h5netcdf version 0.12.0 and earlier, `order tracking`_ was disabled in
+HDF5 file. As this is a requirement for the current netCDF4 standard,
+it has been enabled without deprecation as of version 0.13.0 [*]_.
+
+Datasets created with h5netcdf version 0.12.0 that are opened with
+newer versions of h5netcdf will continue to disable order tracker.
+
+.. _order tracking: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#creation_order
+.. [*] https://github.com/h5netcdf/h5netcdf/issues/128
 
 Changelog
 ---------

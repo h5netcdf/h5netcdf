@@ -3,11 +3,25 @@ Change Log
 
 Development Version:
 
+- Return group name instead of full group path for legacy API.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Add ``endian`` keyword argument ``legacyapi.Dataset.createVariable``.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Resize Dimensions when writing to variables (legacy API only), return padded arrays.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Allow 1D boolean indexers in legacy API.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+
+Version 0.13.0 (January 12, 2022):
+
 - Assign dimensions at creation time, instead of at sync/flush (file-close).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Create/attach dimension scales on the fly, instead of at sync/flush (file-close).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
-
+- Ensure order tracking is true for newly created netcdf4 files as required
+  by the netcdf4 standard. This enables files created by h5netcdf to be
+  appended to by netCDF4 library users (Closes Issue #128).
+  By `Mark Harfouche <https://github.com/hmaarrfk>`_.
 
 Version 0.12.0 (December 20, 2021):
 

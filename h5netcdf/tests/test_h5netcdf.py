@@ -68,6 +68,11 @@ def decode_vlen_strings(request):
         return {}
 
 
+@pytest.fixture(params=[netCDF4, legacyapi])
+def netcdf_write_module(request):
+    return request.param
+
+
 def get_hdf5_module(resource):
     """Return the correct h5py module based on the input resource."""
     if isinstance(resource, str) and resource.startswith(remote_h5):
@@ -943,11 +948,15 @@ def test_creating_variables_with_unlimited_dimensions(tmp_local_or_remote_netcdf
             )
         assert e.value.args[0] == "Shape tuple is incompatible with data"
 
+        # Creating a coordinate variable
+        f.create_variable("x", dimensions=("x",), dtype=np.int64)
+
         # Resize data.
         assert f.variables["dummy"].shape == (0, 2)
         f.resize_dimension("x", 3)
         # This will also force a resize of the existing variables and it will
         # be padded with zeros..
+        assert f._current_dim_sizes["x"] == 3
         np.testing.assert_allclose(f.variables["dummy"], np.zeros((3, 2)))
 
         # Creating another variable with no data will now also take the shape
@@ -955,6 +964,17 @@ def test_creating_variables_with_unlimited_dimensions(tmp_local_or_remote_netcdf
         f.create_variable("dummy3", dimensions=("x", "y"), dtype=np.int64)
         assert f.variables["dummy3"].shape == (3, 2)
         assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
+        np.testing.assert_allclose(f.variables["dummy3"], np.zeros((3, 2)))
+
+        # Writing to a variable with an unlimited dimension raises
+        with pytest.raises(TypeError) as e:
+            f.variables["dummy3"][:] = np.ones((5, 2))
+        assert e.value.args[0] == "Can't broadcast (5, 2) -> (3, 2)"
+        assert f.variables["dummy3"].shape == (3, 2)
+        assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
+        assert f["x"].shape == (3,)
+        assert f._current_dim_sizes["x"] == 3
+        np.testing.assert_allclose(f.variables["dummy3"], np.zeros((3, 2)))
 
     # Close and read again to also test correct parsing of unlimited
     # dimensions.
@@ -973,6 +993,7 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
         # Two dimensions, only one is unlimited.
         f.dimensions["x"] = None
         f.dimensions["y"] = 3
+        f.dimensions["z"] = None
 
         # Cannot create it without first resizing it.
         with pytest.raises(ValueError) as e:
@@ -985,6 +1006,7 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
         f.create_variable("dummy1", dimensions=("x", "y"), dtype=np.int64)
         f.create_variable("dummy2", dimensions=("x", "y"), dtype=np.int64)
         f.create_variable("dummy3", dimensions=("x", "y"), dtype=np.int64)
+        f.create_variable("dummyX", dimensions=("x", "y", "z"), dtype=np.int64)
         g = f.create_group("test")
         g.create_variable("dummy4", dimensions=("y", "x", "x"), dtype=np.int64)
         g.create_variable("dummy5", dimensions=("y", "y"), dtype=np.int64)
@@ -992,20 +1014,22 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
         assert f.variables["dummy1"].shape == (0, 3)
         assert f.variables["dummy2"].shape == (0, 3)
         assert f.variables["dummy3"].shape == (0, 3)
+        assert f.variables["dummyX"].shape == (0, 3, 0)
         assert g.variables["dummy4"].shape == (3, 0, 0)
         assert g.variables["dummy5"].shape == (3, 3)
+
+        # resize dimensions and all connected variables
         f.resize_dimension("x", 2)
         assert f.variables["dummy1"].shape == (2, 3)
         assert f.variables["dummy2"].shape == (2, 3)
         assert f.variables["dummy3"].shape == (2, 3)
+        assert f.variables["dummyX"].shape == (2, 3, 0)
         assert g.variables["dummy4"].shape == (3, 2, 2)
         assert g.variables["dummy5"].shape == (3, 3)
 
-        f.variables["dummy2"][:] = [[1, 2, 3], [5, 6, 7]]
-        np.testing.assert_allclose(f.variables["dummy2"], [[1, 2, 3], [5, 6, 7]])
-
-        f.variables["dummy3"][...] = [[1, 2, 3], [5, 6, 7]]
-        np.testing.assert_allclose(f.variables["dummy3"], [[1, 2, 3], [5, 6, 7]])
+        # broadcast writing
+        f.variables["dummy3"][...] = [[1, 2, 3]]
+        np.testing.assert_allclose(f.variables["dummy3"], [[1, 2, 3], [1, 2, 3]])
 
 
 def test_c_api_can_read_unlimited_dimensions(tmp_local_netcdf):
@@ -1065,7 +1089,9 @@ def test_reading_unlimited_dimensions_created_with_c_api(tmp_local_netcdf):
         assert f["dummy1"].shape == (2, 3)
         # XXX: This array has some data with dimension x - netcdf does not
         # appear to keep dimensions consistent.
-        assert f["dummy2"].shape == (3, 0, 0)
+        # With https://github.com/h5netcdf/h5netcdf/pull/103 h5netcdf will
+        # return a padded array
+        assert f["dummy2"].shape == (3, 2, 2)
         f.groups["test"]["dummy3"].shape == (3, 3)
         f.groups["test"]["dummy4"].shape == (0, 0)
 
@@ -1088,6 +1114,10 @@ def test_reading_special_datatype_created_with_c_api(tmp_local_netcdf):
 
 
 def test_nc4_non_coord(tmp_local_netcdf):
+    # Track order True is the new default for versions after 0.12.0
+    # 0.12.0 defaults to `track_order=False`
+    # Ensure that the tests order the variables in their creation order
+    # not alphabetical order
     with h5netcdf.File(tmp_local_netcdf, "w") as f:
         f.dimensions = {"x": None, "y": 2}
         f.create_variable("test", dimensions=("x",), dtype=np.int64)
@@ -1095,8 +1125,8 @@ def test_nc4_non_coord(tmp_local_netcdf):
 
     with h5netcdf.File(tmp_local_netcdf, "r") as f:
         assert f.dimensions == {"x": None, "y": 2}
-        assert list(f.variables) == ["y", "test"]
-        assert list(f._h5group.keys()) == ["_nc4_non_coord_y", "test", "x", "y"]
+        assert list(f.variables) == ["test", "y"]
+        assert list(f._h5group.keys()) == ["x", "y", "test", "_nc4_non_coord_y"]
 
 
 def test_overwrite_existing_file(tmp_local_netcdf):
@@ -1240,8 +1270,6 @@ def create_netcdf_dimensions(ds, idx):
     ship = g.createVariable("ship", "S1", ("ship", "ship_strlen"))
     sample = g.createVariable("sample", "i8", ("time", "sample"))
 
-    if isinstance(ds, legacyapi.Dataset):
-        g.resize_dimension("time", 10 + idx)
     time[:] = np.arange(10 + idx)
     data[:] = np.ones((3 + idx, 2 + idx, 10 + idx, 5 + idx)) * 12.0
     collide[...] = np.arange(5 + idx)
@@ -1340,10 +1368,7 @@ def check_netcdf_dimensions(tmp_netcdf, write_module, read_module):
             assert g.variables["data"].shape == (3 + i, 2 + i, 10 + i, 5 + i)
             assert g.variables["collide"].shape == (5 + i,)
             assert g.variables["non_collide"].shape == (5 + i,)
-            if write_module == netCDF4 and read_module in [legacyapi, h5netcdf]:
-                assert g.variables["sample"].shape == (2 + i, 2 + i)
-            else:
-                assert g.variables["sample"].shape == (10 + i, 2 + i)
+            assert g.variables["sample"].shape == (10 + i, 2 + i)
             assert g.variables["ship"].shape == (3 + i, 10)
 
 
@@ -1393,3 +1418,213 @@ def test_no_circular_references(tmp_local_netcdf):
     gc.collect()
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
         assert len(gc.get_referrers(ds)) == 1
+
+
+def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
+    with netcdf_write_module.Dataset(tmp_local_netcdf, "w") as ds:
+        f = ds.createGroup("test")
+        f.createDimension("x", None)
+        f.createDimension("y", 3)
+
+        dummy1 = f.createVariable("dummy1", float, ("x", "y"))
+        dummy2 = f.createVariable("dummy2", float, ("x", "y"))
+        dummy3 = f.createVariable("dummy3", float, ("x", "y"))
+        dummy4 = f.createVariable("dummy4", float, ("x", "y"))
+
+        dummy1[:] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        dummy2[:] = [[1, 2, 3]]
+        dummy3[:] = [[1, 2, 3], [4, 5, 6]]
+
+        # don't mask, since h5netcdf doesn't do masking
+        if netcdf_write_module == netCDF4:
+            ds.set_auto_mask(False)
+
+        res1 = dummy1[:]
+        res2 = dummy2[:]
+        res3 = dummy3[:]
+        res4 = dummy4[:]
+
+    with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+        # don't mask, since h5netcdf doesn't do masking
+        if netcdf_write_module == netCDF4:
+            ds.set_auto_mask(False)
+
+        f = ds["test"]
+
+        np.testing.assert_allclose(f.variables["dummy1"][:], res1)
+        assert f.variables["dummy1"].shape == (3, 3)
+        np.testing.assert_allclose(f.variables["dummy2"][:], res2)
+        assert f.variables["dummy2"].shape == (3, 3)
+        np.testing.assert_allclose(f.variables["dummy3"][:], res3)
+        assert f.variables["dummy3"].shape == (3, 3)
+        np.testing.assert_allclose(f.variables["dummy4"][:], res4)
+        assert f.variables["dummy4"].shape == (3, 3)
+
+    with legacyapi.Dataset(tmp_local_netcdf, "r") as ds:
+        f = ds["test"]
+        np.testing.assert_allclose(f.variables["dummy1"][:], res1)
+        assert f.variables["dummy1"].shape == (3, 3)
+        assert f.variables["dummy1"]._h5ds.shape == (3, 3)
+        np.testing.assert_allclose(f.variables["dummy2"][:], res2)
+        assert f.variables["dummy2"].shape == (3, 3)
+        assert f.variables["dummy2"]._h5ds.shape == (1, 3)
+        np.testing.assert_allclose(f.variables["dummy3"][:], res3)
+        assert f.variables["dummy3"].shape == (3, 3)
+        assert f.variables["dummy3"]._h5ds.shape == (2, 3)
+        np.testing.assert_allclose(f.variables["dummy4"][:], res4)
+        assert f.variables["dummy4"].shape == (3, 3)
+        assert f.variables["dummy4"]._h5ds.shape == (0, 3)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        f = ds["test"]
+        np.testing.assert_allclose(f.variables["dummy1"][:], res1)
+        assert f.variables["dummy1"].shape == (3, 3)
+        assert f.variables["dummy1"]._h5ds.shape == (3, 3)
+        np.testing.assert_allclose(f.variables["dummy2"][:], res2)
+        assert f.variables["dummy2"].shape == (3, 3)
+        assert f.variables["dummy2"]._h5ds.shape == (1, 3)
+        np.testing.assert_allclose(f.variables["dummy3"][:], res3)
+        assert f.variables["dummy3"].shape == (3, 3)
+        assert f.variables["dummy3"]._h5ds.shape == (2, 3)
+        np.testing.assert_allclose(f.variables["dummy4"][:], res4)
+        assert f.variables["dummy4"].shape == (3, 3)
+        assert f.variables["dummy4"]._h5ds.shape == (0, 3)
+
+
+def test_creation_with_h5netcdf_edit_with_netcdf4(tmp_local_netcdf):
+    # In version 0.12.0, the wrong file creation attributes were used
+    # making netcdf4 unable to open files created by h5netcdf
+    # https://github.com/h5netcdf/h5netcdf/issues/128
+    with h5netcdf.File(tmp_local_netcdf, "w") as the_file:
+        the_file.dimensions = {"x": 5}
+        variable = the_file.create_variable("hello", ("x",), float)
+        variable[...] = 5
+
+    with netCDF4.Dataset(tmp_local_netcdf, mode="a") as the_file:
+        variable = the_file["hello"]
+        np.testing.assert_array_equal(variable[...].data, 5)
+        # Edit an existing variable
+        variable[:3] = 2
+
+        # Create a new variable
+        variable = the_file.createVariable("goodbye", float, ("x",))
+        variable[...] = 10
+
+    with h5netcdf.File(tmp_local_netcdf, "a") as the_file:
+        # Ensure edited variable is consistent with the expected data
+        variable = the_file["hello"]
+        np.testing.assert_array_equal(variable[...].data, [2, 2, 2, 5, 5])
+
+        # Ensure new variable is accessible
+        variable = the_file["goodbye"]
+        np.testing.assert_array_equal(variable[...].data, 10)
+
+
+def test_track_order_false(tmp_local_netcdf):
+    # track_order must be specified as True or not specified at all
+    # https://github.com/h5netcdf/h5netcdf/issues/130
+    with pytest.raises(ValueError):
+        h5netcdf.File(tmp_local_netcdf, "w", track_order=False)
+
+    with h5netcdf.File(tmp_local_netcdf, "w", track_order=True):
+        pass
+
+
+def test_monitor_netcdf4_requirement_for_track_order(tmp_local_netcdf):
+    # https://github.com/h5netcdf/h5netcdf/issues/130
+    with h5py.File(tmp_local_netcdf, "w", track_order=False):
+        pass
+    with pytest.raises(OSError):
+        with netCDF4.Dataset(tmp_local_netcdf, mode="a"):
+            pass
+
+
+def test_group_names(tmp_local_netcdf):
+    # https://github.com/h5netcdf/h5netcdf/issues/68
+    with netCDF4.Dataset(tmp_local_netcdf, mode="w") as ds:
+        for i in range(10):
+            ds = ds.createGroup(f"group{i:02d}")
+
+    with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+        assert ds.name == "/"
+        name = ""
+        for i in range(10):
+            name = "/".join([name, f"group{i:02d}"])
+            assert ds[name].name == name.split("/")[-1]
+
+    with legacyapi.Dataset(tmp_local_netcdf, "r") as ds:
+        assert ds.name == "/"
+        name = ""
+        for i in range(10):
+            name = "/".join([name, f"group{i:02d}"])
+            assert ds[name].name == name.split("/")[-1]
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        assert ds.name == "/"
+        name = ""
+        for i in range(10):
+            name = "/".join([name, f"group{i:02d}"])
+            assert ds[name].name == name
+
+
+def test_legacyapi_endianess(tmp_local_netcdf):
+    big = legacyapi._check_return_dtype_endianess("big")
+    little = legacyapi._check_return_dtype_endianess("little")
+    native = legacyapi._check_return_dtype_endianess("native")
+
+    with legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("x", 4)
+        # test creating variable using endian keyword argument
+        v = ds.createVariable("big", int, ("x"), endian="big")
+        v[...] = 65533
+        v = ds.createVariable("little", int, ("x"), endian="little")
+        v[...] = 65533
+        v = ds.createVariable("native", int, ("x"), endian="native")
+        v[...] = 65535
+
+    with h5py.File(tmp_local_netcdf, "r") as ds:
+        assert ds["big"].dtype.byteorder == big
+        assert ds["little"].dtype.byteorder == little
+        assert ds["native"].dtype.byteorder == native
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        assert ds["big"].dtype.byteorder == big
+        assert ds["little"].dtype.byteorder == little
+        assert ds["native"].dtype.byteorder == native
+
+    with legacyapi.Dataset(tmp_local_netcdf, "r") as ds:
+        assert ds["big"].dtype.byteorder == big
+        assert ds["little"].dtype.byteorder == little
+        assert ds["native"].dtype.byteorder == native
+
+    with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+        assert ds["big"].dtype.byteorder == big
+        assert ds["little"].dtype.byteorder == little
+        assert ds["native"].dtype.byteorder == native
+
+
+def test_bool_slicing_length_one_dim(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 1, "y": 2}
+        v = ds.create_variable("hello", ("x", "y"), "float")
+        v[:] = np.ones((1, 2))
+
+    bool_slice = np.array([1], dtype=bool)
+
+    # works for legacy API
+    with legacyapi.Dataset(tmp_local_netcdf, "a") as ds:
+        data = ds["hello"][bool_slice, :]
+        np.testing.assert_equal(data, np.ones((1, 2)))
+        ds["hello"][bool_slice, :] = np.zeros((1, 2))
+        data = ds["hello"][bool_slice, :]
+        np.testing.assert_equal(data, np.zeros((1, 2)))
+
+    # should raise for h5py >= 3.0.0
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
+            error = "Indexing arrays must have integer dtypes"
+            with pytest.raises(TypeError) as e:
+                ds["hello"][bool_slice, :]
+            assert error == str(e.value)
+        else:
+            ds["hello"][bool_slice, :]
