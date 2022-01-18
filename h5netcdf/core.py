@@ -662,15 +662,6 @@ class Group(Mapping):
         if shape != maxshape:
             kwargs["maxshape"] = maxshape
 
-        if chunks in {None, True} and (None in maxshape):
-            warnings.warn(
-                "Using h5py's default chunking with unlimited dimensions can lead "
-                "to increased file sizes and degraded performance. Consider using "
-                "``chunks=\"h5netcdf\"`` (default in h5netcdf >= 1.0), or set chunk sizes "
-                "explicitly. To silence this warning, pass ``chunks=\"h5py\"``.",
-                FutureWarning,
-            )
-
         if isinstance(chunks, str):
             if chunks == "h5py":
                 chunks = True
@@ -690,7 +681,7 @@ class Group(Mapping):
                 refs = self._get_dim_scale_refs(name)
                 self._delete_dim_scale(name)
 
-        self._h5group.create_dataset(
+        h5ds = self._h5group.create_dataset(
             h5name,
             shape,
             dtype=dtype,
@@ -700,6 +691,17 @@ class Group(Mapping):
             track_order=self._track_order,
             **kwargs,
         )
+
+        if chunks in {None, True} and (None in maxshape):
+            h5netcdf_chunks = _get_default_chunksizes(maxshape, dtype)
+            warnings.warn(
+                "Using h5py's default chunking with unlimited dimensions can lead "
+                "to increased file sizes and degraded performance (using chunks: %r). "
+                "Consider passing ``chunks=\"h5netcdf\"`` (would give chunks: %r; "
+                "default in h5netcdf >= 1.0), or set chunk sizes explicitly. "
+                "To silence this warning, pass ``chunks=\"h5py\"``. " % (h5ds.chunks, h5netcdf_chunks),
+                FutureWarning,
+            )
 
         self._variables[h5name] = self._variable_cls(self, h5name, dimensions)
         variable = self._variables[h5name]
