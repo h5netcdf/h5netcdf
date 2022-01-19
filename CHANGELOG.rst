@@ -3,6 +3,9 @@ Change Log
 
 Development Version:
 
+- Add chunking method ``chunks="h5netcdf"`` with better handling of
+  unlimited dimensions.
+  By `Dion Häfner <https://github.com/dionhaefner>`_.
 - Return group name instead of full group path for legacy API.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Add ``endian`` keyword argument ``legacyapi.Dataset.createVariable``.
