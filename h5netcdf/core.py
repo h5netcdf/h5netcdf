@@ -669,7 +669,8 @@ class Group(Mapping):
                 chunks = _get_default_chunksizes(maxshape, dtype)
             else:
                 raise ValueError(
-                    "got unrecognized string value %s for chunks argument" % chunks)
+                    "got unrecognized string value %s for chunks argument" % chunks
+                )
 
         # Clear dummy HDF5 datasets with this name that were created for a
         # dimension scale without a corresponding variable.
@@ -697,9 +698,10 @@ class Group(Mapping):
             warnings.warn(
                 "Using h5py's default chunking with unlimited dimensions can lead "
                 "to increased file sizes and degraded performance (using chunks: %r). "
-                "Consider passing ``chunks=\"h5netcdf\"`` (would give chunks: %r; "
+                'Consider passing ``chunks="h5netcdf"`` (would give chunks: %r; '
                 "default in h5netcdf >= 1.0), or set chunk sizes explicitly. "
-                "To silence this warning, pass ``chunks=\"h5py\"``. " % (h5ds.chunks, h5netcdf_chunks),
+                'To silence this warning, pass ``chunks="h5py"``. '
+                % (h5ds.chunks, h5netcdf_chunks),
                 FutureWarning,
             )
 
@@ -728,7 +730,14 @@ class Group(Mapping):
         return variable
 
     def create_variable(
-        self, name, dimensions=(), dtype=None, data=None, fillvalue=None, chunks=None, **kwargs
+        self,
+        name,
+        dimensions=(),
+        dtype=None,
+        data=None,
+        fillvalue=None,
+        chunks=None,
+        **kwargs,
     ):
         if name.startswith("/"):
             return self._root.create_variable(
@@ -1198,19 +1207,19 @@ class File(Group):
 def _get_default_chunksizes(dimsizes, dtype):
     # This is a modified version of h5py's default chunking heuristic
     # https://github.com/h5py/h5py/blob/aa31f03bef99e5807d1d6381e36233325d944279/h5py/_hl/filters.py#L334-L389
-    # (published under BSD-3-Clause)
-    # see also https://github.com/h5py/h5py/issues/2029 for context
+    # (published under BSD-3-Clause, included at licenses/H5PY_LICENSE.txt)
+    # See also https://github.com/h5py/h5py/issues/2029 for context.
 
-    CHUNK_BASE = 16 * 1024    # Multiplier by which chunks are adjusted
-    CHUNK_MIN = 8 * 1024      # Soft lower limit (8k)
-    CHUNK_MAX = 1024 * 1024   # Hard upper limit (1M)
+    CHUNK_BASE = 16 * 1024  # Multiplier by which chunks are adjusted
+    CHUNK_MIN = 8 * 1024  # Soft lower limit (8k)
+    CHUNK_MAX = 1024 * 1024  # Hard upper limit (1M)
 
     type_size = np.dtype(dtype).itemsize
 
     is_unlimited = np.array([x is None for x in dimsizes])
 
     # For unlimited dimensions start with a guess of 1024
-    chunks = np.array([x if x is not None else 1024 for x in dimsizes], dtype='=f8')
+    chunks = np.array([x if x is not None else 1024 for x in dimsizes], dtype="=f8")
 
     ndims = len(dimsizes)
     if ndims == 0:
@@ -1243,12 +1252,9 @@ def _get_default_chunksizes(dimsizes, dtype):
         chunk_bytes = np.product(chunks) * type_size
 
         done = (
-            (
-                chunk_bytes < target_size
-                or abs(chunk_bytes - target_size) / target_size < 0.5
-            )
-            and chunk_bytes < CHUNK_MAX
-        )
+            chunk_bytes < target_size
+            or abs(chunk_bytes - target_size) / target_size < 0.5
+        ) and chunk_bytes < CHUNK_MAX
 
         if done:
             break

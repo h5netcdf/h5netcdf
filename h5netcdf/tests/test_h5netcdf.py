@@ -236,7 +236,16 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
         ["x", "y", "z", "empty", "string3", "mismatched_dim", "unlimited"]
     )
     assert set(ds.variables) == set(
-        ["foo", "y", "z", "intscalar", "scalar", "var_len_str", "mismatched_dim", "foo_unlimited"]
+        [
+            "foo",
+            "y",
+            "z",
+            "intscalar",
+            "scalar",
+            "var_len_str",
+            "mismatched_dim",
+            "foo_unlimited",
+        ]
     )
     assert set(ds.groups) == set(["subgroup"])
     assert ds.parent is None
@@ -332,7 +341,16 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
         ["x", "y", "z", "empty", "string3", "mismatched_dim", "unlimited"]
     )
     assert set(ds.variables) == set(
-        ["foo", "y", "z", "intscalar", "scalar", "var_len_str", "mismatched_dim", "foo_unlimited"]
+        [
+            "foo",
+            "y",
+            "z",
+            "intscalar",
+            "scalar",
+            "var_len_str",
+            "mismatched_dim",
+            "foo_unlimited",
+        ]
     )
     assert set(ds.groups) == set(["subgroup"])
     assert ds.parent is None
@@ -1661,7 +1679,9 @@ def test_default_chunking(tmp_local_netcdf):
 def test_h5netcdf_chunking(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
-        v = ds.create_variable("hello2", ("x", "y", "z", "t"), "float", chunks="h5netcdf")
+        v = ds.create_variable(
+            "hello2", ("x", "y", "z", "t"), "float", chunks="h5netcdf"
+        )
         chunks_h5netcdf = v.chunks
 
     assert chunks_h5netcdf == (10, 10, 10, 1)
