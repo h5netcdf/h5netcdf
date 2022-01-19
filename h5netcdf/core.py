@@ -984,6 +984,7 @@ class File(Group):
         track_order = kwargs.pop("track_order", True)
 
         if not track_order:
+            self._closed = True
             raise ValueError(
                 f"track_order, if specified must be set to to True (got {track_order})"
                 "to conform to the netCDF4 file format. Please see "
