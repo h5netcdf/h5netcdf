@@ -1151,8 +1151,8 @@ def test_nc4_non_coord(tmp_local_netcdf):
 
     with h5netcdf.File(tmp_local_netcdf, "r") as f:
         assert f.dimensions == {"x": None, "y": 2}
-        assert list(f.variables) == ["test", "y"]
-        assert list(f._h5group.keys()) == ["x", "y", "test", "_nc4_non_coord_y"]
+        assert list(f.variables) == ["y", "test"]
+        assert list(f._h5group.keys()) == ["_nc4_non_coord_y", "test", "x", "y"]
 
 
 def test_overwrite_existing_file(tmp_local_netcdf):
@@ -1517,6 +1517,8 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
         assert f.variables["dummy4"]._h5ds.shape == (0, 3)
 
 
+# https://github.com/h5netcdf/h5netcdf/issues/136
+@pytest.mark.skip(reason="h5py bug with track_order prevents editing with netCDF4")
 def test_creation_with_h5netcdf_edit_with_netcdf4(tmp_local_netcdf):
     # In version 0.12.0, the wrong file creation attributes were used
     # making netcdf4 unable to open files created by h5netcdf
@@ -1546,6 +1548,8 @@ def test_creation_with_h5netcdf_edit_with_netcdf4(tmp_local_netcdf):
         np.testing.assert_array_equal(variable[...].data, 10)
 
 
+# https://github.com/h5netcdf/h5netcdf/issues/136
+@pytest.mark.skip(reason="h5py bug with track_order")
 def test_track_order_false(tmp_local_netcdf):
     # track_order must be specified as True or not specified at all
     # https://github.com/h5netcdf/h5netcdf/issues/130
@@ -1556,13 +1560,32 @@ def test_track_order_false(tmp_local_netcdf):
         pass
 
 
-def test_monitor_netcdf4_requirement_for_track_order(tmp_local_netcdf):
-    # https://github.com/h5netcdf/h5netcdf/issues/130
-    with h5py.File(tmp_local_netcdf, "w", track_order=False):
-        pass
-    with pytest.raises(OSError):
-        with netCDF4.Dataset(tmp_local_netcdf, mode="a"):
-            pass
+# This should always work with the default file opening settings
+# https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
+def test_more_than_7_attr_creation(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf, "w") as h5file:
+        for i in range(100):
+            h5file.attrs[f"key{i}"] = i
+            h5file.attrs[f"key{i}"] = 0
+
+
+# Add a test that is supposed to fail in relation to issue #136
+# We choose to monitor when h5py will have fixed their issue in our test suite
+# to enhance maintainability
+# https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
+@pytest.mark.parametrize("track_order", [False, True])
+def test_more_than_7_attr_creation_track_order(tmp_local_netcdf, track_order):
+    if track_order:
+        expected_errors = pytest.raises(KeyError)
+    else:
+        # We don't expect any errors. This is effectively a void context manager
+        expected_errors = memoryview(b"")
+
+    with expected_errors:
+        with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
+            for i in range(100):
+                h5file.attrs[f"key{i}"] = i
+                h5file.attrs[f"key{i}"] = 0
 
 
 def test_group_names(tmp_local_netcdf):
