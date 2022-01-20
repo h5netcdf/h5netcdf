@@ -14,6 +14,8 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Allow 1D boolean indexers in legacy API.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Revert order tracking by default to avoid a bug in ``h5py`` (Closes Issue
+  #136). By `Mark Harfouche <h55ps://github.com/hmaarrfk>`_.
 
 Version 0.13.0 (January 12, 2022):
 
