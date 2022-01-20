@@ -1392,6 +1392,7 @@ def test_no_circular_references(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
         assert len(gc.get_referrers(ds)) == 1
 
+
 # https://github.com/h5netcdf/h5netcdf/issues/136
 @pytest.mark.skip(reason="h5py bug with track_order prevents editing with netCDF4")
 def test_creation_with_h5netcdf_edit_with_netcdf4(tmp_local_netcdf):

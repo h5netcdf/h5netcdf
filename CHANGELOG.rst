@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Version 0.13.1 (Unreleased):
+Version 0.13.1 (January 20, 2022):
 
 - Revert order tracking by default to avoid a bug in ``h5py`` (Closes Issue
   #136). By `Mark Harfouche <h55ps://github.com/hmaarrfk>`_.
