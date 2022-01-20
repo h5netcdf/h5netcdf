@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Version 0.13.1 (Unreleased):
+
+- Revert order tracking by default to avoid a bug in ``h5py`` (Closes Issue
+  #136). By `Mark Harfouche <h55ps://github.com/hmaarrfk>`_.
+
 Version 0.13.0 (January 12, 2022):
 
 - Assign dimensions at creation time, instead of at sync/flush (file-close).

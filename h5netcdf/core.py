@@ -834,15 +834,22 @@ class File(Group):
         # standard
         # https://github.com/Unidata/netcdf-c/issues/2054
         # https://github.com/h5netcdf/h5netcdf/issues/128
-        track_order = kwargs.pop("track_order", True)
+        # 2022/01/20: hmaarrfk
+        # However, it was found that this causes issues with attrs and h5py
+        # https://github.com/h5netcdf/h5netcdf/issues/136
+        # https://github.com/h5py/h5py/issues/1385
+        track_order = kwargs.pop("track_order", False)
 
-        if not track_order:
-            raise ValueError(
-                f"track_order, if specified must be set to to True (got {track_order})"
-                "to conform to the netCDF4 file format. Please see "
-                "https://github.com/h5netcdf/h5netcdf/issues/130 "
-                "for more details."
-            )
+        # When the issues with track_order in h5py are resolved, we
+        # can consider uncommenting the code below
+        # if not track_order:
+        #     self._closed = True
+        #     raise ValueError(
+        #         f"track_order, if specified must be set to to True (got {track_order})"
+        #         "to conform to the netCDF4 file format. Please see "
+        #         "https://github.com/h5netcdf/h5netcdf/issues/130 "
+        #         "for more details."
+        #     )
 
         # Deprecating mode='a' in favor of mode='r'
         # If mode is None default to 'a' and issue a warning

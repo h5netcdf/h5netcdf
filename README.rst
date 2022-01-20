@@ -219,10 +219,14 @@ In h5netcdf version 0.12.0 and earlier, `order tracking`_ was disabled in
 HDF5 file. As this is a requirement for the current netCDF4 standard,
 it has been enabled without deprecation as of version 0.13.0 [*]_.
 
+However in version 0.13.1 this has been reverted due to a bug in a core
+dependency of h5netcdf, h5py `upstream bug`_.
+
 Datasets created with h5netcdf version 0.12.0 that are opened with
 newer versions of h5netcdf will continue to disable order tracker.
 
 .. _order tracking: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#creation_order
+.. _upstream bug: https://github.com/h5netcdf/h5netcdf/issues/136
 .. [*] https://github.com/h5netcdf/h5netcdf/issues/128
 
 Changelog
