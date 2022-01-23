@@ -90,7 +90,7 @@ design is an adaptation of h5py to the netCDF data model. For example:
         # explicitly resize a dimension and all variables using it
         f.resize_dimension('z', 3)
 
-Note:
+Notes:
 
 - Automatic resizing of unlimited dimensions with array indexing is not available.
 - Dimensions need to be manually resized with ``Group.resize_dimension(dimension, size)``.
