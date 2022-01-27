@@ -1,3 +1,7 @@
 include CHANGELOG.rst
 include LICENSE
 recursive-include h5netcdf/tests *.py
+exclude .gitignore
+exclude environment.yml
+exclude MANIFEST.in
+prune .github

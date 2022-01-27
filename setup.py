@@ -27,13 +27,13 @@ setup(
     long_description=(
         open("README.rst").read() if os.path.exists("README.rst") else ""
     ),
-    version="0.13.0",
     license="BSD",
     classifiers=CLASSIFIERS,
     author="Stephan Hoyer",
     author_email="shoyer@gmail.com",
     url="https://github.com/h5netcdf/h5netcdf",
     python_requires=">=3.6",
+    setup_requires=["setuptools_scm"],
     install_requires=["h5py", "packaging"],
     tests_require=["netCDF4", "pytest"],
     packages=find_packages(),

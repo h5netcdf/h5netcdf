@@ -10,6 +10,7 @@ import h5py
 import numpy as np
 from packaging import version
 
+from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
 from .utils import Frozen
@@ -24,9 +25,6 @@ else:
     no_h5pyd = False
     h5_group_types = (h5py.Group, h5pyd.Group)
     h5_dataset_types = (h5py.Dataset, h5pyd.Dataset)
-
-__version__ = "0.13.0"
-
 
 _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5py=%s" % (
     __version__,
