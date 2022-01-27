@@ -621,11 +621,18 @@ class Group(Mapping):
         if shape != maxshape:
             kwargs["maxshape"] = maxshape
 
+        # keep track of chunks
+        use_chunks = chunks
+        if chunks is None:
+            use_chunks = None
+
         if isinstance(chunks, str):
             if chunks == "h5py":
-                chunks = True
+                use_chunks = True
             elif chunks == "h5netcdf":
-                chunks = _get_default_chunksizes(maxshape, dtype)
+                use_chunks = _get_default_chunksizes(maxshape, dtype)
+            elif chunks == "None":
+                use_chunks = None
             else:
                 raise ValueError(
                     "got unrecognized string value %s for chunks argument" % chunks
@@ -646,7 +653,7 @@ class Group(Mapping):
             shape,
             dtype=dtype,
             data=data,
-            chunks=chunks,
+            chunks=use_chunks,
             fillvalue=fillvalue,
             track_order=self._track_order,
             **kwargs,
@@ -659,7 +666,8 @@ class Group(Mapping):
                 "to increased file sizes and degraded performance (using chunks: %r). "
                 'Consider passing ``chunks="h5netcdf"`` (would give chunks: %r; '
                 "default in h5netcdf >= 1.0), or set chunk sizes explicitly. "
-                'To silence this warning, pass ``chunks="h5py"``. '
+                'To silence this warning, pass ``chunks="h5py"``, '
+                '``chunks="h5netcdf"`` or ``chunks="None"`` . '
                 % (h5ds.chunks, h5netcdf_chunks),
                 FutureWarning,
             )
