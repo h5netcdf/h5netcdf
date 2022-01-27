@@ -10,10 +10,10 @@ import h5py
 import numpy as np
 from packaging import version
 
+from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
 from .utils import Frozen
-from . import __version__
 
 try:
     import h5pyd
