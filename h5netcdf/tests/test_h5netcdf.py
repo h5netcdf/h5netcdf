@@ -1716,9 +1716,19 @@ def test_h5netcdf_chunking(tmp_local_netcdf):
 
     assert chunks_h5netcdf == (10, 10, 10, 1)
 
+    # should produce chunks > 1 for small fixed dims
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 10, "t": None}
+        v = ds.create_variable(
+            "hello2", ("x", "t"), "float", chunks="h5netcdf"
+        )
+        chunks_h5netcdf = v.chunks
+
+    assert chunks_h5netcdf == (10, 128)
+
+    # resized unlimited dimensions should be treated like fixed dims
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
-        # resized dimensions should be treated like fixed dims
         ds.resize_dimension("t", 10)
         v = ds.create_variable(
             "hello3", ("x", "y", "z", "t"), "float", chunks="h5netcdf"
