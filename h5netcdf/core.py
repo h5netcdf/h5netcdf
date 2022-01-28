@@ -625,7 +625,7 @@ class Group(Mapping):
             if chunks == "h5py":
                 chunks = True
             elif chunks == "h5netcdf":
-                chunks = _get_default_chunksizes(maxshape, dtype)
+                chunks = _get_default_chunksizes(shape, dtype)
             else:
                 raise ValueError(
                     "got unrecognized string value %s for chunks argument" % chunks
@@ -653,7 +653,7 @@ class Group(Mapping):
         )
 
         if chunks in {None, True} and (None in maxshape):
-            h5netcdf_chunks = _get_default_chunksizes(maxshape, dtype)
+            h5netcdf_chunks = _get_default_chunksizes(shape, dtype)
             warnings.warn(
                 "Using h5py's default chunking with unlimited dimensions can lead "
                 "to increased file sizes and degraded performance (using chunks: %r). "
@@ -1085,10 +1085,10 @@ def _get_default_chunksizes(dimsizes, dtype):
 
     type_size = np.dtype(dtype).itemsize
 
-    is_unlimited = np.array([x is None for x in dimsizes])
+    is_unlimited = np.array([x == 0 for x in dimsizes])
 
     # For unlimited dimensions start with a guess of 1024
-    chunks = np.array([x if x is not None else 1024 for x in dimsizes], dtype="=f8")
+    chunks = np.array([x if x != 0 else 1024 for x in dimsizes], dtype="=f8")
 
     ndims = len(dimsizes)
     if ndims == 0:

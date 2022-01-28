@@ -1716,6 +1716,17 @@ def test_h5netcdf_chunking(tmp_local_netcdf):
 
     assert chunks_h5netcdf == (10, 10, 10, 1)
 
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
+        # resized dimensions should be treated like fixed dims
+        ds.resize_dimension("t", 10)
+        v = ds.create_variable(
+            "hello3", ("x", "y", "z", "t"), "float", chunks="h5netcdf"
+        )
+        chunks_h5netcdf = v.chunks
+
+    assert chunks_h5netcdf == (5, 5, 5, 10)
+
 
 def test_create_invalid_netcdf_catch_error(tmp_local_netcdf):
     # see https://github.com/h5netcdf/h5netcdf/issues/138
