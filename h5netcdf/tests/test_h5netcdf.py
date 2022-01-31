@@ -1689,17 +1689,23 @@ def test_bool_slicing_length_one_dim(tmp_local_netcdf):
 def test_default_chunking(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
-        v = ds.create_variable("hello", ("x", "y", "z", "t"), "float", chunks="h5py")
+        v = ds.create_variable(
+            "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5py"
+        )
         chunks_h5py = v.chunks
 
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
-        v = ds.create_variable("hello", ("x", "y", "z", "t"), "float", chunks="h5py")
+        v = ds.create_variable(
+            "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5py"
+        )
         chunks_default = v.chunks
 
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
-        v = ds.create_variable("hello", ("x", "y", "z", "t"), "float", chunks="h5py")
+        v = ds.create_variable(
+            "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5py"
+        )
         chunks_true = v.chunks
 
     assert chunks_h5py == chunks_default
@@ -1710,7 +1716,7 @@ def test_h5netcdf_chunking(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
         v = ds.create_variable(
-            "hello2", ("x", "y", "z", "t"), "float", chunks="h5netcdf"
+            "hello2", ("x", "y", "z", "t"), "float", chunking_heuristic="h5netcdf"
         )
         chunks_h5netcdf = v.chunks
 
@@ -1721,7 +1727,7 @@ def test_h5netcdf_chunking(tmp_local_netcdf):
         # resized dimensions should be treated like fixed dims
         ds.resize_dimension("t", 10)
         v = ds.create_variable(
-            "hello3", ("x", "y", "z", "t"), "float", chunks="h5netcdf"
+            "hello3", ("x", "y", "z", "t"), "float", chunking_heuristic="h5netcdf"
         )
         chunks_h5netcdf = v.chunks
 

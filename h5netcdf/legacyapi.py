@@ -104,6 +104,7 @@ class Group(core.Group, HasAttributesMixin):
         fill_value=None,
         endian="native",
     ):
+        # TODO: decide on how to set chunking_heuristic
         if len(dimensions) == 0:  # it's a scalar
             # rip off chunk and filter options for consistency with netCDF4-python
 
