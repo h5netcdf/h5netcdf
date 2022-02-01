@@ -132,6 +132,9 @@ class Group(core.Group, HasAttributesMixin):
             if dtype.byteorder != "|":
                 datatype = dtype.newbyteorder("S")
 
+        # closer to netCDF4 chunking behavior
+        kwds["chunking_heuristic"] = "h5netcdf"
+
         return super(Group, self).create_variable(
             varname,
             dimensions,

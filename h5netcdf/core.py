@@ -558,7 +558,15 @@ class Group(Mapping):
         return group._create_child_group(keys[-1])
 
     def _create_child_variable(
-        self, name, dimensions, dtype, data, fillvalue, chunks, **kwargs
+        self,
+        name,
+        dimensions,
+        dtype,
+        data,
+        fillvalue,
+        chunks,
+        chunking_heuristic,
+        **kwargs,
     ):
         if name in self:
             raise ValueError(
@@ -621,14 +629,23 @@ class Group(Mapping):
         if shape != maxshape:
             kwargs["maxshape"] = maxshape
 
-        if isinstance(chunks, str):
-            if chunks == "h5py":
-                chunks = True
-            elif chunks == "h5netcdf":
-                chunks = _get_default_chunksizes(maxshape, dtype)
+        warn_h5py_chunking = False
+        has_unsized_dims = 0 in shape
+        if has_unsized_dims and chunks in {None, True}:
+            # TODO: set default to "h5netcdf" in h5netcdf>=1.0, and remove warning
+            if chunking_heuristic is None:
+                warn_h5py_chunking = True
+                chunking_heuristic = "h5py"
+
+            if chunking_heuristic == "h5py":
+                # do nothing -> h5py will handle chunks internally
+                pass
+            elif chunking_heuristic == "h5netcdf":
+                chunks = _get_default_chunksizes(shape, dtype)
             else:
                 raise ValueError(
-                    "got unrecognized string value %s for chunks argument" % chunks
+                    "got unrecognized value %s for chunking_heuristic argument "
+                    '(has to be "h5py" or "h5netcdf")' % chunking_heuristic
                 )
 
         # Clear dummy HDF5 datasets with this name that were created for a
@@ -652,14 +669,14 @@ class Group(Mapping):
             **kwargs,
         )
 
-        if chunks in {None, True} and (None in maxshape):
-            h5netcdf_chunks = _get_default_chunksizes(maxshape, dtype)
+        if warn_h5py_chunking:
+            h5netcdf_chunks = _get_default_chunksizes(shape, dtype)
             warnings.warn(
                 "Using h5py's default chunking with unlimited dimensions can lead "
                 "to increased file sizes and degraded performance (using chunks: %r). "
-                'Consider passing ``chunks="h5netcdf"`` (would give chunks: %r; '
+                'Consider passing ``chunking_heuristic="h5netcdf"`` (would give chunks: %r; '
                 "default in h5netcdf >= 1.0), or set chunk sizes explicitly. "
-                'To silence this warning, pass ``chunks="h5py"``. '
+                'To silence this warning, pass ``chunking_heuristic="h5py"``. '
                 % (h5ds.chunks, h5netcdf_chunks),
                 FutureWarning,
             )
@@ -702,12 +719,20 @@ class Group(Mapping):
         data=None,
         fillvalue=None,
         chunks=None,
+        chunking_heuristic=None,
         **kwargs,
     ):
         # if root-variable
         if name.startswith("/"):
             return self._root.create_variable(
-                name[1:], dimensions, dtype, data, fillvalue, **kwargs
+                name[1:],
+                dimensions,
+                dtype,
+                data,
+                fillvalue,
+                chunks,
+                chunking_heuristic,
+                **kwargs,
             )
         # else split groups and iterate child groups
         keys = name.split("/")
@@ -715,7 +740,14 @@ class Group(Mapping):
         for k in keys[:-1]:
             group = group._require_child_group(k)
         return group._create_child_variable(
-            keys[-1], dimensions, dtype, data, fillvalue, chunks, **kwargs
+            keys[-1],
+            dimensions,
+            dtype,
+            data,
+            fillvalue,
+            chunks,
+            chunking_heuristic,
+            **kwargs,
         )
 
     def _get_child(self, key):
@@ -1085,10 +1117,10 @@ def _get_default_chunksizes(dimsizes, dtype):
 
     type_size = np.dtype(dtype).itemsize
 
-    is_unlimited = np.array([x is None for x in dimsizes])
+    is_unlimited = np.array([x == 0 for x in dimsizes])
 
     # For unlimited dimensions start with a guess of 1024
-    chunks = np.array([x if x is not None else 1024 for x in dimsizes], dtype="=f8")
+    chunks = np.array([x if x != 0 else 1024 for x in dimsizes], dtype="=f8")
 
     ndims = len(dimsizes)
     if ndims == 0:
