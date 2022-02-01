@@ -1702,7 +1702,7 @@ def test_default_chunking(tmp_local_netcdf):
 
         ds.resize_dimension("t", 4)
         v = ds.create_variable(
-            "hello3", ("x", "y", "z", "t"), "float", chunking_heuristic="h5pys"
+            "hello3", ("x", "y", "z", "t"), "float", chunking_heuristic="h5py"
         )
         chunks_resized = v.chunks
 
