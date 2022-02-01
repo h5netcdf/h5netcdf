@@ -1689,34 +1689,59 @@ def test_bool_slicing_length_one_dim(tmp_local_netcdf):
 def test_default_chunking(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
+
         v = ds.create_variable(
             "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5py"
         )
         chunks_h5py = v.chunks
 
-    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
-        ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
         v = ds.create_variable(
-            "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5py"
+            "hello2", ("x", "y", "z", "t"), "float", chunking_heuristic=None
         )
         chunks_default = v.chunks
 
-    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
-        ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
+        ds.resize_dimension("t", 4)
         v = ds.create_variable(
-            "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5py"
+            "hello3", ("x", "y", "z", "t"), "float", chunking_heuristic="h5pys"
+        )
+        chunks_resized = v.chunks
+
+    # cases above should be equivalent to a fixed dimension with appropriate size
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": 1024}
+
+        v = ds.create_variable(
+            "hello",
+            ("x", "y", "z", "t"),
+            "float",
+            chunks=True,
+            chunking_heuristic="h5py",
         )
         chunks_true = v.chunks
 
-    assert chunks_h5py == chunks_default
-    assert chunks_true == chunks_default
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": 4}
+
+        v = ds.create_variable(
+            "hello",
+            ("x", "y", "z", "t"),
+            "float",
+            chunks=True,
+            chunking_heuristic="h5py",
+        )
+        chunks_true_resized = v.chunks
+
+    assert chunks_h5py == chunks_true
+    assert chunks_default == chunks_true
+    assert chunks_resized == chunks_true_resized
 
 
 def test_h5netcdf_chunking(tmp_local_netcdf):
+    # produces much smaller chunks for unsized dimensions
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
         v = ds.create_variable(
-            "hello2", ("x", "y", "z", "t"), "float", chunking_heuristic="h5netcdf"
+            "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5netcdf"
         )
         chunks_h5netcdf = v.chunks
 
@@ -1726,7 +1751,7 @@ def test_h5netcdf_chunking(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "t": None}
         v = ds.create_variable(
-            "hello2", ("x", "t"), "float", chunking_heuristic="h5netcdf"
+            "hello", ("x", "t"), "float", chunking_heuristic="h5netcdf"
         )
         chunks_h5netcdf = v.chunks
 
@@ -1737,7 +1762,7 @@ def test_h5netcdf_chunking(tmp_local_netcdf):
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
         ds.resize_dimension("t", 10)
         v = ds.create_variable(
-            "hello3", ("x", "y", "z", "t"), "float", chunking_heuristic="h5netcdf"
+            "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5netcdf"
         )
         chunks_h5netcdf = v.chunks
 

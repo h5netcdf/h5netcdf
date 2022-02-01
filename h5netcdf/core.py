@@ -630,8 +630,8 @@ class Group(Mapping):
             kwargs["maxshape"] = maxshape
 
         warn_h5py_chunking = False
-        has_unlimited_dims = 0 in shape
-        if has_unlimited_dims and chunks in {None, True}:
+        has_unsized_dims = 0 in shape
+        if has_unsized_dims and chunks in {None, True}:
             # TODO: set default to "h5netcdf" in h5netcdf>=1.0, and remove warning
             if chunking_heuristic is None:
                 warn_h5py_chunking = True

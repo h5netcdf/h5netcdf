@@ -104,7 +104,6 @@ class Group(core.Group, HasAttributesMixin):
         fill_value=None,
         endian="native",
     ):
-        # TODO: decide on how to set chunking_heuristic
         if len(dimensions) == 0:  # it's a scalar
             # rip off chunk and filter options for consistency with netCDF4-python
 
@@ -132,6 +131,9 @@ class Group(core.Group, HasAttributesMixin):
             dtype = np.dtype(datatype)
             if dtype.byteorder != "|":
                 datatype = dtype.newbyteorder("S")
+
+        # closer to netCDF4 chunking behavior
+        kwds["chunking_heuristic"] = "h5netcdf"
 
         return super(Group, self).create_variable(
             varname,
