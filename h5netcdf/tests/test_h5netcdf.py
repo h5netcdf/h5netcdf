@@ -1820,14 +1820,23 @@ def test_array_attributes(tmp_local_netcdf):
         ds.attrs["unicode_list"] = [unicode]
 
         dt = h5py.string_dtype("ascii")
-        ascii = b"ascii"
+        # if dtype is ascii it's irrelevant if the data is provided as bytes or string
+        ascii = "ascii"
         ds.attrs["ascii"] = ascii
         ds.attrs["ascii_0dim"] = np.array(ascii, dtype=dt)
         ds.attrs["ascii_1dim"] = np.array([ascii], dtype=dt)
         ds.attrs["ascii_array"] = np.array([ascii, "foobar"], dtype=dt)
         ds.attrs["ascii_list"] = [ascii]
 
+        ascii = b"ascii"
+        ds.attrs["bytes"] = ascii
+        ds.attrs["bytes_0dim"] = np.array(ascii, dtype=dt)
+        ds.attrs["bytes_1dim"] = np.array([ascii], dtype=dt)
+        ds.attrs["bytes_array"] = np.array([ascii, b"foobar"], dtype=dt)
+        ds.attrs["bytes_list"] = [ascii]
+
         dt = h5py.string_dtype("utf-8", 10)
+        # unicode needs to be encoded properly for fixed size string type
         ds.attrs["unicode_fixed"] = np.array(unicode.encode("utf-8"), dtype=dt)
         ds.attrs["unicode_fixed_0dim"] = np.array(unicode.encode("utf-8"), dtype=dt)
         ds.attrs["unicode_fixed_1dim"] = np.array([unicode.encode("utf-8")], dtype=dt)
@@ -1836,10 +1845,17 @@ def test_array_attributes(tmp_local_netcdf):
         )
 
         dt = h5py.string_dtype("ascii", 10)
+        ascii = "ascii"
         ds.attrs["ascii_fixed"] = np.array(ascii, dtype=dt)
         ds.attrs["ascii_fixed_0dim"] = np.array(ascii, dtype=dt)
         ds.attrs["ascii_fixed_1dim"] = np.array([ascii], dtype=dt)
         ds.attrs["ascii_fixed_array"] = np.array([ascii, "foobar"], dtype=dt)
+
+        ascii = b"ascii"
+        ds.attrs["bytes_fixed"] = np.array(ascii, dtype=dt)
+        ds.attrs["bytes_fixed_0dim"] = np.array(ascii, dtype=dt)
+        ds.attrs["bytes_fixed_1dim"] = np.array([ascii], dtype=dt)
+        ds.attrs["bytes_fixed_array"] = np.array([ascii, b"foobar"], dtype=dt)
 
         ds.attrs["int"] = 1
         ds.attrs["intlist"] = [1]
@@ -1852,54 +1868,136 @@ def test_array_attributes(tmp_local_netcdf):
         assert ds.attrs["unicode_arrary"] == [unicode, "foobár"]
         assert ds.attrs["unicode_list"] == unicode
 
-        # bytes are retrieved as strings
-        ascii = "ascii"
-        assert ds.attrs["ascii"] == ascii
+        # bytes and strings are received as strings for h5py3
+        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
+            ascii = "ascii"
+            foobar = "foobar"
+        # and bytes for h5py2
+        else:
+            ascii = b"ascii"
+            foobar = b"foobar"
+        assert ds.attrs["ascii"] == "ascii"
         assert ds.attrs["ascii_0dim"] == ascii
         assert ds.attrs["ascii_1dim"] == ascii
-        assert ds.attrs["ascii_array"] == [ascii, "foobar"]
-        assert ds.attrs["ascii_list"] == ascii
+        assert ds.attrs["ascii_array"] == [ascii, foobar]
+        # list is decoded for h5py2
+        assert ds.attrs["ascii_list"] == "ascii"
+
+        assert ds.attrs["bytes"] == ascii
+        assert ds.attrs["bytes_0dim"] == ascii
+        assert ds.attrs["bytes_1dim"] == ascii
+        assert ds.attrs["bytes_array"] == [ascii, foobar]
+        # list is decoded for h5py2
+        assert ds.attrs["bytes_list"] == "ascii"
 
         assert ds.attrs["unicode_fixed"] == unicode
         assert ds.attrs["unicode_fixed_0dim"] == unicode
         assert ds.attrs["unicode_fixed_1dim"] == unicode
         assert ds.attrs["unicode_fixed_arrary"] == [unicode, "foobár"]
 
+        ascii = "ascii"
         assert ds.attrs["ascii_fixed"] == ascii
         assert ds.attrs["ascii_fixed_0dim"] == ascii
         assert ds.attrs["ascii_fixed_1dim"] == ascii
         assert ds.attrs["ascii_fixed_array"] == [ascii, "foobar"]
 
+        assert ds.attrs["bytes_fixed"] == ascii
+        assert ds.attrs["bytes_fixed_0dim"] == ascii
+        assert ds.attrs["bytes_fixed_1dim"] == ascii
+        assert ds.attrs["bytes_fixed_array"] == [ascii, "foobar"]
+
         assert ds.attrs["int"] == 1
         assert ds.attrs["intlist"] == 1
         np.testing.assert_equal(ds.attrs["int_array"], np.arange(10))
 
-    for nc4api in [legacyapi, netCDF4]:
-        with nc4api.Dataset(tmp_local_netcdf, mode="r") as ds:
-            assert ds.unicode == unicode
-            assert ds.unicode_0dim == unicode
-            assert ds.unicode_1dim == unicode
-            assert ds.unicode_arrary == [unicode, "foobár"]
-            assert ds.unicode_list == unicode
+    with legacyapi.Dataset(tmp_local_netcdf, mode="r") as ds:
+        assert ds.unicode == unicode
+        assert ds.unicode_0dim == unicode
+        assert ds.unicode_1dim == unicode
+        assert ds.unicode_arrary == [unicode, "foobár"]
+        assert ds.unicode_list == unicode
 
-            # bytes are retrieved as strings
+        # bytes and strings are received as strings for h5py3
+        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
             ascii = "ascii"
-            assert ds.ascii == ascii
-            assert ds.ascii_0dim == ascii
-            assert ds.ascii_1dim == ascii
-            assert ds.ascii_array == [ascii, "foobar"]
-            assert ds.ascii_list == ascii
+            foobar = "foobar"
+        # and bytes for h5py2
+        else:
+            ascii = b"ascii"
+            foobar = b"foobar"
+        assert ds.ascii == "ascii"
+        assert ds.ascii_0dim == ascii
+        assert ds.ascii_1dim == ascii
+        assert ds.ascii_array == [ascii, foobar]
+        # list is decoded for h5py2
+        assert ds.ascii_list == "ascii"
 
-            assert ds.unicode_fixed == unicode
-            assert ds.unicode_fixed_0dim == unicode
-            assert ds.unicode_fixed_1dim == unicode
-            assert ds.unicode_fixed_arrary == [unicode, "foobár"]
+        assert ds.bytes == ascii
+        assert ds.bytes_0dim == ascii
+        assert ds.bytes_1dim == ascii
+        assert ds.bytes_array == [ascii, foobar]
+        # list is decoded for h5py2
+        assert ds.bytes_list == "ascii"
 
-            assert ds.ascii_fixed == ascii
-            assert ds.ascii_fixed_0dim == ascii
-            assert ds.ascii_fixed_1dim == ascii
-            assert ds.ascii_fixed_array == [ascii, "foobar"]
+        assert ds.unicode_fixed == unicode
+        assert ds.unicode_fixed_0dim == unicode
+        assert ds.unicode_fixed_1dim == unicode
+        assert ds.unicode_fixed_arrary == [unicode, "foobár"]
 
-            assert ds.int == 1
-            assert ds.intlist == 1
-            np.testing.assert_equal(ds.int_array, np.arange(10))
+        ascii = "ascii"
+        assert ds.ascii_fixed == ascii
+        assert ds.ascii_fixed_0dim == ascii
+        assert ds.ascii_fixed_1dim == ascii
+        assert ds.ascii_fixed_array == [ascii, "foobar"]
+
+        assert ds.bytes_fixed == ascii
+        assert ds.bytes_fixed_0dim == ascii
+        assert ds.bytes_fixed_1dim == ascii
+        assert ds.bytes_fixed_array == [ascii, "foobar"]
+
+        assert ds.int == 1
+        assert ds.intlist == 1
+        np.testing.assert_equal(ds.int_array, np.arange(10))
+
+    with netCDF4.Dataset(tmp_local_netcdf, mode="r") as ds:
+        assert ds.unicode == unicode
+        assert ds.unicode_0dim == unicode
+        assert ds.unicode_1dim == unicode
+        assert ds.unicode_arrary == [unicode, "foobár"]
+        assert ds.unicode_list == unicode
+
+        ascii = "ascii"
+        assert ds.ascii == ascii
+        assert ds.ascii_0dim == ascii
+        assert ds.ascii_1dim == ascii
+        assert ds.ascii_array == [ascii, "foobar"]
+        assert ds.ascii_list == ascii
+
+        assert ds.bytes == ascii
+        assert ds.bytes_0dim == ascii
+        assert ds.bytes_1dim == ascii
+        assert ds.bytes_array == [ascii, "foobar"]
+        # writing lists is broken with writing h5py2/reading netCDF4
+        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
+            assert ds.bytes_list == ascii
+        else:
+            assert ds.bytes_list == "ascii\x7f"
+
+        assert ds.unicode_fixed == unicode
+        assert ds.unicode_fixed_0dim == unicode
+        assert ds.unicode_fixed_1dim == unicode
+        assert ds.unicode_fixed_arrary == [unicode, "foobár"]
+
+        assert ds.ascii_fixed == ascii
+        assert ds.ascii_fixed_0dim == ascii
+        assert ds.ascii_fixed_1dim == ascii
+        assert ds.ascii_fixed_array == [ascii, "foobar"]
+
+        assert ds.bytes_fixed == ascii
+        assert ds.bytes_fixed_0dim == ascii
+        assert ds.bytes_fixed_1dim == ascii
+        assert ds.bytes_fixed_array == [ascii, "foobar"]
+
+        assert ds.int == 1
+        assert ds.intlist == 1
+        np.testing.assert_equal(ds.int_array, np.arange(10))
