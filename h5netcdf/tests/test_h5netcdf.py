@@ -1977,11 +1977,9 @@ def test_array_attributes(tmp_local_netcdf):
         assert ds.bytes_0dim == ascii
         assert ds.bytes_1dim == ascii
         assert ds.bytes_array == [ascii, "foobar"]
-        # writing lists is broken with writing h5py2/reading netCDF4
+        # writing/reading lists is broken with h5py2/netCDF4
         if version.parse(h5py.__version__) >= version.parse("3.0.0"):
             assert ds.bytes_list == ascii
-        else:
-            assert ds.bytes_list == "ascii\x7f"
 
         assert ds.unicode_fixed == unicode
         assert ds.unicode_fixed_0dim == unicode
