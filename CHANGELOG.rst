@@ -18,6 +18,10 @@ Development Version:
   #136). By `Mark Harfouche <h55ps://github.com/hmaarrfk>`_.
 - Implement Dimension-class.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Return items from 0-dim and one-element 1-dim array attributes. Return multi-element
+  attributes as lists. Return string attributes as Python strings decoded from their respective
+  encoding (`utf-8`, `ascii`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 0.13.0 (January 12, 2022):
 
