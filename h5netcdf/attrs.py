@@ -37,9 +37,7 @@ class Attributes(MutableMapping):
             if string_info and string_info.length == 1:
                 return b""
 
-        # transform to 1d array in any case for easy iteration
-        # see https://github.com/h5netcdf/h5netcdf/issues/116
-        output = np.atleast_1d(self._h5attrs[key])
+        output = self._h5attrs[key]
 
         # string decoding subtleties
         # vlen strings are already decoded -> only decode fixed length strings
@@ -51,13 +49,20 @@ class Attributes(MutableMapping):
             # see https://github.com/Unidata/netcdf4-python/issues/271
             if string_info.length is not None and string_info.length > 1:
                 encoding = string_info.encoding
-                output = [b.decode(encoding, "surrogateescape") for b in output.flat]
+                if np.isscalar(output):
+                    output = output.decode(encoding, "surrogateescape")
+                else:
+                    output = [
+                        b.decode(encoding, "surrogateescape") for b in output.flat
+                    ]
             else:
-                output = list(output)
+                # transform string array to list
+                if not np.isscalar(output):
+                    output = output.tolist()
 
         # return item if single element list/array
         # see https://github.com/h5netcdf/h5netcdf/issues/116
-        if len(output) == 1:
+        if not np.isscalar(output) and len(output) == 1:
             return output[0]
 
         return output
@@ -69,6 +74,7 @@ class Attributes(MutableMapping):
             dtype = value.dtype
         else:
             dtype = np.asarray(value).dtype
+
         self._check_dtype(dtype)
         self._h5attrs[key] = value
 
