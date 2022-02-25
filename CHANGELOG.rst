@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development Version:
+Version 0.14.0 (February 25, 2022):
 
 - Add ``chunking_heuristic`` keyword and custom heuristic ``chunking_heuristic="h5netcdf"``
   with better handling of unlimited dimensions.
