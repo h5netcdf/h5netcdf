@@ -31,11 +31,15 @@ class Attributes(MutableMapping):
         # see https://github.com/h5py/h5py/issues/2045
         attr = self._h5attrs.get_id(key)
 
-        # see https://github.com/h5netcdf/h5netcdf/issues/94 for details
+        # handle Empty types
         if isinstance(self._h5attrs[key], h5py.Empty):
+            # see https://github.com/h5netcdf/h5netcdf/issues/94 for details
             string_info = h5py.check_string_dtype(self._h5attrs[key].dtype)
             if string_info and string_info.length == 1:
                 return b""
+            # see https://github.com/h5netcdf/h5netcdf/issues/154 for details
+            else:
+                return np.array([], dtype=attr.dtype)
 
         output = self._h5attrs[key]
 

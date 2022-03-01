@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Version 0.14.1 (March 2nd, 2022):
+
+- Directly return non-string ``Empty``-type attributes as empty numpy-ndarray.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+
 Version 0.14.0 (February 25, 2022):
 
 - Add ``chunking_heuristic`` keyword and custom heuristic ``chunking_heuristic="h5netcdf"``
