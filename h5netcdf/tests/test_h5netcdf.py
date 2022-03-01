@@ -1860,6 +1860,8 @@ def test_array_attributes(tmp_local_netcdf):
         ds.attrs["int"] = 1
         ds.attrs["intlist"] = [1]
         ds.attrs["int_array"] = np.arange(10)
+        ds.attrs["empty_list"] = []
+        ds.attrs["empty_array"] = np.array([])
 
     with h5netcdf.File(tmp_local_netcdf, mode="r") as ds:
         assert ds.attrs["unicode"] == unicode
@@ -1909,6 +1911,8 @@ def test_array_attributes(tmp_local_netcdf):
         assert ds.attrs["int"] == 1
         assert ds.attrs["intlist"] == 1
         np.testing.assert_equal(ds.attrs["int_array"], np.arange(10))
+        np.testing.assert_equal(ds.attrs["empty_list"], np.array([]))
+        np.testing.assert_equal(ds.attrs["empty_array"], np.array([]))
 
     with legacyapi.Dataset(tmp_local_netcdf, mode="r") as ds:
         assert ds.unicode == unicode
@@ -1958,6 +1962,8 @@ def test_array_attributes(tmp_local_netcdf):
         assert ds.int == 1
         assert ds.intlist == 1
         np.testing.assert_equal(ds.int_array, np.arange(10))
+        np.testing.assert_equal(ds.attrs["empty_list"], np.array([]))
+        np.testing.assert_equal(ds.attrs["empty_array"], np.array([]))
 
     with netCDF4.Dataset(tmp_local_netcdf, mode="r") as ds:
         assert ds.unicode == unicode
@@ -1999,3 +2005,5 @@ def test_array_attributes(tmp_local_netcdf):
         assert ds.int == 1
         assert ds.intlist == 1
         np.testing.assert_equal(ds.int_array, np.arange(10))
+        np.testing.assert_equal(ds.empty_list, np.array([]))
+        np.testing.assert_equal(ds.empty_array, np.array([]))
