@@ -92,9 +92,52 @@ jobs:
       run: |
         pytest -v --durations=0 h5netcdf/tests/
 
+  sphinx_doc:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Install micromamba
+      uses: mamba-org/provision-with-micromamba@main
+      with:
+        environment-name: h5netcdf-docs
+        extra-specs: |
+          python=3.10
+          pip
+          pytest
+          wheel
+          netCDF4
+          sphinx
+          sphinx-book-theme
+    - name: Install h5netcdf
+      run: |
+        python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+    - name: Build HTML
+      run: |
+        sphinx-build -b html doc/ doc/_build
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+        name: html-doc
+        path: doc/_build
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      # this uploads new documentation on every push
+      if: github.ref == 'refs/heads/main'
+      # this uploads only on releases, activate this before
+      # h5netcdf release 1.0
+      # if: github.event_name == 'release'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: doc/_build
+
   upload-pypi:
     if: github.event_name == 'release'
-    needs: [lint, build_0, build_1]
+    needs: [lint, build_0, build_1, sphinx_doc]
     name: deploy to pypi
     runs-on: ubuntu-latest
     defaults:
