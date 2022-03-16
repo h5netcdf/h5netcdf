@@ -50,7 +50,7 @@ extensions = [
 
 # disable WARNINGs for extlinks for now
 # see https://github.com/sphinx-doc/sphinx/issues/10112
-linklogger = logging.getLogger('sphinx.ext.extlinks')
+linklogger = logging.getLogger("sphinx.ext.extlinks")
 linklogger.setLevel(40)
 
 extlinks = {
