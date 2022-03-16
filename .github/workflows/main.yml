@@ -118,12 +118,13 @@ jobs:
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
     - name: Build HTML
       run: |
-        sphinx-build -b html doc/ doc/_build
+        cd doc
+        make html
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
         name: html-doc
-        path: doc/_build
+        path: doc/_build/html
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       # this uploads new documentation on every push
@@ -133,7 +134,7 @@ jobs:
       # if: github.event_name == 'release'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: doc/_build
+        publish_dir: doc/_build/html
 
   upload-pypi:
     if: github.event_name == 'release'

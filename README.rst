@@ -4,14 +4,14 @@ h5netcdf
 .. image:: https://github.com/h5netcdf/h5netcdf/workflows/CI/badge.svg
     :target: https://github.com/h5netcdf/h5netcdf/actions
 .. image:: https://badge.fury.io/py/h5netcdf.svg
-    :target: https://pypi.python.org/pypi/h5netcdf/
+    :target: https://pypi.org/project/h5netcdf/
 
 A Python interface for the `netCDF4`_ file-format that reads and writes local or
 remote HDF5 files directly via `h5py`_ or `h5pyd`_, without relying on the Unidata
 netCDF library.
 
-.. _netCDF4: http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
-.. _h5py: http://www.h5py.org/
+.. _netCDF4: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec
+.. _h5py: https://www.h5py.org/
 .. _h5pyd: https://github.com/HDFGroup/h5pyd
 
 Why h5netcdf?
@@ -31,12 +31,13 @@ Why h5netcdf?
   bugs in the netCDF libraries/specification.
 
 .. _one workflow: https://github.com/Unidata/netcdf4-python/issues/390#issuecomment-93864839
-.. _xarray: http://github.com/pydata/xarray/
+.. _xarray: https://github.com/pydata/xarray/
 
 Install
 -------
 
-Ensure you have a recent version of h5py installed (I recommend using `conda`_).
+Ensure you have a recent version of h5py installed (I recommend using `conda`_ or
+the community effort `conda-forge`_).
 At least version 2.1 is required (for dimension scales); versions 2.3 and newer
 have been verified to work, though some tests only pass on h5py 2.6. Then::
 
@@ -46,7 +47,8 @@ Or if you are already using conda::
 
     $ conda install h5netcdf
 
-.. _conda: http://conda.io/
+.. _conda: https://conda.io/
+.. _conda-forge: https://conda-forge.org/
 
 Usage
 -----
@@ -229,7 +231,7 @@ to group access time. The created phony dimension naming will differ from
 
 .. [#] Keyword default setting ``phony_dims=None`` for backwards compatibility.
 
-.. _netCDF: https://www.unidata.ucar.edu/software/netcdf/docs/interoperability_hdf5.html
+.. _netCDF: https://docs.unidata.ucar.edu/netcdf-c/current/interoperability_hdf5.html
 
 Track Order
 ~~~~~~~~~~~
@@ -253,11 +255,11 @@ Changelog
 
 `Changelog`_
 
-.. _Changelog: https://github.com/h5netcdf/h5netcdf/blob/master/CHANGELOG.rst
+.. _Changelog: https://github.com/h5netcdf/h5netcdf/blob/main/CHANGELOG.rst
 
 License
 -------
 
 `3-clause BSD`_
 
-.. _3-clause BSD: https://github.com/h5netcdf/h5netcdf/blob/master/LICENSE
+.. _3-clause BSD: https://github.com/h5netcdf/h5netcdf/blob/main/LICENSE

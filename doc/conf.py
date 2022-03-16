@@ -15,6 +15,8 @@ import datetime
 import os
 import sys
 
+from sphinx.util import logging
+
 sys.path.insert(0, os.path.abspath("."))
 
 # -- Project information -----------------------------------------------------
@@ -45,6 +47,11 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.githubpages",
 ]
+
+# disable WARNINGs for extlinks for now
+# see https://github.com/sphinx-doc/sphinx/issues/10112
+linklogger = logging.getLogger('sphinx.ext.extlinks')
+linklogger.setLevel(40)
 
 extlinks = {
     "issue": ("https://github.com/h5netcdf/h5netcdf/issues/%s", "GH"),
@@ -82,11 +89,6 @@ html_context = {
     "doc_path": "doc",
 }
 
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
-
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
@@ -108,16 +110,11 @@ napoleon_type_aliases = {
     "Path": "~~pathlib.Path",
 }
 
-# adapt index.rst - set release
-file = open("index.rst", mode="r")
-index = file.read()
-file.close()
-
-
+# handle release substition
 url = "https://github.com/h5netcdf"
 shorthash = h5netcdf._version.version_tuple[-1].split(".")[0][1:]
-rel = "`{0} <{1}/h5netcdf/tree/{2}>`_".format(release, url, shorthash)
-
-file = open("index.rst", mode="w")
-file.write(index.format(release=rel))
-file.close()
+rel = "`{0} <{1}/h5netcdf/tree/{2}>`__".format(release, url, shorthash)
+rst_epilog = ""
+rst_epilog += f"""
+.. |release| replace:: {rel}
+"""
