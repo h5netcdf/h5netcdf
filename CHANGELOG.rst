@@ -1,6 +1,13 @@
 Change Log
 ----------
 
+Version 0.15.0 (March 18th, 2022):
+
+- Add documentation to ``h5netcdf``, merging current available documentation
+  available as ``.rst``-files, in the repo-wiki and new API-docs into one document
+  using ``sphinx-doc`` and ``sphinx-book-theme``.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+
 Version 0.14.1 (March 2nd, 2022):
 
 - Directly return non-string ``Empty``-type attributes as empty numpy-ndarray.
