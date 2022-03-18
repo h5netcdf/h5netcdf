@@ -1,0 +1,524 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>h5netcdf.Group &#8212; h5netcdf - 0.15.0.dev1+g5c9a98b</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-book-theme.css?digest=84ace793992934648b4de8eed757e5a2" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx-book-theme.9d8b4a8b9bb19db25eeaddc40d639ba2.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="h5netcdf.Dimension" href="h5netcdf.Dimension.html" />
+    <link rel="prev" title="h5netcdf.File.resize_dimension" href="h5netcdf.File.resize_dimension.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<!-- Checkboxes to toggle the left sidebar -->
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle navigation sidebar">
+<label class="overlay" for="__navigation">
+    <div class="visually-hidden">Toggle navigation sidebar</div>
+</label>
+<div class="col-12 col-md-3 bd-sidebar site-navigation " id="site-navigation">
+    
+        <div class="navbar-brand-box">
+    <a class="navbar-brand text-wrap" href="../index.html">
+      
+      
+      
+      <h1 class="site-logo" id="site-title">h5netcdf - 0.15.0.dev1+g5c9a98b</h1>
+      
+    </a>
+</div><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item active">
+        <p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  For users
+ </span>
+</p>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../readme.html">
+   Overview
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../feature.html">
+   Feature comparison
+  </a>
+ </li>
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="../api.html">
+   New API Reference
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.File.html">
+     h5netcdf.File
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.File.create_group.html">
+     h5netcdf.File.create_group
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.File.create_variable.html">
+     h5netcdf.File.create_variable
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.File.resize_dimension.html">
+     h5netcdf.File.resize_dimension
+    </a>
+   </li>
+   <li class="toctree-l2 current active">
+    <a class="current reference internal" href="#">
+     h5netcdf.Group
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.Dimension.html">
+     h5netcdf.Dimension
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.Variable.html">
+     h5netcdf.Variable
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="../legacyapi.html">
+   Legacy API Reference
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+  <label for="toctree-checkbox-2">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.legacyapi.Dataset.html">
+     h5netcdf.legacyapi.Dataset
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.legacyapi.Dataset.createGroup.html">
+     h5netcdf.legacyapi.Dataset.createGroup
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.legacyapi.Dataset.createDimension.html">
+     h5netcdf.legacyapi.Dataset.createDimension
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.legacyapi.Dataset.createVariable.html">
+     h5netcdf.legacyapi.Dataset.createVariable
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.legacyapi.Group.html">
+     h5netcdf.legacyapi.Group
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.legacyapi.Dimension.html">
+     h5netcdf.legacyapi.Dimension
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="h5netcdf.legacyapi.Variable.html">
+     h5netcdf.legacyapi.Variable
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  For developers
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../devguide.html">
+   Developers Guide
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="../changelog.html">
+   Changelog
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Community
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference external" href="https://github.com/h5netcdf/h5netcdf/issues">
+   GitHub issues
+  </a>
+ </li>
+</ul>
+
+    </div>
+</nav> <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Theme by the <a href="https://ebp.jupyterbook.org">Executable Book Project</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<!-- This is an invisible pixel that we watch to see if we've scrolled. -->
+<div class="sbt-scroll-pixel-helper"></div>
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="topbar container-xl fixed-top">
+    <div class="topbar-contents row">
+        <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show"></div>
+        <div class="col pl-md-4 topbar-main">
+            <div class="topbar-left">
+                
+                <label class="nav-toggle-button" for="__navigation">
+                    <div class="visually-hidden">Toggle navigation</div>
+                    <i class="fas fa-bars"></i>
+                </label>
+                
+            </div>
+            
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="../_sources/generated/h5netcdf.Group.rst.txt"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.rst</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+                onclick="printPdf(this)" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+</div>
+
+            <!-- Source interaction buttons -->
+
+            <!-- Full screen (wrap in <a> to have style consistency -->
+
+<a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+        data-placement="bottom" onclick="toggleFullScreen()" aria-label="Fullscreen mode"
+        title="Fullscreen mode"><i
+            class="fas fa-expand"></i></button></a>
+
+            <!-- Launch buttons -->
+
+        </div>
+
+        <!-- Table of contents -->
+        <div class="d-none d-md-block col-md-2 bd-toc show noprint">
+            
+        </div>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+            <!-- Table of contents that is only displayed when printing the page -->
+            <div id="jb-print-docs-body" class="onlyprint">
+                <h1>h5netcdf.Group</h1>
+                <!-- Table of contents -->
+                <div id="print-main-content">
+                    <div id="jb-print-toc">
+                        
+                    </div>
+                </div>
+            </div>
+            
+              <div>
+                
+  <div class="section" id="h5netcdf-group">
+<h1>h5netcdf.Group<a class="headerlink" href="#h5netcdf-group" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="h5netcdf.Group">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">h5netcdf.</span></span><span class="sig-name descname"><span class="pre">Group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="h5netcdf.Group.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create netCDF4 group.</p>
+<p>Groups are containers by which the netCDF4 (HDF5) files are organized.
+Each group is like a Dataset itself.</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Group.__init__" title="h5netcdf.Group.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(parent, name)</p></td>
+<td><p>Create netCDF4 group.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#h5netcdf.Group.create_group" title="h5netcdf.Group.create_group"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_group</span></code></a>(name)</p></td>
+<td><p>Create NetCDF4 group.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Group.create_variable" title="h5netcdf.Group.create_variable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_variable</span></code></a>(name[, dimensions, dtype, ...])</p></td>
+<td><p>Creates a new variable.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#h5netcdf.Group.flush" title="h5netcdf.Group.flush"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flush</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code>(k[,d])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">items</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">keys</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#h5netcdf.Group.resize_dimension" title="h5netcdf.Group.resize_dimension"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resize_dimension</span></code></a>(dim, size)</p></td>
+<td><p>Resize a dimension to a certain size.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Group.sync" title="h5netcdf.Group.sync"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sync</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">values</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Group.attrs" title="h5netcdf.Group.attrs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">attrs</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#h5netcdf.Group.dimensions" title="h5netcdf.Group.dimensions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimensions</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Group.dims" title="h5netcdf.Group.dims"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dims</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#h5netcdf.Group.groups" title="h5netcdf.Group.groups"><code class="xref py py-obj docutils literal notranslate"><span class="pre">groups</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Group.name" title="h5netcdf.Group.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#h5netcdf.Group.parent" title="h5netcdf.Group.parent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parent</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Group.variables" title="h5netcdf.Group.variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">variables</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py property">
+<dt class="sig sig-object py" id="h5netcdf.Group.attrs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">attrs</span></span><a class="headerlink" href="#h5netcdf.Group.attrs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="h5netcdf.Group.create_group">
+<span class="sig-name descname"><span class="pre">create_group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group.create_group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create NetCDF4 group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of new group.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="h5netcdf.Group.create_variable">
+<span class="sig-name descname"><span class="pre">create_variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimensions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillvalue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunking_heuristic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group.create_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of the new variable. If given as a path, intermediate groups will be created,
+if not existent.</p></li>
+<li><p><strong>dimensions</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – Tuple containing dimension name strings. Defaults to empty tuple, effectively
+creating a scalar variable.</p></li>
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v1.22)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.dtype</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Dataype of the new variable. Defaults to None.</p></li>
+<li><p><strong>fillvalue</strong> (<a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-scalar" title="(in NumPy v1.22)"><span class="xref std std-term">scalar</span></a>, <em>optional</em>) – Specify fillvalue for uninitialized parts of the variable. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>chunks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>, <em>optional</em>) – Tuple of integers specifying the chunksizes of each variable dimension.</p></li>
+<li><p><strong>chunking_heuristic</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Specify auto-chunking approach. Can be either of <code class="docutils literal notranslate"><span class="pre">h5py</span></code> or <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code>.
+Discussion on <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> chunking can be found in (<a class="reference external" href="https://github.com/h5netcdf/h5netcdf/issues/52">GH52</a>) and (<a class="reference external" href="https://github.com/h5netcdf/h5netcdf/pull/127">PR127</a>).</p></li>
+<li><p><strong>compression</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Compression filter to apply, defaults to <code class="docutils literal notranslate"><span class="pre">gzip</span></code></p></li>
+<li><p><strong>compression_opts</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Parameter for compression filter. For <code class="docutils literal notranslate"><span class="pre">compression=&quot;gzip&quot;</span></code> Integer from 1 to 9 specifying
+the compression level. Defaults to 4.</p></li>
+<li><p><strong>fletcher32</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, HDF5 Fletcher32 checksum algorithm is applied. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>shuffle</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, HDF5 shuffle filter will be applied. Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please refer to <code class="docutils literal notranslate"><span class="pre">h5py</span></code> <a class="reference external" href="https://docs.h5py.org/en/stable/high/dataset.html#creating-datasets">documentation</a> for further parameters via keyword arguments.
+Any parameterizations which do not adhere to netCDF4 standard will only work on files
+created with <code class="docutils literal notranslate"><span class="pre">invalid_netcdf=True</span></code>,</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>var</strong> (<a class="reference internal" href="h5netcdf.Variable.html#h5netcdf.Variable" title="h5netcdf.Variable"><code class="xref py py-class docutils literal notranslate"><span class="pre">h5netcdf.Variable</span></code></a>) – Variable class instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="h5netcdf.Group.dimensions">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dimensions</span></span><a class="headerlink" href="#h5netcdf.Group.dimensions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="h5netcdf.Group.dims">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dims</span></span><a class="headerlink" href="#h5netcdf.Group.dims" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="h5netcdf.Group.flush">
+<span class="sig-name descname"><span class="pre">flush</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group.flush" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="h5netcdf.Group.groups">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">groups</span></span><a class="headerlink" href="#h5netcdf.Group.groups" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="h5netcdf.Group.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#h5netcdf.Group.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="h5netcdf.Group.parent">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parent</span></span><a class="headerlink" href="#h5netcdf.Group.parent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="h5netcdf.Group.resize_dimension">
+<span class="sig-name descname"><span class="pre">resize_dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group.resize_dimension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resize a dimension to a certain size.</p>
+<p>It will pad with the underlying HDF5 data sets’ fill values (usually
+zero) where necessary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="h5netcdf.Group.sync">
+<span class="sig-name descname"><span class="pre">sync</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group.sync" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="h5netcdf.Group.variables">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">variables</span></span><a class="headerlink" href="#h5netcdf.Group.variables" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+              </div>
+              
+            
+                <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="h5netcdf.File.resize_dimension.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">h5netcdf.File.resize_dimension</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="h5netcdf.Dimension.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">h5netcdf.Dimension</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+            
+        </div>
+    </div>
+    <footer class="footer">
+  <p>
+    
+        &copy; Copyright 2015-2022, h5netcdf developers.<br/>
+  </p>
+</footer>
+</main>
+
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+
+  </body>
+</html>
