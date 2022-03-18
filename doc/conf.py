@@ -118,7 +118,7 @@ version_tuple = h5netcdf._version.version_tuple
 
 # is release?
 if len(version_tuple) == 3:
-    gh_tree_name = h5netcdf._version.version
+    gh_tree_name = f"v{h5netcdf._version.version}"
 else:
     # extract git revision
     gh_tree_name = version_tuple[-1].split(".")[0][1:]
