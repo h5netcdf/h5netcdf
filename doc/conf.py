@@ -112,8 +112,19 @@ napoleon_type_aliases = {
 
 # handle release substition
 url = "https://github.com/h5netcdf"
-shorthash = h5netcdf._version.version_tuple[-1].split(".")[0][1:]
-rel = "`{0} <{1}/h5netcdf/tree/{2}>`__".format(release, url, shorthash)
+
+# get version
+version_tuple = h5netcdf._version.version_tuple
+
+# is release?
+if len(version_tuple) == 3:
+    gh_tree_name = h5netcdf._version.version
+else:
+    # extract git revision
+    gh_tree_name = version_tuple[-1].split(".")[0][1:]
+
+rel = "`{0} <{1}/h5netcdf/tree/{2}>`__".format(release, url, gh_tree_name)
+
 rst_epilog = ""
 rst_epilog += f"""
 .. |release| replace:: {rel}
