@@ -5,6 +5,8 @@ h5netcdf
     :target: https://github.com/h5netcdf/h5netcdf/actions
 .. image:: https://badge.fury.io/py/h5netcdf.svg
     :target: https://pypi.org/project/h5netcdf/
+.. image:: https://github.com/kmuehlbauer/h5netcdf/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages
+    :target: https://h5netcdf.github.io/h5netcdf/
 
 A Python interface for the `netCDF4`_ file-format that reads and writes local or
 remote HDF5 files directly via `h5py`_ or `h5pyd`_, without relying on the Unidata

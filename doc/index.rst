@@ -22,7 +22,7 @@ by Stephan Hoyer. The first `official` ``h5netcdf`` announcement was made by Ste
 
 The library evolved constantly over the years (fixing bugs and adding enhancements)
 and gained contributions from 14 other :ref:`contributors` so far. The library is widely used,
-especially as backend within `xarray docs`_.
+especially as backend within `xarray`_.
 
 Early 2020 Kai Mühlbauer started to add contributions and after some time he volunteered
 to help in maintaining ``h5netcdf``. Two years later in January 2022 Stephan handed the
@@ -34,7 +34,7 @@ late March, 2022.
 .. _h5py: https://www.h5py.org/
 .. _h5pyd: https://github.com/HDFGroup/h5pyd
 .. _xarray issue tracker: https://github.com/pydata/xarray/issues/23#issuecomment-90780331
-.. _xarray docs: https://docs.xarray.dev/
+.. _xarray: https://docs.xarray.dev/
 
 .. toctree::
    :maxdepth: 2
