@@ -19,18 +19,9 @@ try:
     import h5pyd
 except ImportError:
     no_h5pyd = True
-    h5_group_types = (h5py.Group,)
-    h5_dataset_types = (h5py.Dataset,)
 else:
     no_h5pyd = False
-    h5_group_types = (h5py.Group, h5pyd.Group)
-    h5_dataset_types = (h5py.Dataset, h5pyd.Dataset)
 
-_NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5py=%s" % (
-    __version__,
-    h5py.version.hdf5_version,
-    h5py.__version__,
-)
 
 NOT_A_VARIABLE = b"This is a netCDF dimension but not a netCDF variable."
 
@@ -292,7 +283,7 @@ class BaseVariable(object):
             key = _transform_1d_boolean_indexers(key)
 
         if getattr(self._root, "decode_vlen_strings", False):
-            string_info = h5py.check_string_dtype(self._h5ds.dtype)
+            string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
             if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
 
@@ -325,7 +316,7 @@ class BaseVariable(object):
     @property
     def attrs(self):
         """Return variable attributes."""
-        return Attributes(self._h5ds.attrs, self._root._check_valid_netcdf_dtype)
+        return Attributes(self._h5ds.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py)
 
     _cls_name = "h5netcdf.Variable"
 
@@ -454,7 +445,7 @@ class Group(Mapping):
             phony_dims = Counter()
 
         for k, v in self._h5group.items():
-            if isinstance(v, h5_group_types):
+            if isinstance(v, self._root._h5py.Group):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
                 self._groups.add(k)
@@ -471,7 +462,7 @@ class Group(Mapping):
                             phony_dims |= Counter(v.shape)
 
                 if not _netcdf_dimension_but_not_variable(v):
-                    if isinstance(v, h5_dataset_types):
+                    if isinstance(v, self._root._h5py.Dataset):
                         self._variables.add(k)
 
         # iterate over found phony dimensions and create them
@@ -858,7 +849,7 @@ class Group(Mapping):
 
     @property
     def attrs(self):
-        return Attributes(self._h5group.attrs, self._root._check_valid_netcdf_dtype)
+        return Attributes(self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py)
 
     _cls_name = "h5netcdf.Group"
 
@@ -982,17 +973,19 @@ class File(Group):
                             "opening urls: {}".format(path)
                         )
                     try:
-                        with h5pyd.File(path, "r") as f:  # noqa
+                        with h5pyd.File(path, "r", **kwargs) as f:  # noqa
                             pass
                         self._preexisting_file = True
                     except IOError:
                         self._preexisting_file = False
-                    self._h5file = h5pyd.File(
+                    self._h5py = h5pyd
+                    self._h5file = self._h5py.File(
                         path, mode, track_order=track_order, **kwargs
                     )
                 else:
                     self._preexisting_file = os.path.exists(path) and mode != "w"
-                    self._h5file = h5py.File(
+                    self._h5py = h5py
+                    self._h5file = self._h5py.File(
                         path, mode, track_order=track_order, **kwargs
                     )
             else:  # file-like object
@@ -1003,7 +996,8 @@ class File(Group):
                     )
                 else:
                     self._preexisting_file = mode in {"r", "r+", "a"}
-                    self._h5file = h5py.File(
+                    self._h5py = h5py
+                    self._h5file = self._h5py.File(
                         path, mode, track_order=track_order, **kwargs
                     )
         except Exception:
@@ -1124,6 +1118,15 @@ class File(Group):
     def flush(self):
         if self._writable:
             if not self._preexisting_file and not self.invalid_netcdf:
+                if self._h5py.__name__ == 'h5py':
+                    _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5py=%s"
+                else:
+                    _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5pyd=%s"
+                _NC_PROPERTIES = _NC_PROPERTIES % (
+                    __version__,
+                    self._h5py.version.hdf5_version,
+                    self._h5py.__version__,
+                )
                 self.attrs._h5attrs["_NCProperties"] = np.array(
                     _NC_PROPERTIES,
                     dtype=h5py.string_dtype(
