@@ -17,13 +17,12 @@ _HIDDEN_ATTRS = frozenset(
 
 
 class Attributes(MutableMapping):
-    def __init__(self, h5attrs, check_dtype):
+    def __init__(self, h5attrs, check_dtype, h5py_pckg):
         self._h5attrs = h5attrs
         self._check_dtype = check_dtype
+        self._h5py = h5py_pckg
 
     def __getitem__(self, key):
-        import h5py
-
         if key in _HIDDEN_ATTRS:
             raise KeyError(key)
 
@@ -32,9 +31,9 @@ class Attributes(MutableMapping):
         attr = self._h5attrs.get_id(key)
 
         # handle Empty types
-        if isinstance(self._h5attrs[key], h5py.Empty):
+        if isinstance(self._h5attrs[key], self._h5py.Empty):
             # see https://github.com/h5netcdf/h5netcdf/issues/94 for details
-            string_info = h5py.check_string_dtype(self._h5attrs[key].dtype)
+            string_info = self._h5py.check_string_dtype(self._h5attrs[key].dtype)
             if string_info and string_info.length == 1:
                 return b""
             # see https://github.com/h5netcdf/h5netcdf/issues/154 for details

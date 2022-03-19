@@ -19,7 +19,6 @@ from h5netcdf.core import NOT_A_VARIABLE, CompatibilityError
 
 try:
     import h5pyd
-
     without_h5pyd = False
 except ImportError:
     without_h5pyd = True
@@ -28,29 +27,24 @@ except ImportError:
 remote_h5 = ("http:", "hdf5:")
 
 
-@pytest.fixture()
-def restapi(pytestconfig):
-    return pytestconfig.getoption("restapi")
-
-
 @pytest.fixture
 def tmp_local_netcdf(tmpdir):
     return str(tmpdir.join("testfile.nc"))
 
 
 @pytest.fixture(params=["testfile.nc", "hdf5://testfile"])
-def tmp_local_or_remote_netcdf(request, tmpdir, restapi):
+def tmp_local_or_remote_netcdf(request, tmpdir, hsds_up):
     if request.param.startswith(remote_h5):
-        if not restapi:
-            pytest.skip("Do not test with HDF5 REST API")
-        elif without_h5pyd:
+        if without_h5pyd:
             pytest.skip("h5pyd package not available")
-        if any([env.get(v) is None for v in ("HS_USERNAME", "HS_PASSWORD")]):
-            pytest.skip("HSDS username and/or password missing")
+        elif not hsds_up:
+            pytest.skip('HSDS service not running')
         rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
         return (
-            env["HS_ENDPOINT"]
-            + env["H5PYD_TEST_FOLDER"]
+            "hdf5://"
+            + "home"
+            + "/"
+            + env["HS_USERNAME"]
             + "/"
             + "testfile"
             + rnd
@@ -528,9 +522,10 @@ def test_repr(tmp_local_or_remote_netcdf):
 
 
 def test_attrs_api(tmp_local_or_remote_netcdf):
+    h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
         ds.attrs["conventions"] = "CF"
-        ds.attrs["empty_string"] = h5py.Empty(dtype=np.dtype("|S1"))
+        ds.attrs["empty_string"] = h5.Empty(dtype=np.dtype("|S1"))
         ds.dimensions["x"] = 1
         v = ds.create_variable("x", ("x",), "i4")
         v.attrs.update({"units": "meters", "foo": "bar"})
@@ -652,6 +647,8 @@ def check_invalid_netcdf4(var, i):
 
 
 def test_invalid_netcdf4(tmp_local_or_remote_netcdf):
+    if tmp_local_or_remote_netcdf.startswith(remote_h5):
+        pytest.skip("netCDF4 package does not work with remote HDF5 files")
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
     with h5.File(tmp_local_or_remote_netcdf, "w") as f:
         var, var2 = create_invalid_netcdf_data()
@@ -673,10 +670,12 @@ def test_invalid_netcdf4(tmp_local_or_remote_netcdf):
             var = dsr[grp].variables
             check_invalid_netcdf4(var, i)
 
-    with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as dsr:
-        for i, grp in enumerate(grps):
-            var = dsr[grp].variables
-            check_invalid_netcdf4(var, i)
+    if not tmp_local_or_remote_netcdf.startswith(remote_h5):
+        # netcdf4 package does not work with remote HDF5 files
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as dsr:
+            for i, grp in enumerate(grps):
+                var = dsr[grp].variables
+                check_invalid_netcdf4(var, i)
 
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
         with raises(ValueError):
@@ -710,6 +709,8 @@ def check_invalid_netcdf4_mixed(var, i):
 
 
 def test_invalid_netcdf4_mixed(tmp_local_or_remote_netcdf):
+    if tmp_local_or_remote_netcdf.startswith(remote_h5):
+        pytest.skip("netCDF4 package does not work with remote HDF5 files")
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
     with h5.File(tmp_local_or_remote_netcdf, "w") as f:
         var, var2 = create_invalid_netcdf_data()
@@ -738,9 +739,11 @@ def test_invalid_netcdf4_mixed(tmp_local_or_remote_netcdf):
         var = ds.variables
         check_invalid_netcdf4_mixed(var, 0)
 
-    with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
-        var = ds.variables
-        check_invalid_netcdf4_mixed(var, 3)
+    if not tmp_local_or_remote_netcdf.startswith(remote_h5):
+        # netcdf4 package does not work with remote HDF5 files
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+            var = ds.variables
+            check_invalid_netcdf4_mixed(var, 3)
 
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
         with raises(ValueError):
@@ -855,8 +858,8 @@ def test_failed_read_open_and_clean_delete(tmpdir):
 def test_create_variable_matching_saved_dimension(tmp_local_or_remote_netcdf):
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
 
-    if h5 is not h5py:
-        pytest.xfail("https://github.com/h5netcdf/h5netcdf/issues/48")
+    # if h5 is not h5py:
+    #     pytest.xfail("https://github.com/h5netcdf/h5netcdf/issues/48")
 
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as f:
         f.dimensions["x"] = 2
@@ -874,6 +877,8 @@ def test_create_variable_matching_saved_dimension(tmp_local_or_remote_netcdf):
 
 
 def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
+    if tmp_local_or_remote_netcdf.startswith(remote_h5):
+        pytest.skip("Remote HDF5 does not yet support LZF compression")
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w", invalid_netcdf=False) as f:
         # valid
         f.create_variable(
