@@ -5,17 +5,44 @@ from pathlib import Path
 from shutil import rmtree
 import pytest
 try:
+    from h5pyd._apps.hstouch import main as hstouch
     from hsds.hsds_app import HsdsApp
-    has_hsds = True
+    with_reqd_pkgs = True
 except ImportError:
-    has_hsds = False
+    with_reqd_pkgs = False
+
+
+def set_hsds_root():
+    """Make required HSDS root directory."""
+    hsds_root = Path(os.environ['ROOT_DIR']) / os.environ['BUCKET_NAME'] / 'home'
+    if hsds_root.exists():
+        rmtree(hsds_root)
+
+    old_sysargv = sys.argv
+    sys.argv = ['']
+    sys.argv.extend(['-e', os.environ['HS_ENDPOINT']])
+    sys.argv.extend(['-u', 'admin'])
+    sys.argv.extend(['-p', 'admin'])
+    sys.argv.extend(['-b', os.environ['BUCKET_NAME']])
+    sys.argv.append('/home/')
+    hstouch()
+
+    sys.argv = ['']
+    sys.argv.extend(['-e', os.environ['HS_ENDPOINT']])
+    sys.argv.extend(['-u', 'admin'])
+    sys.argv.extend(['-p', 'admin'])
+    sys.argv.extend(['-b', os.environ['BUCKET_NAME']])
+    sys.argv.extend(['-o', os.environ['HS_USERNAME']])
+    sys.argv.append(f'/home/{os.environ["HS_USERNAME"]}/')
+    hstouch()
+    sys.argv = old_sysargv
 
 
 @pytest.fixture(scope='session')
 def hsds_up():
     """Provide HDF Highly Scalabale Data Service (HSDS) for h5pyd testing."""
     env_vars = ('HS_USERNAME', 'HS_PASSWORD', 'ROOT_DIR', 'BUCKET_NAME')
-    if has_hsds and all([os.getenv(v) is not None for v in env_vars]):
+    if with_reqd_pkgs and all([os.getenv(v) is not None for v in env_vars]):
         config = """allow_noauth: true
 auth_expiration: -1
 default_public: False
@@ -104,12 +131,12 @@ domain_req_max_objects_limit: 500
         passwd_file = tmp_dir / 'passwd.txt'
         passwd_file.write_text(
             f'admin:admin\n{os.environ["HS_USERNAME"]}:{os.environ["HS_PASSWORD"]}\n')
-        log_file = str(tmp_dir / 'hs.log')
+        log_file = str(tmp_dir / 'hsds.log')
         tmp_dir = str(tmp_dir)
         if sys.platform == 'darwin':
             # macOS temp directory paths can be very long and break low-level
             # socket comms code...
-            socket_dir = '/tmp/hs'
+            socket_dir = '/tmp/hsds'
         else:
             socket_dir = tmp_dir
 
@@ -125,7 +152,10 @@ domain_req_max_objects_limit: 500
                 dn_count=2)
             hsds.run()
             is_up = hsds.ready
-            os.environ['HS_ENDPOINT'] = hsds.endpoint
+
+            if is_up:
+                os.environ['HS_ENDPOINT'] = hsds.endpoint
+                set_hsds_root()
         except Exception:
             is_up = False
 
