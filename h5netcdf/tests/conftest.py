@@ -41,8 +41,14 @@ def set_hsds_root():
 @pytest.fixture(scope='session')
 def hsds_up():
     """Provide HDF Highly Scalabale Data Service (HSDS) for h5pyd testing."""
-    env_vars = ('HS_USERNAME', 'HS_PASSWORD', 'ROOT_DIR', 'BUCKET_NAME')
-    if with_reqd_pkgs and all([os.getenv(v) is not None for v in env_vars]):
+    if with_reqd_pkgs:
+        root_dir = Path(tempfile.mkdtemp(prefix='tmp-hsds-root-'))
+        os.environ['BUCKET_NAME'] = 'data'
+        (root_dir / os.getenv('BUCKET_NAME')).mkdir(parents=True, exist_ok=True)
+        os.environ['ROOT_DIR'] = str(root_dir)
+        os.environ['HS_USENAME'] = 'h5netcdf-pytest'
+        os.environ['HS_PASSWORD'] = 'TestEarlyTestEverything'
+
         config = """allow_noauth: true
 auth_expiration: -1
 default_public: False
@@ -164,6 +170,7 @@ domain_req_max_objects_limit: 500
         hsds.stop()
         rmtree(tmp_dir, ignore_errors=True)
         rmtree(socket_dir, ignore_errors=True)
+        rmtree(root_dir, ignore_errors=True)
 
     else:
         yield False
