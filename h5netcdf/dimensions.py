@@ -57,6 +57,19 @@ def _join_h5paths(parent_path, child_path):
 
 class Dimension(object):
     def __init__(self, parent, name, size=None, create_h5ds=False):
+        """NetCDF4 Dimension constructor.
+
+        Parameters
+        ----------
+        parent: h5netcdf.Group
+            Parent group.
+        name: str
+            Name of the dimension.
+        size : int
+            Size of the Netcdf4 Dimension. Defaults to None (unlimited).
+        create_h5ds : bool
+            For internal use only.
+        """
         self._parent_ref = weakref.ref(parent)
         self._phony = "phony_dim" in name
         self._root_ref = weakref.ref(parent._root)
@@ -82,12 +95,14 @@ class Dimension(object):
 
     @property
     def name(self):
+        """Return dimension name."""
         if self._phony:
             return self._name
         return self._h5ds.name.split("/")[-1]
 
     @property
     def size(self):
+        """Return dimension size."""
         size = len(self)
         if self.isunlimited():
             # return actual dimensions sizes, this is in line with netcdf4-python
@@ -102,9 +117,11 @@ class Dimension(object):
         return size
 
     def group(self):
+        """Return parent group."""
         return self._parent
 
     def isunlimited(self):
+        """Return ``True`` if dimension is unlimited, otherwise ``False``."""
         if self._phony:
             return False
         return self._h5ds.maxshape == (None,)

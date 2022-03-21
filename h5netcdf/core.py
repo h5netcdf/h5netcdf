@@ -134,6 +134,7 @@ class BaseVariable(object):
 
     @property
     def name(self):
+        """Return variable name."""
         # fix name if _nc4_non_coord_
         return self._h5ds.name.replace("_nc4_non_coord_", "")
 
@@ -255,17 +256,20 @@ class BaseVariable(object):
 
     @property
     def dimensions(self):
+        """Return variable dimension names."""
         if self._dimensions is None:
             self._dimensions = self._lookup_dimensions()
         return self._dimensions
 
     @property
     def shape(self):
+        """Return current sizes of all variable dimensions."""
         # return actual dimensions sizes, this is in line with netcdf4-python
         return tuple([self._parent._all_dimensions[d].size for d in self.dimensions])
 
     @property
     def ndim(self):
+        """Return number variable dimensions"""
         return len(self.shape)
 
     def __len__(self):
@@ -273,6 +277,7 @@ class BaseVariable(object):
 
     @property
     def dtype(self):
+        """Return NumPy dtype object giving the variable’s type."""
         return self._h5ds.dtype
 
     def __array__(self, *args, **kwargs):
@@ -319,6 +324,7 @@ class BaseVariable(object):
 
     @property
     def attrs(self):
+        """Return variable attributes."""
         return Attributes(self._h5ds.attrs, self._root._check_valid_netcdf_dtype)
 
     _cls_name = "h5netcdf.Variable"
@@ -414,7 +420,6 @@ def _unlabeled_dimension_mix(h5py_dataset):
 
 
 class Group(Mapping):
-
     _variable_cls = Variable
     _dimension_cls = Dimension
 
@@ -423,6 +428,11 @@ class Group(Mapping):
         return Group
 
     def __init__(self, parent, name):
+        """Create netCDF4 group.
+
+        Groups are containers by which the netCDF4 (HDF5) files are organized.
+        Each group is like a Dataset itself.
+        """
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent._h5path, name)
@@ -549,6 +559,14 @@ class Group(Mapping):
             return self._create_child_group(name)
 
     def create_group(self, name):
+        """Create NetCDF4 group.
+
+        Parameters
+        ----------
+        name : str
+            Name of new group.
+        """
+
         if name.startswith("/"):
             return self._root.create_group(name[1:])
         keys = name.split("/")
@@ -722,6 +740,49 @@ class Group(Mapping):
         chunking_heuristic=None,
         **kwargs,
     ):
+        """Creates a new variable.
+
+        Parameters
+        ----------
+        name : str
+            Name of the new variable. If given as a path, intermediate groups will be created,
+            if not existent.
+        dimensions : tuple
+            Tuple containing dimension name strings. Defaults to empty tuple, effectively
+            creating a scalar variable.
+        dtype : numpy.dtype, str, optional
+            Dataype of the new variable. Defaults to None.
+        fillvalue : scalar, optional
+            Specify fillvalue for uninitialized parts of the variable. Defaults to ``None``.
+        chunks : tuple, optional
+            Tuple of integers specifying the chunksizes of each variable dimension.
+        chunking_heuristic : str, optional
+            Specify auto-chunking approach. Can be either of ``h5py`` or ``h5netcdf``.
+            Discussion on ``h5netcdf`` chunking can be found in (:issue:`52`) and (:pull:`127`).
+        compression : str, optional
+            Compression filter to apply, defaults to ``gzip``
+        compression_opts : int
+            Parameter for compression filter. For ``compression="gzip"`` Integer from 1 to 9 specifying
+            the compression level. Defaults to 4.
+        fletcher32 : bool
+            If ``True``, HDF5 Fletcher32 checksum algorithm is applied. Defaults to ``False``.
+        shuffle : bool, optional
+            If ``True``, HDF5 shuffle filter will be applied. Defaults to ``True``.
+
+        Note
+        ----
+        Please refer to ``h5py`` `documentation`_ for further parameters via keyword arguments.
+        Any parameterizations which do not adhere to netCDF4 standard will only work on files
+        created with ``invalid_netcdf=True``,
+
+        .. _documentation: https://docs.h5py.org/en/stable/high/dataset.html#creating-datasets
+
+
+        Returns
+        -------
+        var : h5netcdf.Variable
+            Variable class instance
+        """
         # if root-variable
         if name.startswith("/"):
             return self._root.create_variable(
@@ -852,18 +913,15 @@ class File(Group):
             Location of the netCDF4 file to be accessed.
 
         mode: "r", "r+", "a", "w"
-            A valid file access mode. See
+            A valid file access mode.
 
         invalid_netcdf: bool
             Allow writing netCDF4 with data types and attributes that would
             otherwise not generate netCDF4 files that can be read by other
-            applications. See
-            https://github.com/h5netcdf/h5netcdf#invalid-netcdf-files
-            for more details.
+            applications. See :ref:`invalid netcdf` for more details.
 
         phony_dims: 'sort', 'access'
-            See:
-            https://github.com/h5netcdf/h5netcdf#datasets-with-missing-dimension-scales
+            See :ref:`phony dims` for more details.
 
         **kwargs:
             Additional keyword arguments to be passed to the ``h5py.File``
@@ -873,13 +931,10 @@ class File(Group):
         -----
         In h5netcdf version 0.12.0 and earlier, order tracking was disabled in
         HDF5 file. As this is a requirement for the current netCDF4 standard,
-        it has been enabled without deprecation as of version 0.13.0 [1]_.
+        it has been enabled without deprecation as of version 0.13.0 (:issue:`128`).
 
         Datasets created with h5netcdf version 0.12.0 that are opened with
         newer versions of h5netcdf will continue to disable order tracker.
-
-        .. [1] https://github.com/h5netcdf/h5netcdf/issues/128
-
         """
         # 2022/01/09
         # netCDF4 wants the track_order parameter to be true

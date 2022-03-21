@@ -1,6 +1,13 @@
 Change Log
 ----------
 
+Version 0.15.0 (March 18th, 2022):
+
+- Add documentation to ``h5netcdf``, merging current available documentation
+  available as ``.rst``-files, in the repo-wiki and new API-docs into one document
+  using ``sphinx-doc`` and ``sphinx-book-theme``.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+
 Version 0.14.1 (March 2nd, 2022):
 
 - Directly return non-string ``Empty``-type attributes as empty numpy-ndarray.
@@ -20,7 +27,7 @@ Version 0.14.0 (February 25, 2022):
 - Allow 1D boolean indexers in legacy API.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Revert order tracking by default to avoid a bug in ``h5py`` (Closes Issue
-  #136). By `Mark Harfouche <h55ps://github.com/hmaarrfk>`_.
+  #136). By `Mark Harfouche <https://github.com/hmaarrfk>`_.
 - Implement Dimension-class.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Return items from 0-dim and one-element 1-dim array attributes. Return multi-element
@@ -126,15 +133,15 @@ Version 0.6.1 (Jun 8, 2018):
 Version 0.6 (Jun 7, 2018):
 
 - Support for reading and writing data to remote HDF5 files via the HDF5 REST
-  API using the h5pyd_ package. Any file "path" starting with either
+  API using the ``h5pyd`` package. Any file "path" starting with either
   ``http://``, ``https://``, or ``hdf5://`` will automatically trigger the use
   of this package.
-  By `Aleksandar Jelenak <https://github.com/ajelenak-thg>`_.
+  By `Aleksandar Jelenak <https://github.com/ajelenak>`_.
 
 Version 0.5.1 (Apr 11, 2018):
 
 - Bug fix for files with an unlimited dimension with no associated variables.
-  By `Aleksandar Jelenak <https://github.com/ajelenak-thg>`_.
+  By `Aleksandar Jelenak <https://github.com/ajelenak>`_.
 
 Version 0.5 (Oct 17, 2017):
 
