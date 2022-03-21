@@ -46,7 +46,7 @@ def hsds_up():
         os.environ['BUCKET_NAME'] = 'data'
         (root_dir / os.getenv('BUCKET_NAME')).mkdir(parents=True, exist_ok=True)
         os.environ['ROOT_DIR'] = str(root_dir)
-        os.environ['HS_USENAME'] = 'h5netcdf-pytest'
+        os.environ['HS_USERNAME'] = 'h5netcdf-pytest'
         os.environ['HS_PASSWORD'] = 'TestEarlyTestEverything'
 
         config = """allow_noauth: true
