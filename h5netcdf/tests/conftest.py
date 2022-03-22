@@ -3,10 +3,13 @@ import sys
 import tempfile
 from pathlib import Path
 from shutil import rmtree
+
 import pytest
+
 try:
     from h5pyd._apps.hstouch import main as hstouch
     from hsds.hsds_app import HsdsApp
+
     with_reqd_pkgs = True
 except ImportError:
     with_reqd_pkgs = False
@@ -14,40 +17,40 @@ except ImportError:
 
 def set_hsds_root():
     """Make required HSDS root directory."""
-    hsds_root = Path(os.environ['ROOT_DIR']) / os.environ['BUCKET_NAME'] / 'home'
+    hsds_root = Path(os.environ["ROOT_DIR"]) / os.environ["BUCKET_NAME"] / "home"
     if hsds_root.exists():
         rmtree(hsds_root)
 
     old_sysargv = sys.argv
-    sys.argv = ['']
-    sys.argv.extend(['-e', os.environ['HS_ENDPOINT']])
-    sys.argv.extend(['-u', 'admin'])
-    sys.argv.extend(['-p', 'admin'])
-    sys.argv.extend(['-b', os.environ['BUCKET_NAME']])
-    sys.argv.append('/home/')
+    sys.argv = [""]
+    sys.argv.extend(["-e", os.environ["HS_ENDPOINT"]])
+    sys.argv.extend(["-u", "admin"])
+    sys.argv.extend(["-p", "admin"])
+    sys.argv.extend(["-b", os.environ["BUCKET_NAME"]])
+    sys.argv.append("/home/")
     hstouch()
 
-    sys.argv = ['']
-    sys.argv.extend(['-e', os.environ['HS_ENDPOINT']])
-    sys.argv.extend(['-u', 'admin'])
-    sys.argv.extend(['-p', 'admin'])
-    sys.argv.extend(['-b', os.environ['BUCKET_NAME']])
-    sys.argv.extend(['-o', os.environ['HS_USERNAME']])
+    sys.argv = [""]
+    sys.argv.extend(["-e", os.environ["HS_ENDPOINT"]])
+    sys.argv.extend(["-u", "admin"])
+    sys.argv.extend(["-p", "admin"])
+    sys.argv.extend(["-b", os.environ["BUCKET_NAME"]])
+    sys.argv.extend(["-o", os.environ["HS_USERNAME"]])
     sys.argv.append(f'/home/{os.environ["HS_USERNAME"]}/')
     hstouch()
     sys.argv = old_sysargv
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def hsds_up():
     """Provide HDF Highly Scalabale Data Service (HSDS) for h5pyd testing."""
     if with_reqd_pkgs:
-        root_dir = Path(tempfile.mkdtemp(prefix='tmp-hsds-root-'))
-        os.environ['BUCKET_NAME'] = 'data'
-        (root_dir / os.getenv('BUCKET_NAME')).mkdir(parents=True, exist_ok=True)
-        os.environ['ROOT_DIR'] = str(root_dir)
-        os.environ['HS_USERNAME'] = 'h5netcdf-pytest'
-        os.environ['HS_PASSWORD'] = 'TestEarlyTestEverything'
+        root_dir = Path(tempfile.mkdtemp(prefix="tmp-hsds-root-"))
+        os.environ["BUCKET_NAME"] = "data"
+        (root_dir / os.getenv("BUCKET_NAME")).mkdir(parents=True, exist_ok=True)
+        os.environ["ROOT_DIR"] = str(root_dir)
+        os.environ["HS_USERNAME"] = "h5netcdf-pytest"
+        os.environ["HS_PASSWORD"] = "TestEarlyTestEverything"
 
         config = """allow_noauth: true
 auth_expiration: -1
@@ -131,36 +134,38 @@ k8s_namespace: null
 restart_policy: on-failure
 domain_req_max_objects_limit: 500
 """
-        tmp_dir = Path(tempfile.mkdtemp(prefix='tmp-hsds-'))
-        config_file = tmp_dir / 'config.yml'
+        tmp_dir = Path(tempfile.mkdtemp(prefix="tmp-hsds-"))
+        config_file = tmp_dir / "config.yml"
         config_file.write_text(config)
-        passwd_file = tmp_dir / 'passwd.txt'
+        passwd_file = tmp_dir / "passwd.txt"
         passwd_file.write_text(
-            f'admin:admin\n{os.environ["HS_USERNAME"]}:{os.environ["HS_PASSWORD"]}\n')
-        log_file = str(tmp_dir / 'hsds.log')
+            f'admin:admin\n{os.environ["HS_USERNAME"]}:{os.environ["HS_PASSWORD"]}\n'
+        )
+        log_file = str(tmp_dir / "hsds.log")
         tmp_dir = str(tmp_dir)
-        if sys.platform == 'darwin':
+        if sys.platform == "darwin":
             # macOS temp directory paths can be very long and break low-level
             # socket comms code...
-            socket_dir = '/tmp/hsds'
+            socket_dir = "/tmp/hsds"
         else:
             socket_dir = tmp_dir
 
         try:
             hsds = HsdsApp(
-                username=os.environ['HS_USERNAME'],
-                password=os.environ['HS_PASSWORD'],
+                username=os.environ["HS_USERNAME"],
+                password=os.environ["HS_PASSWORD"],
                 password_file=str(passwd_file),
-                log_level=os.getenv('LOG_LEVEL', 'DEBUG'),
+                log_level=os.getenv("LOG_LEVEL", "DEBUG"),
                 logfile=log_file,
                 socket_dir=socket_dir,
                 config_dir=tmp_dir,
-                dn_count=2)
+                dn_count=2,
+            )
             hsds.run()
             is_up = hsds.ready
 
             if is_up:
-                os.environ['HS_ENDPOINT'] = hsds.endpoint
+                os.environ["HS_ENDPOINT"] = hsds.endpoint
                 set_hsds_root()
         except Exception:
             is_up = False

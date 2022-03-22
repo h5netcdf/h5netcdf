@@ -28,7 +28,10 @@ class Attributes(MutableMapping):
 
         # get original attribute via h5py low level api
         # see https://github.com/h5py/h5py/issues/2045
-        attr = self._h5attrs.get_id(key)
+        if self._h5py.__name__ == "h5py":
+            attr = self._h5attrs.get_id(key)
+        else:
+            attr = self._h5attrs[key]
 
         # handle Empty types
         if isinstance(self._h5attrs[key], self._h5py.Empty):
@@ -46,27 +49,28 @@ class Attributes(MutableMapping):
         # vlen strings are already decoded -> only decode fixed length strings
         # see https://github.com/h5netcdf/h5netcdf/issues/116
         # netcdf4-python returns string arrays as lists, we do as well
-        string_info = h5py.check_string_dtype(attr.dtype)
-        if string_info is not None:
-            # do not decode "S1"-type char arrays, as they are actually wanted as bytes
-            # see https://github.com/Unidata/netcdf4-python/issues/271
-            if string_info.length is not None and string_info.length > 1:
-                encoding = string_info.encoding
-                if np.isscalar(output):
-                    output = output.decode(encoding, "surrogateescape")
+        if self._h5py.__name__ == "h5py":
+            string_info = self._h5py.check_string_dtype(attr.dtype)
+            if string_info is not None:
+                # do not decode "S1"-type char arrays, as they are actually wanted as bytes
+                # see https://github.com/Unidata/netcdf4-python/issues/271
+                if string_info.length is not None and string_info.length > 1:
+                    encoding = string_info.encoding
+                    if np.isscalar(output):
+                        output = output.decode(encoding, "surrogateescape")
+                    else:
+                        output = [
+                            b.decode(encoding, "surrogateescape") for b in output.flat
+                        ]
                 else:
-                    output = [
-                        b.decode(encoding, "surrogateescape") for b in output.flat
-                    ]
-            else:
-                # transform string array to list
-                if not np.isscalar(output):
-                    output = output.tolist()
+                    # transform string array to list
+                    if not np.isscalar(output):
+                        output = output.tolist()
 
-        # return item if single element list/array
-        # see https://github.com/h5netcdf/h5netcdf/issues/116
-        if not np.isscalar(output) and len(output) == 1:
-            return output[0]
+            # return item if single element list/array
+            # see https://github.com/h5netcdf/h5netcdf/issues/116
+            if not np.isscalar(output) and len(output) == 1:
+                return output[0]
 
         return output
 

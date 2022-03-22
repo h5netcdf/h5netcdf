@@ -316,7 +316,9 @@ class BaseVariable(object):
     @property
     def attrs(self):
         """Return variable attributes."""
-        return Attributes(self._h5ds.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py)
+        return Attributes(
+            self._h5ds.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
+        )
 
     _cls_name = "h5netcdf.Variable"
 
@@ -499,6 +501,8 @@ class Group(Mapping):
 
     @property
     def _track_order(self):
+        if self._root._h5py.__name__ == "h5pyd":
+            return False
         # TODO: make a suggestion to upstream to create a property
         # for files to get if they track the order
         # As of version 3.6.0 this property did not exist
@@ -539,7 +543,11 @@ class Group(Mapping):
     def _create_child_group(self, name):
         if name in self:
             raise ValueError("unable to create group %r (name already exists)" % name)
-        self._h5group.create_group(name, track_order=self._track_order)
+        kwargs = {}
+        if self._root._h5py.__name__ == "h5py":
+            kwargs.update(track_order=self._track_order)
+
+        self._h5group.create_group(name, **kwargs)
         self._groups[name] = self._group_cls(self, name)
         return self._groups[name]
 
@@ -581,7 +589,6 @@ class Group(Mapping):
             raise ValueError(
                 "unable to create variable %r " "(name already exists)" % name
             )
-
         if data is not None:
             data = np.asarray(data)
 
@@ -666,6 +673,9 @@ class Group(Mapping):
             self._dimensions[name]._detach_scale()
             del self._h5group[name]
 
+        if self._root._h5py.__name__ == "h5py":
+            kwargs.update(dict(track_order=self._parent._track_order))
+
         # create hdf5 variable
         h5ds = self._h5group.create_dataset(
             h5name,
@@ -674,7 +684,6 @@ class Group(Mapping):
             data=data,
             chunks=chunks,
             fillvalue=fillvalue,
-            track_order=self._track_order,
             **kwargs,
         )
 
@@ -849,7 +858,9 @@ class Group(Mapping):
 
     @property
     def attrs(self):
-        return Attributes(self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py)
+        return Attributes(
+            self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
+        )
 
     _cls_name = "h5netcdf.Group"
 
@@ -1115,16 +1126,17 @@ class File(Group):
     def parent(self):
         return None
 
+    @property
+    def _root(self):
+        return self
+
     def flush(self):
         if self._writable:
             if not self._preexisting_file and not self.invalid_netcdf:
-                if self._h5py.__name__ == 'h5py':
-                    _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5py=%s"
-                else:
-                    _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,h5pyd=%s"
-                _NC_PROPERTIES = _NC_PROPERTIES % (
+                _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,%s=%s" % (
                     __version__,
                     self._h5py.version.hdf5_version,
+                    self._h5py.__name__,
                     self._h5py.__version__,
                 )
                 self.attrs._h5attrs["_NCProperties"] = np.array(

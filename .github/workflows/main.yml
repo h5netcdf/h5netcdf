@@ -92,6 +92,38 @@ jobs:
       run: |
         pytest -v --durations=0 h5netcdf/tests/
 
+  build_2:
+    name: h5py3/h5pyd tests
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9"]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install micromamba
+      uses: mamba-org/provision-with-micromamba@main
+      with:
+        environment-name: h5netcdf-tests
+        extra-specs: |
+          python=${{ matrix.python-version }}
+          pip
+          pytest
+          wheel
+          netCDF4
+    - name: Install h5netcdf
+      run: |
+        python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+        python -m pip install git+https://github.com/HDFGroup/hsds.git
+        python -m pip install git+https://github.com/HDFGroup/h5pyd.git
+    - name: Test with pytest
+      run: |
+        pytest -v --durations=0 h5netcdf/tests/
+  
   sphinx_doc:
     runs-on: ubuntu-latest
     defaults:
