@@ -170,11 +170,12 @@ class Dimension(object):
             kwargs = {}
             if self._size is None or self._size == 0:
                 kwargs["maxshape"] = (None,)
+            if self._root._h5py.__name__ == "h5py":
+                kwargs.update(dict(track_order=self._parent._track_order))
             self._parent._h5group.create_dataset(
                 name=self._name,
                 shape=(self._size,),
                 dtype=">f4",
-                track_order=self._parent._track_order,
                 **kwargs,
             )
         self._h5ds.attrs["_Netcdf4Dimid"] = np.array(self._dimid, dtype=np.int32)
@@ -201,7 +202,7 @@ class Dimension(object):
             else NOT_A_VARIABLE + dimlen
         )
         # don't re-create scales if they already exist.
-        if not h5py.h5ds.is_scale(self._h5ds.id):
+        if not self._root._h5py.h5ds.is_scale(self._h5ds.id):
             if Version(h5py.__version__) < Version("2.10.0"):
                 self._h5ds.dims.create_scale(self._h5ds, scale_name)
             else:
