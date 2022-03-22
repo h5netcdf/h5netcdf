@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development Version:
+
+- Add HSDS pytest-fixture, make tests work with h5ypd.
+  By `Aleksandar Jelenak <https://github.com/ajelenak>`_.
+
 Version 0.15.0 (March 18th, 2022):
 
 - Add documentation to ``h5netcdf``, merging current available documentation
