@@ -923,6 +923,28 @@ def test_invalid_netcdf_okay(tmp_local_or_remote_netcdf):
         assert "_NCProperties" not in f.attrs
 
 
+def test_invalid_netcdf_overwrite_valid(tmp_local_netcdf):
+    # https://github.com/h5netcdf/h5netcdf/issues/165
+    with netCDF4.Dataset(tmp_local_netcdf, mode="w"):
+        pass
+    with pytest.warns(UserWarning):
+        with h5netcdf.File(tmp_local_netcdf, "a", invalid_netcdf=True) as f:
+            f.create_variable(
+                "lzf_compressed", data=[1], dimensions=("x"), compression="lzf"
+            )
+            f.create_variable("complex", data=1j)
+            f.attrs["complex_attr"] = 1j
+            f.create_variable("scaleoffset", data=[1], dimensions=("x",), scaleoffset=0)
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        np.testing.assert_equal(f["lzf_compressed"][:], [1])
+        assert f["complex"][...] == 1j
+        assert f.attrs["complex_attr"] == 1j
+        np.testing.assert_equal(f["scaleoffset"][:], [1])
+    h5 = get_hdf5_module(tmp_local_netcdf)
+    with h5.File(tmp_local_netcdf, "r") as f:
+        assert "_NCProperties" not in f.attrs
+
+
 def test_reopen_file_different_dimension_sizes(tmp_local_netcdf):
     # regression test for https://github.com/h5netcdf/h5netcdf/issues/55
     with h5netcdf.File(tmp_local_netcdf, "w") as f:
