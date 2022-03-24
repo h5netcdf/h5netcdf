@@ -5,6 +5,9 @@ Development Version:
 
 - Add HSDS pytest-fixture, make tests work with h5ypd.
   By `Aleksandar Jelenak <https://github.com/ajelenak>`_.
+- Remove `_NCProperties` from existing file if writing invalid netcdf features.
+  Warn users if `.nc` file extension is used writing invalid netcdf features.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 0.15.0 (March 18th, 2022):
 

@@ -1132,6 +1132,7 @@ class File(Group):
 
     def flush(self):
         if self._writable:
+            # only write `_NCProperties` in newly created files
             if not self._preexisting_file and not self.invalid_netcdf:
                 _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,%s=%s" % (
                     __version__,
@@ -1145,6 +1146,20 @@ class File(Group):
                         encoding="ascii", length=len(_NC_PROPERTIES)
                     ),
                 )
+            if self.invalid_netcdf:
+                # see https://github.com/h5netcdf/h5netcdf/issues/165
+                # warn user if .nc file extension is used for invalid netcdf features
+                if os.path.splitext(self.filename)[1] == ".nc":
+                    msg = (
+                        f"You are writing invalid netcdf features to file "
+                        f"`{self.filename}`. The file will thus be not conforming "
+                        f"to NetCDF-4 standard and might not be readable by other "
+                        f"netcdf tools. Consider using a different extension."
+                    )
+                    warnings.warn(msg, UserWarning, stacklevel=2)
+                # remove _NCProperties if invalid_netcdf if exists
+                if "_NCProperties" in self.attrs._h5attrs:
+                    del self.attrs._h5attrs["_NCProperties"]
 
     sync = flush
 

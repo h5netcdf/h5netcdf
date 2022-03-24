@@ -180,6 +180,9 @@ when creating a file:
   ds = h5netcdf.legacyapi.Dataset('mydata.h5', invalid_netcdf=True)
   ...
 
+In such cases the `_NCProperties` attribute will not be saved to the file or be removed
+from an existing file. A warning will be issued if the file has `.nc`-extension.
+
 .. rubric:: Footnotes
 
 .. [#] h5netcdf we will raise ``h5netcdf.CompatibilityError``.
