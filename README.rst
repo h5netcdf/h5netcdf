@@ -37,8 +37,6 @@ Why h5netcdf?
 .. _one workflow: https://github.com/Unidata/netcdf4-python/issues/390#issuecomment-93864839
 .. _xarray: https://github.com/pydata/xarray/
 
-.. why_h5netcdf_end
-
 Install
 -------
 
