@@ -619,13 +619,6 @@ def test_mode_warning(tmp_local_or_remote_netcdf):
             pass
 
 
-def test_unlimited_chunk_warning(tmp_local_or_remote_netcdf):
-    with pytest.warns(FutureWarning):
-        with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
-            ds.dimensions = {"x": None}
-            ds.create_variable("foo", ("x",), float)
-
-
 def create_invalid_netcdf_data():
     foo_data = np.arange(125).reshape(5, 5, 5)
     bar_data = np.arange(625).reshape(25, 5, 5)
@@ -1725,7 +1718,7 @@ def test_bool_slicing_length_one_dim(tmp_local_netcdf):
             ds["hello"][bool_slice, :]
 
 
-def test_default_chunking(tmp_local_netcdf):
+def test_h5py_chunking(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
 
@@ -1733,11 +1726,6 @@ def test_default_chunking(tmp_local_netcdf):
             "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5py"
         )
         chunks_h5py = v.chunks
-
-        v = ds.create_variable(
-            "hello2", ("x", "y", "z", "t"), "float", chunking_heuristic=None
-        )
-        chunks_default = v.chunks
 
         ds.resize_dimension("t", 4)
         v = ds.create_variable(
@@ -1771,7 +1759,6 @@ def test_default_chunking(tmp_local_netcdf):
         chunks_true_resized = v.chunks
 
     assert chunks_h5py == chunks_true
-    assert chunks_default == chunks_true
     assert chunks_resized == chunks_true_resized
 
 

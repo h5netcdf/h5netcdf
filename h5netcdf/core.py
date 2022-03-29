@@ -645,19 +645,13 @@ class Group(Mapping):
         if shape != maxshape:
             kwargs["maxshape"] = maxshape
 
-        warn_h5py_chunking = False
         has_unsized_dims = 0 in shape
         if has_unsized_dims and chunks in {None, True}:
-            # TODO: set default to "h5netcdf" in h5netcdf>=1.0, and remove warning
-            if chunking_heuristic is None:
-                warn_h5py_chunking = True
-                chunking_heuristic = "h5py"
-
-            if chunking_heuristic == "h5py":
+            if chunking_heuristic in [None, "h5netcdf"]:
+                chunks = _get_default_chunksizes(shape, dtype)
+            elif chunking_heuristic == "h5py":
                 # do nothing -> h5py will handle chunks internally
                 pass
-            elif chunking_heuristic == "h5netcdf":
-                chunks = _get_default_chunksizes(shape, dtype)
             else:
                 raise ValueError(
                     "got unrecognized value %s for chunking_heuristic argument "
@@ -686,18 +680,6 @@ class Group(Mapping):
             fillvalue=fillvalue,
             **kwargs,
         )
-
-        if warn_h5py_chunking:
-            h5netcdf_chunks = _get_default_chunksizes(shape, dtype)
-            warnings.warn(
-                "Using h5py's default chunking with unlimited dimensions can lead "
-                "to increased file sizes and degraded performance (using chunks: %r). "
-                'Consider passing ``chunking_heuristic="h5netcdf"`` (would give chunks: %r; '
-                "default in h5netcdf >= 1.0), or set chunk sizes explicitly. "
-                'To silence this warning, pass ``chunking_heuristic="h5py"``. '
-                % (h5ds.chunks, h5netcdf_chunks),
-                FutureWarning,
-            )
 
         # create variable class instance
         variable = self._variable_cls(self, h5name, dimensions)
@@ -757,8 +739,9 @@ class Group(Mapping):
         chunks : tuple, optional
             Tuple of integers specifying the chunksizes of each variable dimension.
         chunking_heuristic : str, optional
-            Specify auto-chunking approach. Can be either of ``h5py`` or ``h5netcdf``.
-            Discussion on ``h5netcdf`` chunking can be found in (:issue:`52`) and (:pull:`127`).
+            Specify auto-chunking approach. Can be either of ``h5py`` or ``h5netcdf``. Defaults to
+            ``h5netcdf``. Discussion on ``h5netcdf`` chunking can be found in (:issue:`52`)
+            and (:pull:`127`).
         compression : str, optional
             Compression filter to apply, defaults to ``gzip``
         compression_opts : int
