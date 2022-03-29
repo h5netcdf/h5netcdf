@@ -1016,20 +1016,7 @@ class File(Group):
                 self.decode_vlen_strings = True
             else:
                 if self.decode_vlen_strings is None:
-                    msg = (
-                        "String decoding changed with h5py >= 3.0. "
-                        "See https://docs.h5py.org/en/latest/strings.html and "
-                        "https://github.com/h5netcdf/h5netcdf/issues/132 for more details. "
-                        "Currently backwards compatibility with h5py < 3.0 is kept by "
-                        "decoding vlen strings per default. This will change in future "
-                        "versions for consistency with h5py >= 3.0. To silence this "
-                        "warning set kwarg ``decode_vlen_strings=False`` which will "
-                        "return Python bytes from variables containing vlen strings. Setting "
-                        "``decode_vlen_strings=True`` forces vlen string decoding which returns "
-                        "Python strings from variables containing vlen strings."
-                    )
-                    warnings.warn(msg, FutureWarning, stacklevel=2)
-                    self.decode_vlen_strings = True
+                    self.decode_vlen_strings = False
 
         self._max_dim_id = -1
         # This maps keeps track of all HDF5 datasets corresponding to this group.

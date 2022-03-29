@@ -593,17 +593,6 @@ def test_error_handling(tmp_local_or_remote_netcdf):
     version.parse(h5py.__version__) < version.parse("3.0.0"),
     reason="not needed with h5py < 3.0",
 )
-def test_decode_string_warning(tmp_local_or_remote_netcdf):
-    write_h5netcdf(tmp_local_or_remote_netcdf)
-    with pytest.warns(FutureWarning):
-        with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
-            assert ds.name == "/"
-
-
-@pytest.mark.skipif(
-    version.parse(h5py.__version__) < version.parse("3.0.0"),
-    reason="not needed with h5py < 3.0",
-)
 def test_decode_string_error(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)
     with pytest.raises(TypeError):
