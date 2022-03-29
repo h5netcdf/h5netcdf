@@ -671,7 +671,7 @@ class Group(Mapping):
             kwargs.update(dict(track_order=self._parent._track_order))
 
         # create hdf5 variable
-        h5ds = self._h5group.create_dataset(
+        self._h5group.create_dataset(
             h5name,
             shape,
             dtype=dtype,
@@ -887,9 +887,7 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(
-        self, path, mode=None, invalid_netcdf=False, phony_dims=None, **kwargs
-    ):
+    def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, **kwargs):
         """NetCDF4 file constructor.
 
         Parameters
@@ -898,7 +896,7 @@ class File(Group):
             Location of the netCDF4 file to be accessed.
 
         mode: "r", "r+", "a", "w"
-            A valid file access mode.
+            A valid file access mode. Defaults to "r".
 
         invalid_netcdf: bool
             Allow writing netCDF4 with data types and attributes that would
@@ -943,18 +941,6 @@ class File(Group):
         #         "https://github.com/h5netcdf/h5netcdf/issues/130 "
         #         "for more details."
         #     )
-
-        # Deprecating mode='a' in favor of mode='r'
-        # If mode is None default to 'a' and issue a warning
-        if mode is None:
-            msg = (
-                "Falling back to mode='a'. "
-                "In future versions, mode will default to read-only. "
-                "It is recommended to explicitly set mode='r' to prevent any unintended "
-                "changes to the file."
-            )
-            warnings.warn(msg, FutureWarning, stacklevel=2)
-            mode = "a"
 
         if version.parse(h5py.__version__) >= version.parse("3.0.0"):
             self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)

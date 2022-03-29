@@ -613,12 +613,6 @@ def test_decode_string_error(tmp_local_or_remote_netcdf):
             assert ds.name == "/"
 
 
-def test_mode_warning(tmp_local_or_remote_netcdf):
-    with pytest.warns(FutureWarning):
-        with h5netcdf.File(tmp_local_or_remote_netcdf):
-            pass
-
-
 def create_invalid_netcdf_data():
     foo_data = np.arange(125).reshape(5, 5, 5)
     bar_data = np.arange(625).reshape(25, 5, 5)
