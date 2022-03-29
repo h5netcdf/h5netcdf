@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 0.16.0.dev5+g2eb876b</title>
+    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 0.16.0.dev6+gb2846eb</title>
     
   <link href="_static/css/theme.css" rel="stylesheet">
   <link href="_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -34,7 +34,7 @@
     <script src="_static/sphinx-book-theme.9d8b4a8b9bb19db25eeaddc40d639ba2.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="h5netcdf" href="readme.html" />
+    <link rel="next" title="legacyapi vs new API feature comparison" href="feature.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -63,7 +63,7 @@
       
       
       
-      <h1 class="site-logo" id="site-title">h5netcdf - 0.16.0.dev5+g2eb876b</h1>
+      <h1 class="site-logo" id="site-title">h5netcdf - 0.16.0.dev6+gb2846eb</h1>
       
     </a>
 </div><form class="bd-search d-flex align-items-center" action="search.html" method="get">
@@ -76,9 +76,9 @@
   For users
  </span>
 </p>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="readme.html">
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
    Overview
   </a>
  </li>
@@ -262,6 +262,24 @@
 
             <!-- Source interaction buttons -->
 
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/h5netcdf/h5netcdf"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        <a class="issues-button"
+            href="https://github.com/h5netcdf/h5netcdf/issues/new?title=Issue%20on%20page%20%2Findex.html&body=Your%20issue%20content%20here."><button
+                type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip" data-placement="left"
+                title="Open an issue"><i class="fas fa-lightbulb"></i>open issue</button></a>
+        <a class="edit-button" href="https://github.com/h5netcdf/h5netcdf/edit/main/doc/index.rst"><button
+                type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip" data-placement="left"
+                title="Edit this page"><i class="fas fa-pencil-alt"></i>suggest edit</button></a>
+    </div>
+</div>
+
             <!-- Full screen (wrap in <a> to have style consistency -->
 
 <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
@@ -281,6 +299,63 @@
             </div>
             <nav id="bd-toc-nav" aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#why-h5netcdf">
+   Why h5netcdf?
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#install">
+   Install
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#usage">
+   Usage
+  </a>
+  <ul class="visible nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#new-api">
+     New API
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#legacy-api">
+     Legacy API
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#invalid-netcdf-files">
+     Invalid netCDF files
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#decoding-variable-length-strings">
+     Decoding variable length strings
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#datasets-with-missing-dimension-scales">
+     Datasets with missing dimension scales
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#track-order">
+     Track Order
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#history">
+   History
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#license">
+   License
+  </a>
+ </li>
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#indices-and-tables">
    Indices and tables
@@ -307,6 +382,63 @@
                         <nav aria-label="Page">
                             <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#why-h5netcdf">
+   Why h5netcdf?
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#install">
+   Install
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#usage">
+   Usage
+  </a>
+  <ul class="visible nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#new-api">
+     New API
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#legacy-api">
+     Legacy API
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#invalid-netcdf-files">
+     Invalid netCDF files
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#decoding-variable-length-strings">
+     Decoding variable length strings
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#datasets-with-missing-dimension-scales">
+     Datasets with missing dimension scales
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#track-order">
+     Track Order
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#history">
+   History
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#license">
+   License
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#indices-and-tables">
    Indices and tables
   </a>
@@ -324,34 +456,256 @@
 <h1>h5netcdf: A Python interface for the netCDF4 file-format based on h5py<a class="headerlink" href="#h5netcdf-a-python-interface-for-the-netcdf4-file-format-based-on-h5py" title="Permalink to this headline">¶</a></h1>
 <dl class="field-list simple">
 <dt class="field-odd">Release</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/2eb876b">0.16.0.dev5+g2eb876b</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/b2846eb">0.16.0.dev6+gb2846eb</a></p>
 </dd>
 <dt class="field-even">Date</dt>
-<dd class="field-even"><p>Mar 24, 2022</p>
+<dd class="field-even"><p>Mar 29, 2022</p>
 </dd>
 </dl>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
-<p><code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> <a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/2eb876b">0.16.0.dev5+g2eb876b</a> will be the last version before <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> <a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/b2846eb">0.16.0.dev6+gb2846eb</a> will be the last version before <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p>
 </div>
 <p><strong>h5netcdf</strong> is an open source project and Python package that provides an interface
 for the <a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec">netCDF4 file-format</a> that reads and writes local or remote HDF5 files directly
 via <a class="reference external" href="https://www.h5py.org/">h5py</a> or <a class="reference external" href="https://github.com/HDFGroup/h5pyd">h5pyd</a>, without relying on the Unidata netCDF library.</p>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="why-h5netcdf">
+<h2>Why h5netcdf?<a class="headerlink" href="#why-h5netcdf" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>It has one less binary dependency (netCDF C). If you already have h5py
+installed, reading netCDF4 with h5netcdf may be much easier than installing
+netCDF4-Python.</p></li>
+<li><p>We’ve seen occasional reports of better performance with h5py than
+netCDF4-python, though in many cases performance is identical. For
+<a class="reference external" href="https://github.com/Unidata/netcdf4-python/issues/390#issuecomment-93864839">one workflow</a>, h5netcdf was reported to be almost <strong>4x faster</strong> than
+<a class="reference external" href="https://github.com/Unidata/netcdf4-python">netCDF4-python</a>.</p></li>
+<li><p>Anecdotally, HDF5 users seem to be unexcited about switching to netCDF –
+hopefully this will convince them that netCDF4 is actually quite sane!</p></li>
+<li><p>Finally, side-stepping the netCDF C library (and Cython bindings to it)
+gives us an easier way to identify the source of performance issues and
+bugs in the netCDF libraries/specification.</p></li>
+</ul>
+</div>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<p>Ensure you have a recent version of h5py installed (I recommend using <a class="reference external" href="https://conda.io/">conda</a> or
+the community effort <a class="reference external" href="https://conda-forge.org/">conda-forge</a>).
+At least version 2.1 is required (for dimension scales); versions 2.3 and newer
+have been verified to work, though some tests only pass on h5py 2.6. Then:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install h5netcdf
+</pre></div>
+</div>
+<p>Or if you are already using conda:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ conda install h5netcdf
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
+reproduce most of the features of the netCDF interface, with the notable
+exception of support for operations that rename or delete existing objects.
+We simply haven’t gotten around to implementing this yet. Patches
+would be very welcome.</p>
+<div class="section" id="new-api">
+<h3>New API<a class="headerlink" href="#new-api" title="Permalink to this headline">¶</a></h3>
+<p>The new API supports direct hierarchical access of variables and groups. Its
+design is an adaptation of h5py to the netCDF data model. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">h5netcdf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="k">with</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;mydata.nc&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="c1"># set dimensions with a dictionary</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">}</span>
+    <span class="c1"># and update them with a dict-like interface</span>
+    <span class="c1"># f.dimensions[&#39;x&#39;] = 5</span>
+    <span class="c1"># f.dimensions.update({&#39;x&#39;: 5})</span>
+
+    <span class="n">v</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_variable</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="n">v</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+    <span class="c1"># you don&#39;t need to create groups first</span>
+    <span class="c1"># you also don&#39;t need to create dimensions first if you supply data</span>
+    <span class="c1"># with the new variable</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_variable</span><span class="p">(</span><span class="s1">&#39;/grouped/data&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,),</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+
+    <span class="c1"># access and modify attributes with a dict-like interface</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;bar&#39;</span>
+
+    <span class="c1"># you can access variables and groups directly using a hierarchical</span>
+    <span class="c1"># keys like h5py</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s1">&#39;/grouped/data&#39;</span><span class="p">])</span>
+
+    <span class="c1"># add an unlimited dimension</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># explicitly resize a dimension and all variables using it</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">resize_dimension</span><span class="p">(</span><span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Notes:</p>
+<ul class="simple">
+<li><p>Automatic resizing of unlimited dimensions with array indexing is not available.</p></li>
+<li><p>Dimensions need to be manually resized with <code class="docutils literal notranslate"><span class="pre">Group.resize_dimension(dimension,</span> <span class="pre">size)</span></code>.</p></li>
+<li><p>Arrays are returned padded with <code class="docutils literal notranslate"><span class="pre">fillvalue</span></code> (taken from underlying hdf5 dataset) up to
+current size of variable’s dimensions. The behaviour is equivalent to netCDF4-python’s
+<code class="docutils literal notranslate"><span class="pre">Dataset.set_auto_mask(False)</span></code>.</p></li>
+</ul>
+</div>
+<div class="section" id="legacy-api">
+<h3>Legacy API<a class="headerlink" href="#legacy-api" title="Permalink to this headline">¶</a></h3>
+<p>The legacy API is designed for compatibility with <a class="reference external" href="https://github.com/Unidata/netcdf4-python">netCDF4-python</a>. To use it, import
+<code class="docutils literal notranslate"><span class="pre">h5netcdf.legacyapi</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">h5netcdf.legacyapi</span> <span class="k">as</span> <span class="nn">netCDF4</span>
+<span class="c1"># everything here would also work with this instead:</span>
+<span class="c1"># import netCDF4</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="k">with</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="s1">&#39;mydata.nc&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ds</span><span class="p">:</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,))</span>
+    <span class="n">v</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+    <span class="n">g</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">createGroup</span><span class="p">(</span><span class="s1">&#39;grouped&#39;</span><span class="p">)</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;i8&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,))</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="n">v</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">foo</span> <span class="o">=</span> <span class="s1">&#39;bar&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s1">&#39;grouped&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The legacy API is designed to be easy to try-out for netCDF4-python users, but it is not an
+exact match. Here is an incomplete list of functionality we don’t include:</p>
+<ul class="simple">
+<li><p>Utility functions <code class="docutils literal notranslate"><span class="pre">chartostring</span></code>, <code class="docutils literal notranslate"><span class="pre">num2date</span></code>, etc., that are not directly necessary
+for writing netCDF files.</p></li>
+<li><p>h5netcdf variables do not support automatic masking or scaling (e.g., of values matching
+the <code class="docutils literal notranslate"><span class="pre">_FillValue</span></code> attribute). We prefer to leave this functionality to client libraries
+(e.g., <a class="reference external" href="https://github.com/pydata/xarray/">xarray</a>), which can implement their exact desired scaling behavior. Nevertheless
+arrays are returned padded with <code class="docutils literal notranslate"><span class="pre">fillvalue</span></code> (taken from underlying hdf5 dataset) up to
+current size of variable’s dimensions. The behaviour is equivalent to netCDF4-python’s
+<code class="docutils literal notranslate"><span class="pre">Dataset.set_auto_mask(False)</span></code>.</p></li>
+</ul>
+</div>
+<div class="section" id="invalid-netcdf-files">
+<span id="invalid-netcdf"></span><h3>Invalid netCDF files<a class="headerlink" href="#invalid-netcdf-files" title="Permalink to this headline">¶</a></h3>
+<p>h5py implements some features that do not (yet) result in valid netCDF files:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Data types:</dt><dd><ul>
+<li><p>Booleans</p></li>
+<li><p>Complex values</p></li>
+<li><p>Non-string variable length types</p></li>
+<li><p>Enum types</p></li>
+<li><p>Reference types</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Arbitrary filters:</dt><dd><ul>
+<li><p>Scale-offset filters</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>By default <a class="footnote-reference brackets" href="#id2" id="id1">1</a>, h5netcdf will not allow writing files using any of these features,
+as files with such features are not readable by other netCDF tools.</p>
+<p>However, these are still valid HDF5 files. If you don’t care about netCDF
+compatibility, you can use these features by setting <code class="docutils literal notranslate"><span class="pre">invalid_netcdf=True</span></code>
+when creating a file:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># avoid the .nc extension for non-netcdf files</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;mydata.h5&#39;</span><span class="p">,</span> <span class="n">invalid_netcdf</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="o">...</span>
+
+<span class="c1"># works with the legacy API, too, though compression options are not exposed</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">legacyapi</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="s1">&#39;mydata.h5&#39;</span><span class="p">,</span> <span class="n">invalid_netcdf</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>In such cases the <cite>_NCProperties</cite> attribute will not be saved to the file or be removed
+from an existing file. A warning will be issued if the file has <cite>.nc</cite>-extension.</p>
+<p class="rubric">Footnotes</p>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>h5netcdf we will raise <code class="docutils literal notranslate"><span class="pre">h5netcdf.CompatibilityError</span></code>.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="decoding-variable-length-strings">
+<h3>Decoding variable length strings<a class="headerlink" href="#decoding-variable-length-strings" title="Permalink to this headline">¶</a></h3>
+<p>h5py 3.0 introduced <a class="reference external" href="https://docs.h5py.org/en/stable/strings.html">new behavior</a> for handling variable length string.
+Instead of being automatically decoded with UTF-8 into NumPy arrays of <code class="docutils literal notranslate"><span class="pre">str</span></code>,
+they are required as arrays of <code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</p>
+<p>The legacy API preserves the old behavior of h5py (which matches netCDF4),
+and automatically decodes strings.</p>
+<p>The new API <em>also</em> currently preserves the old behavior of h5py, but issues a
+warning that it will change in the future to match h5py. Explicitly set
+<code class="docutils literal notranslate"><span class="pre">decode_vlen_strings=False</span></code> in the <code class="docutils literal notranslate"><span class="pre">h5netcdf.File</span></code> constructor to opt-in to
+the new behavior early, or set <code class="docutils literal notranslate"><span class="pre">decode_vlen_strings=True</span></code> to opt-in to
+automatic decoding.</p>
+</div>
+<div class="section" id="datasets-with-missing-dimension-scales">
+<span id="phony-dims"></span><h3>Datasets with missing dimension scales<a class="headerlink" href="#datasets-with-missing-dimension-scales" title="Permalink to this headline">¶</a></h3>
+<p>By default <a class="footnote-reference brackets" href="#id4" id="id3">2</a> h5netcdf raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if variables with no dimension
+scale associated with one of their axes are accessed.
+You can set <code class="docutils literal notranslate"><span class="pre">phony_dims='sort'</span></code> when opening a file to let h5netcdf invent
+phony dimensions according to <a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/interoperability_hdf5.html">netCDF</a> behaviour.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># mimic netCDF-behaviour for non-netcdf files</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;mydata.h5&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">phony_dims</span><span class="o">=</span><span class="s1">&#39;sort&#39;</span><span class="p">)</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>Note, that this iterates once over the whole group-hierarchy. This has affects
+on performance in case you rely on laziness of group access.
+You can set <code class="docutils literal notranslate"><span class="pre">phony_dims='access'</span></code> instead to defer phony dimension creation
+to group access time. The created phony dimension naming will differ from
+<a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/interoperability_hdf5.html">netCDF</a> behaviour.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;mydata.h5&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">phony_dims</span><span class="o">=</span><span class="s1">&#39;access&#39;</span><span class="p">)</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p class="rubric">Footnotes</p>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd><p>Keyword default setting <code class="docutils literal notranslate"><span class="pre">phony_dims=None</span></code> for backwards compatibility.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="track-order">
+<h3>Track Order<a class="headerlink" href="#track-order" title="Permalink to this headline">¶</a></h3>
+<p>In h5netcdf version 0.12.0 and earlier, <a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#creation_order">order tracking</a> was disabled in
+HDF5 file. As this is a requirement for the current netCDF4 standard,
+it has been enabled without deprecation as of version 0.13.0 <a class="reference external" href="https://github.com/h5netcdf/h5netcdf/issues/128">[*]</a>.</p>
+<p>However in version 0.13.1 this has been reverted due to a bug in a core
+dependency of h5netcdf, h5py <a class="reference external" href="https://github.com/h5netcdf/h5netcdf/issues/136">upstream bug</a>.</p>
+<p>Datasets created with h5netcdf version 0.12.0 that are opened with
+newer versions of h5netcdf will continue to disable order tracker.</p>
+</div>
+</div>
+<div class="section" id="history">
+<h2>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
 <p>The project was started in early 2015. The first commit was made on on 7th of April in 2015
 by Stephan Hoyer. The first <cite>official</cite> <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> announcement was made by Stephan on the
 <a class="reference external" href="https://github.com/pydata/xarray/issues/23#issuecomment-90780331">xarray issue tracker</a> only one day later.</p>
 <p>The library evolved constantly over the years (fixing bugs and adding enhancements)
 and gained contributions from 14 other <a class="reference internal" href="devguide.html#contributors"><span class="std std-ref">Contributors</span></a> so far. The library is widely used,
-especially as backend within <a class="reference external" href="https://docs.xarray.dev/">xarray</a>.</p>
+especially as backend within <a class="reference external" href="https://github.com/pydata/xarray/">xarray</a>.</p>
 <p>Early 2020 Kai Mühlbauer started to add contributions and after some time he volunteered
 to help in maintaining <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code>. Two years later in January 2022 Stephan handed the
 project-lead over to Kai. Next project aim is the release of <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> version 1.0 in
 late March, 2022.</p>
-<div class="toctree-wrapper compound">
 </div>
-<div class="toctree-wrapper compound">
-</div>
-<div class="toctree-wrapper compound">
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/blob/main/LICENSE">3-clause BSD</a></p>
 </div>
 <div class="section" id="indices-and-tables">
 <h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
@@ -369,10 +723,10 @@ late March, 2022.</p>
             
                 <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='right-next' id="next-link" href="readme.html" title="next page">
+    <a class='right-next' id="next-link" href="feature.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">h5netcdf</p>
+        <p class="prev-next-title">legacyapi vs new API feature comparison</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
