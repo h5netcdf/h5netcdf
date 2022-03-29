@@ -15,8 +15,6 @@ import datetime
 import os
 import sys
 
-from sphinx.util import logging
-
 sys.path.insert(0, os.path.abspath("."))
 
 # -- Project information -----------------------------------------------------
@@ -48,11 +46,6 @@ extensions = [
     "sphinx.ext.githubpages",
 ]
 
-# disable WARNINGs for extlinks for now
-# see https://github.com/sphinx-doc/sphinx/issues/10112
-linklogger = logging.getLogger("sphinx.ext.extlinks")
-linklogger.setLevel(40)
-
 extlinks = {
     "issue": ("https://github.com/h5netcdf/h5netcdf/issues/%s", "GH"),
     "pull": ("https://github.com/h5netcdf/h5netcdf/pull/%s", "PR"),
@@ -81,6 +74,8 @@ autodoc_default_options = {
 #
 html_theme = "sphinx_book_theme"
 html_title = f"h5netcdf - {release}"
+
+html_baseurl = "https://h5netcdf.org"
 
 html_context = {
     "github_user": "h5netcdf",
