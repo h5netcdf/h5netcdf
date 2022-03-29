@@ -16,32 +16,12 @@ h5netcdf: A Python interface for the netCDF4 file-format based on h5py
 for the `netCDF4 file-format`_ that reads and writes local or remote HDF5 files directly
 via `h5py`_ or `h5pyd`_, without relying on the Unidata netCDF library.
 
-The project was started in early 2015. The first commit was made on on 7th of April in 2015
-by Stephan Hoyer. The first `official` ``h5netcdf`` announcement was made by Stephan on the
-`xarray issue tracker`_ only one day later.
-
-The library evolved constantly over the years (fixing bugs and adding enhancements)
-and gained contributions from 14 other :ref:`contributors` so far. The library is widely used,
-especially as backend within `xarray`_.
-
-Early 2020 Kai Mühlbauer started to add contributions and after some time he volunteered
-to help in maintaining ``h5netcdf``. Two years later in January 2022 Stephan handed the
-project-lead over to Kai. Next project aim is the release of ``h5netcdf`` version 1.0 in
-late March, 2022.
-
-.. _netCDF4 file-format: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec
-.. _netCDF4-python: https://unidata.github.io/netcdf4-python/
-.. _h5py: https://www.h5py.org/
-.. _h5pyd: https://github.com/HDFGroup/h5pyd
-.. _xarray issue tracker: https://github.com/pydata/xarray/issues/23#issuecomment-90780331
-.. _xarray: https://docs.xarray.dev/
-
 .. toctree::
    :maxdepth: 2
    :hidden:
    :caption: For users
 
-   Overview <readme>
+   Overview <self>
    Feature comparison <feature>
    New API Reference <api>
    Legacy API Reference <legacyapi>
@@ -60,6 +40,34 @@ late March, 2022.
    :caption: Community
 
    GitHub issues <https://github.com/h5netcdf/h5netcdf/issues>
+
+.. include:: ../README.rst
+   :start-after: .. why-h5netcdf
+   :end-before:  .. changelog
+
+History
+-------
+
+The project was started in early 2015. The first commit was made on on 7th of April in 2015
+by Stephan Hoyer. The first `official` ``h5netcdf`` announcement was made by Stephan on the
+`xarray issue tracker`_ only one day later.
+
+The library evolved constantly over the years (fixing bugs and adding enhancements)
+and gained contributions from 14 other :ref:`contributors` so far. The library is widely used,
+especially as backend within `xarray`_.
+
+Early 2020 Kai Mühlbauer started to add contributions and after some time he volunteered
+to help in maintaining ``h5netcdf``. Two years later in January 2022 Stephan handed the
+project-lead over to Kai. Next project aim is the release of ``h5netcdf`` version 1.0 in
+late March, 2022.
+
+.. _netCDF4 file-format: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec
+.. _h5py: https://www.h5py.org/
+.. _h5pyd: https://github.com/HDFGroup/h5pyd
+.. _xarray issue tracker: https://github.com/pydata/xarray/issues/23#issuecomment-90780331
+
+.. include:: ../README.rst
+   :start-after: .. license
 
 Indices and tables
 ------------------

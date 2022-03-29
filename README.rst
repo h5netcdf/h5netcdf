@@ -16,6 +16,8 @@ netCDF library.
 .. _h5py: https://www.h5py.org/
 .. _h5pyd: https://github.com/HDFGroup/h5pyd
 
+
+.. why-h5netcdf
 Why h5netcdf?
 -------------
 
@@ -255,6 +257,7 @@ newer versions of h5netcdf will continue to disable order tracker.
 .. _upstream bug: https://github.com/h5netcdf/h5netcdf/issues/136
 .. _[*]: https://github.com/h5netcdf/h5netcdf/issues/128
 
+.. changelog
 Changelog
 ---------
 
@@ -262,6 +265,7 @@ Changelog
 
 .. _Changelog: https://github.com/h5netcdf/h5netcdf/blob/main/CHANGELOG.rst
 
+.. license
 License
 -------
 
