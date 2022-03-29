@@ -8,6 +8,10 @@ Development Version:
 - Remove `_NCProperties` from existing file if writing invalid netcdf features.
   Warn users if `.nc` file extension is used writing invalid netcdf features.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Remove deprecated code (eg. remove deprecated code (eg. handling mode,
+  chunking_heuristics, decode_vlen_strings), adapt LICENSE/AUTHOR.txt,
+  prepare repository for release 1.0.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 0.15.0 (March 18th, 2022):
 
