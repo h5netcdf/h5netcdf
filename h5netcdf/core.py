@@ -645,19 +645,13 @@ class Group(Mapping):
         if shape != maxshape:
             kwargs["maxshape"] = maxshape
 
-        warn_h5py_chunking = False
         has_unsized_dims = 0 in shape
         if has_unsized_dims and chunks in {None, True}:
-            # TODO: set default to "h5netcdf" in h5netcdf>=1.0, and remove warning
-            if chunking_heuristic is None:
-                warn_h5py_chunking = True
-                chunking_heuristic = "h5py"
-
-            if chunking_heuristic == "h5py":
+            if chunking_heuristic in [None, "h5netcdf"]:
+                chunks = _get_default_chunksizes(shape, dtype)
+            elif chunking_heuristic == "h5py":
                 # do nothing -> h5py will handle chunks internally
                 pass
-            elif chunking_heuristic == "h5netcdf":
-                chunks = _get_default_chunksizes(shape, dtype)
             else:
                 raise ValueError(
                     "got unrecognized value %s for chunking_heuristic argument "
@@ -677,7 +671,7 @@ class Group(Mapping):
             kwargs.update(dict(track_order=self._parent._track_order))
 
         # create hdf5 variable
-        h5ds = self._h5group.create_dataset(
+        self._h5group.create_dataset(
             h5name,
             shape,
             dtype=dtype,
@@ -686,18 +680,6 @@ class Group(Mapping):
             fillvalue=fillvalue,
             **kwargs,
         )
-
-        if warn_h5py_chunking:
-            h5netcdf_chunks = _get_default_chunksizes(shape, dtype)
-            warnings.warn(
-                "Using h5py's default chunking with unlimited dimensions can lead "
-                "to increased file sizes and degraded performance (using chunks: %r). "
-                'Consider passing ``chunking_heuristic="h5netcdf"`` (would give chunks: %r; '
-                "default in h5netcdf >= 1.0), or set chunk sizes explicitly. "
-                'To silence this warning, pass ``chunking_heuristic="h5py"``. '
-                % (h5ds.chunks, h5netcdf_chunks),
-                FutureWarning,
-            )
 
         # create variable class instance
         variable = self._variable_cls(self, h5name, dimensions)
@@ -757,8 +739,9 @@ class Group(Mapping):
         chunks : tuple, optional
             Tuple of integers specifying the chunksizes of each variable dimension.
         chunking_heuristic : str, optional
-            Specify auto-chunking approach. Can be either of ``h5py`` or ``h5netcdf``.
-            Discussion on ``h5netcdf`` chunking can be found in (:issue:`52`) and (:pull:`127`).
+            Specify auto-chunking approach. Can be either of ``h5py`` or ``h5netcdf``. Defaults to
+            ``h5netcdf``. Discussion on ``h5netcdf`` chunking can be found in (:issue:`52`)
+            and (:pull:`127`).
         compression : str, optional
             Compression filter to apply, defaults to ``gzip``
         compression_opts : int
@@ -904,9 +887,7 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(
-        self, path, mode=None, invalid_netcdf=False, phony_dims=None, **kwargs
-    ):
+    def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, **kwargs):
         """NetCDF4 file constructor.
 
         Parameters
@@ -915,7 +896,7 @@ class File(Group):
             Location of the netCDF4 file to be accessed.
 
         mode: "r", "r+", "a", "w"
-            A valid file access mode.
+            A valid file access mode. Defaults to "r".
 
         invalid_netcdf: bool
             Allow writing netCDF4 with data types and attributes that would
@@ -960,18 +941,6 @@ class File(Group):
         #         "https://github.com/h5netcdf/h5netcdf/issues/130 "
         #         "for more details."
         #     )
-
-        # Deprecating mode='a' in favor of mode='r'
-        # If mode is None default to 'a' and issue a warning
-        if mode is None:
-            msg = (
-                "Falling back to mode='a'. "
-                "In future versions, mode will default to read-only. "
-                "It is recommended to explicitly set mode='r' to prevent any unintended "
-                "changes to the file."
-            )
-            warnings.warn(msg, FutureWarning, stacklevel=2)
-            mode = "a"
 
         if version.parse(h5py.__version__) >= version.parse("3.0.0"):
             self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
@@ -1047,20 +1016,7 @@ class File(Group):
                 self.decode_vlen_strings = True
             else:
                 if self.decode_vlen_strings is None:
-                    msg = (
-                        "String decoding changed with h5py >= 3.0. "
-                        "See https://docs.h5py.org/en/latest/strings.html and "
-                        "https://github.com/h5netcdf/h5netcdf/issues/132 for more details. "
-                        "Currently backwards compatibility with h5py < 3.0 is kept by "
-                        "decoding vlen strings per default. This will change in future "
-                        "versions for consistency with h5py >= 3.0. To silence this "
-                        "warning set kwarg ``decode_vlen_strings=False`` which will "
-                        "return Python bytes from variables containing vlen strings. Setting "
-                        "``decode_vlen_strings=True`` forces vlen string decoding which returns "
-                        "Python strings from variables containing vlen strings."
-                    )
-                    warnings.warn(msg, FutureWarning, stacklevel=2)
-                    self.decode_vlen_strings = True
+                    self.decode_vlen_strings = False
 
         self._max_dim_id = -1
         # This maps keeps track of all HDF5 datasets corresponding to this group.

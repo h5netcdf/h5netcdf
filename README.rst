@@ -199,11 +199,8 @@ they are required as arrays of ``bytes``.
 The legacy API preserves the old behavior of h5py (which matches netCDF4),
 and automatically decodes strings.
 
-The new API *also* currently preserves the old behavior of h5py, but issues a
-warning that it will change in the future to match h5py. Explicitly set
-``decode_vlen_strings=False`` in the ``h5netcdf.File`` constructor to opt-in to
-the new behavior early, or set ``decode_vlen_strings=True`` to opt-in to
-automatic decoding.
+The new API matches h5py behavior. Explicitly set ``decode_vlen_strings=True``
+in the ``h5netcdf.File`` constructor to opt-in to automatic decoding.
 
 .. _new behavior: https://docs.h5py.org/en/stable/strings.html
 

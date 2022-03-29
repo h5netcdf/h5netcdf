@@ -593,17 +593,6 @@ def test_error_handling(tmp_local_or_remote_netcdf):
     version.parse(h5py.__version__) < version.parse("3.0.0"),
     reason="not needed with h5py < 3.0",
 )
-def test_decode_string_warning(tmp_local_or_remote_netcdf):
-    write_h5netcdf(tmp_local_or_remote_netcdf)
-    with pytest.warns(FutureWarning):
-        with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
-            assert ds.name == "/"
-
-
-@pytest.mark.skipif(
-    version.parse(h5py.__version__) < version.parse("3.0.0"),
-    reason="not needed with h5py < 3.0",
-)
 def test_decode_string_error(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)
     with pytest.raises(TypeError):
@@ -611,19 +600,6 @@ def test_decode_string_error(tmp_local_or_remote_netcdf):
             tmp_local_or_remote_netcdf, "r", decode_vlen_strings=True
         ) as ds:
             assert ds.name == "/"
-
-
-def test_mode_warning(tmp_local_or_remote_netcdf):
-    with pytest.warns(FutureWarning):
-        with h5netcdf.File(tmp_local_or_remote_netcdf):
-            pass
-
-
-def test_unlimited_chunk_warning(tmp_local_or_remote_netcdf):
-    with pytest.warns(FutureWarning):
-        with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
-            ds.dimensions = {"x": None}
-            ds.create_variable("foo", ("x",), float)
 
 
 def create_invalid_netcdf_data():
@@ -906,13 +882,14 @@ def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
 def test_invalid_netcdf_okay(tmp_local_or_remote_netcdf):
     if tmp_local_or_remote_netcdf.startswith(remote_h5):
         pytest.skip("h5pyd does not support NumPy complex dtype yet")
-    with h5netcdf.File(tmp_local_or_remote_netcdf, "w", invalid_netcdf=True) as f:
-        f.create_variable(
-            "lzf_compressed", data=[1], dimensions=("x"), compression="lzf"
-        )
-        f.create_variable("complex", data=1j)
-        f.attrs["complex_attr"] = 1j
-        f.create_variable("scaleoffset", data=[1], dimensions=("x",), scaleoffset=0)
+    with pytest.warns(UserWarning, match="invalid netcdf features"):
+        with h5netcdf.File(tmp_local_or_remote_netcdf, "w", invalid_netcdf=True) as f:
+            f.create_variable(
+                "lzf_compressed", data=[1], dimensions=("x"), compression="lzf"
+            )
+            f.create_variable("complex", data=1j)
+            f.attrs["complex_attr"] = 1j
+            f.create_variable("scaleoffset", data=[1], dimensions=("x",), scaleoffset=0)
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as f:
         np.testing.assert_equal(f["lzf_compressed"][:], [1])
         assert f["complex"][...] == 1j
@@ -956,8 +933,9 @@ def test_reopen_file_different_dimension_sizes(tmp_local_netcdf):
 
 
 def test_invalid_then_valid_no_ncproperties(tmp_local_or_remote_netcdf):
-    with h5netcdf.File(tmp_local_or_remote_netcdf, "w", invalid_netcdf=True):
-        pass
+    with pytest.warns(UserWarning, match="invalid netcdf features"):
+        with h5netcdf.File(tmp_local_or_remote_netcdf, "w", invalid_netcdf=True):
+            pass
     with h5netcdf.File(tmp_local_or_remote_netcdf, "a"):
         pass
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
@@ -1723,7 +1701,7 @@ def test_bool_slicing_length_one_dim(tmp_local_netcdf):
             ds["hello"][bool_slice, :]
 
 
-def test_default_chunking(tmp_local_netcdf):
+def test_h5py_chunking(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"x": 10, "y": 10, "z": 10, "t": None}
 
@@ -1731,11 +1709,6 @@ def test_default_chunking(tmp_local_netcdf):
             "hello", ("x", "y", "z", "t"), "float", chunking_heuristic="h5py"
         )
         chunks_h5py = v.chunks
-
-        v = ds.create_variable(
-            "hello2", ("x", "y", "z", "t"), "float", chunking_heuristic=None
-        )
-        chunks_default = v.chunks
 
         ds.resize_dimension("t", 4)
         v = ds.create_variable(
@@ -1769,7 +1742,6 @@ def test_default_chunking(tmp_local_netcdf):
         chunks_true_resized = v.chunks
 
     assert chunks_h5py == chunks_true
-    assert chunks_default == chunks_true
     assert chunks_resized == chunks_true_resized
 
 

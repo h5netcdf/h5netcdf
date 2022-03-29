@@ -1,0 +1,6 @@
+The h5netcdf developers:
+
+* Stephan Hoyer <shoyer@gmail.com> (main h5netcdf author)
+* Kai Mühlbauer <kmuehlbauer@wradlib.org> (current maintainer)
+* Developers that have contributed to the h5netcdf repository:
+  <https://github.com/h5netcdf/h5netcdf/graphs/contributors>
