@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 0.16.0.dev6+gb2846eb</title>
+    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 0.16.0.dev7+g2d3ee6b</title>
     
   <link href="_static/css/theme.css" rel="stylesheet">
   <link href="_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -32,6 +32,7 @@
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx-book-theme.9d8b4a8b9bb19db25eeaddc40d639ba2.js"></script>
+    <link rel="canonical" href="https://h5netcdf.org/index.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="legacyapi vs new API feature comparison" href="feature.html" />
@@ -63,7 +64,7 @@
       
       
       
-      <h1 class="site-logo" id="site-title">h5netcdf - 0.16.0.dev6+gb2846eb</h1>
+      <h1 class="site-logo" id="site-title">h5netcdf - 0.16.0.dev7+g2d3ee6b</h1>
       
     </a>
 </div><form class="bd-search d-flex align-items-center" action="search.html" method="get">
@@ -456,16 +457,12 @@
 <h1>h5netcdf: A Python interface for the netCDF4 file-format based on h5py<a class="headerlink" href="#h5netcdf-a-python-interface-for-the-netcdf4-file-format-based-on-h5py" title="Permalink to this headline">¶</a></h1>
 <dl class="field-list simple">
 <dt class="field-odd">Release</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/b2846eb">0.16.0.dev6+gb2846eb</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/2d3ee6b">0.16.0.dev7+g2d3ee6b</a></p>
 </dd>
 <dt class="field-even">Date</dt>
 <dd class="field-even"><p>Mar 29, 2022</p>
 </dd>
 </dl>
-<div class="admonition important">
-<p class="admonition-title">Important</p>
-<p><code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> <a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/b2846eb">0.16.0.dev6+gb2846eb</a> will be the last version before <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p>
-</div>
 <p><strong>h5netcdf</strong> is an open source project and Python package that provides an interface
 for the <a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec">netCDF4 file-format</a> that reads and writes local or remote HDF5 files directly
 via <a class="reference external" href="https://www.h5py.org/">h5py</a> or <a class="reference external" href="https://github.com/HDFGroup/h5pyd">h5pyd</a>, without relying on the Unidata netCDF library.</p>
@@ -646,11 +643,8 @@ Instead of being automatically decoded with UTF-8 into NumPy arrays of <code cla
 they are required as arrays of <code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</p>
 <p>The legacy API preserves the old behavior of h5py (which matches netCDF4),
 and automatically decodes strings.</p>
-<p>The new API <em>also</em> currently preserves the old behavior of h5py, but issues a
-warning that it will change in the future to match h5py. Explicitly set
-<code class="docutils literal notranslate"><span class="pre">decode_vlen_strings=False</span></code> in the <code class="docutils literal notranslate"><span class="pre">h5netcdf.File</span></code> constructor to opt-in to
-the new behavior early, or set <code class="docutils literal notranslate"><span class="pre">decode_vlen_strings=True</span></code> to opt-in to
-automatic decoding.</p>
+<p>The new API matches h5py behavior. Explicitly set <code class="docutils literal notranslate"><span class="pre">decode_vlen_strings=True</span></code>
+in the <code class="docutils literal notranslate"><span class="pre">h5netcdf.File</span></code> constructor to opt-in to automatic decoding.</p>
 </div>
 <div class="section" id="datasets-with-missing-dimension-scales">
 <span id="phony-dims"></span><h3>Datasets with missing dimension scales<a class="headerlink" href="#datasets-with-missing-dimension-scales" title="Permalink to this headline">¶</a></h3>
