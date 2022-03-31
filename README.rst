@@ -18,6 +18,7 @@ netCDF library.
 
 
 .. why-h5netcdf
+
 Why h5netcdf?
 -------------
 
@@ -255,6 +256,7 @@ newer versions of h5netcdf will continue to disable order tracker.
 .. _[*]: https://github.com/h5netcdf/h5netcdf/issues/128
 
 .. changelog
+
 Changelog
 ---------
 
@@ -263,6 +265,7 @@ Changelog
 .. _Changelog: https://github.com/h5netcdf/h5netcdf/blob/main/CHANGELOG.rst
 
 .. license
+
 License
 -------
 
