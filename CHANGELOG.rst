@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development Version:
+Version 1.0.0 (March 31st, 2022):
 
 - Add HSDS pytest-fixture, make tests work with h5ypd.
   By `Aleksandar Jelenak <https://github.com/ajelenak>`_.

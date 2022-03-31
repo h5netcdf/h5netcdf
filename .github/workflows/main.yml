@@ -161,11 +161,8 @@ jobs:
         path: doc/_build/html
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
-      # this uploads new documentation on every push
-      if: github.ref == 'refs/heads/main'
-      # this uploads only on releases, activate this before
-      # h5netcdf release 1.0
-      # if: github.event_name == 'release'
+      # this uploads only on releases
+      if: github.event_name == 'release'
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: doc/_build/html
