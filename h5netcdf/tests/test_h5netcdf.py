@@ -256,12 +256,14 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     if write_module is not netCDF4:
         assert v.getncattr("units") == "meters"
     assert tuple(v.chunking()) == (4, 5)
-    assert v.filters() == {
-        "complevel": 4,
-        "fletcher32": False,
-        "shuffle": True,
-        "zlib": True,
-    }
+
+    # check for dict items separately
+    # see https://github.com/h5netcdf/h5netcdf/issues/171
+    filters = v.filters()
+    assert filters["complevel"] == 4
+    assert filters["fletcher32"] is False
+    assert filters["shuffle"] is True
+    assert filters["zlib"] is True
 
     v = ds.variables["y"]
     assert array_equal(v, np.r_[np.arange(4), [-1]])
@@ -271,12 +273,15 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.ncattrs() == ["_FillValue"]
     assert v.getncattr("_FillValue") == -1
     assert v.chunking() == "contiguous"
-    assert v.filters() == {
-        "complevel": 0,
-        "fletcher32": False,
-        "shuffle": False,
-        "zlib": False,
-    }
+
+    # check for dict items separately
+    # see https://github.com/h5netcdf/h5netcdf/issues/171
+    filters = v.filters()
+    assert filters["complevel"] == 0
+    assert filters["fletcher32"] is False
+    assert filters["shuffle"] is False
+    assert filters["zlib"] is False
+
     ds.close()
 
     # Check the behavior if h5py. Cannot expect h5netcdf to overcome these
