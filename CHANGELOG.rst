@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Version 1.0.1 (June 27th, 2022):
+
+- Fix failing tests when using netCDF4 4.9.0.
+  Reported and patch submitted by `Bas Couwenberg <https://github.com/sebastic>`_.
+
 Version 1.0.0 (March 31st, 2022):
 
 - Add HSDS pytest-fixture, make tests work with h5ypd.
