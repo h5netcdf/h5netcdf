@@ -179,7 +179,7 @@ jobs:
           wheel
           netCDF4
           sphinx
-          sphinx-book-theme
+          sphinx-book-theme>=0.3.2
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
