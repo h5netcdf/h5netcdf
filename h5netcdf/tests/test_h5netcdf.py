@@ -1695,9 +1695,12 @@ def test_bool_slicing_length_one_dim(tmp_local_netcdf):
         data = ds["hello"][bool_slice, :]
         np.testing.assert_equal(data, np.zeros((1, 2)))
 
-    # should raise for h5py >= 3.0.0
+    # should raise for h5py >= 3.0.0 and h5py < 3.7.0
+    # https://github.com/h5py/h5py/pull/2079
+    # https://github.com/h5netcdf/h5netcdf/pull/125/
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
-        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
+        h5py_version = version.parse(h5py.__version__)
+        if version.parse("3.0.0") <= h5py_version < version.parse("3.7.0"):
             error = "Indexing arrays must have integer dtypes"
             with pytest.raises(TypeError) as e:
                 ds["hello"][bool_slice, :]
