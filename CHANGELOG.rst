@@ -1,5 +1,9 @@
 Change Log
 ----------
+Development Version:
+
+- Adapt boolean indexing as h5py 3.7.0 started supporting it.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 1.0.1 (June 27th, 2022):
 

@@ -280,7 +280,12 @@ class BaseVariable(object):
         if isinstance(self._parent._root, Dataset):
             # this is only for legacyapi
             key = _expanded_indexer(key, self.ndim)
-            key = _transform_1d_boolean_indexers(key)
+            # fix boolean indexing for affected versions
+            # https://github.com/h5py/h5py/pull/2079
+            # https://github.com/h5netcdf/h5netcdf/pull/125/
+            h5py_version = version.parse(h5py.__version__)
+            if version.parse("3.0.0") <= h5py_version < version.parse("3.7.0"):
+                key = _transform_1d_boolean_indexers(key)
 
         if getattr(self._root, "decode_vlen_strings", False):
             string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
