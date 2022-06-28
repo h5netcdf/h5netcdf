@@ -11,6 +11,7 @@ Contributors
 ------------
 
 - `Aleksandar Jelenak <https://github.com/ajelenak>`_
+- `Bas Couwenberg <https://github.com/sebastic>`_.
 - `Brett Naul <https://github.com/bnaul>`_
 - `Dion Häfner <https://github.com/dionhaefner>`_
 - `Drew Parsons <https://github.com/drew-parsons>`_
