@@ -1,5 +1,10 @@
 Change Log
 ----------
+Development Version:
+
+- Rework adding _FillValue-attribute, add tests.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+
 Version 1.0.2 (August 2nd, 2022):
 
 - Adapt boolean indexing as h5py 3.7.0 started supporting it.
