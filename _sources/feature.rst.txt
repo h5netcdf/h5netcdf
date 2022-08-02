@@ -14,7 +14,7 @@ differences which are outlined in the following table.
 +---------------------+-------------------------+----------------+------------------+
 | feature             | legacyapi               | new api        | type             |
 +=====================+=========================+================+==================+
-| 1D boolean indexer  | |check|                 | |cross|        | Variable/Dataset |
+| 1D boolean indexer  | |check|                 | |check|        | Variable/Dataset |
 +---------------------+-------------------------+----------------+------------------+
 | resize on write     | |check|                 | |cross|        | Dimension        |
 |                     |                         |                | Variable/Dataset |
