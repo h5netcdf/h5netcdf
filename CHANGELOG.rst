@@ -6,6 +6,8 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Add special add_phony method for creating phony dimensions, add test.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Rewrite _unlabeled_dimension_mix (labeled/unlabeled), add tests.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 1.0.2 (August 2nd, 2022):
 

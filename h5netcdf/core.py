@@ -145,10 +145,14 @@ class BaseVariable(object):
         # normal variable carrying DIMENSION_LIST
         # extract hdf5 file references and get objects name
         if "DIMENSION_LIST" in attrs:
-            return tuple(
-                self._root._h5file[ref[0]].name.split("/")[-1]
-                for ref in list(self._h5ds.attrs.get("DIMENSION_LIST", []))
-            )
+            # check if malformed variable and raise
+            if _unlabeled_dimension_mix(self._h5ds) == "labeled":
+                # If a dimension has attached more than one scale for some reason, then
+                # take the last one. This is in line with netcdf-c and netcdf4-python.
+                return tuple(
+                    self._root._h5file[ref[-1]].name.split("/")[-1]
+                    for ref in list(self._h5ds.attrs.get("DIMENSION_LIST", []))
+                )
 
         # need to use the h5ds name here to distinguish from collision dimensions
         child_name = self._h5ds.name.split("/")[-1]
@@ -406,15 +410,26 @@ def _netcdf_dimension_but_not_variable(h5py_dataset):
 
 
 def _unlabeled_dimension_mix(h5py_dataset):
-    dims = sum([len(j) for j in h5py_dataset.dims])
-    if dims:
-        if dims != h5py_dataset.ndim:
+    # check if dataset has dims and get it
+    dimlist = getattr(h5py_dataset, "dims", [])
+    if not dimlist:
+        status = "nodim"
+    else:
+        dimset = set([len(j) for j in dimlist])
+        # either all dimensions have exactly one scale
+        # or all dimensions have no scale
+        if dimset ^ {0} == set():
+            status = "unlabeled"
+        elif dimset & {0}:
             name = h5py_dataset.name.split("/")[-1]
             raise ValueError(
                 "malformed variable {0} has mixing of labeled and "
                 "unlabeled dimensions.".format(name)
             )
-    return dims
+        else:
+            status = "labeled"
+
+    return status
 
 
 class Group(Mapping):
@@ -462,9 +477,8 @@ class Group(Mapping):
                     self._dimensions.add(k)
                 else:
                     if self._root._phony_dims_mode is not None:
-
-                        # check if malformed variable
-                        if not _unlabeled_dimension_mix(v):
+                        # check if malformed variable and raise
+                        if _unlabeled_dimension_mix(v) == "unlabeled":
                             # if unscaled variable, get phony dimensions
                             phony_dims |= Counter(v.shape)
 
