@@ -712,7 +712,20 @@ class Group(Mapping):
         variable._ensure_dim_id()
 
         if fillvalue is not None:
-            value = variable.dtype.type(fillvalue)
+            # trying to create correct type of fillvalue
+            if variable.dtype is str:
+                value = fillvalue
+            else:
+                string_info = self._root._h5py.check_string_dtype(variable.dtype)
+                if (
+                    string_info
+                    and string_info.length is not None
+                    and string_info.length > 1
+                ):
+                    value = fillvalue
+                else:
+                    value = variable.dtype.type(fillvalue)
+
             variable.attrs._h5attrs["_FillValue"] = value
         return variable
 
