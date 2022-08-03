@@ -768,8 +768,14 @@ def test_invalid_netcdf_malformed_dimension_scales(tmp_local_or_remote_netcdf):
         f["foo1"].dims[0].attach_scale(f["x"])
 
     with raises(ValueError):
+        with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+            assert ds
+            print(ds)
+
+    with raises(ValueError):
         with h5netcdf.File(tmp_local_or_remote_netcdf, "r", phony_dims="sort") as ds:
             assert ds
+            print(ds)
 
 
 def test_hierarchical_access_auto_create(tmp_local_or_remote_netcdf):
