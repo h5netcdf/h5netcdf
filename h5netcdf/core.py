@@ -486,7 +486,7 @@ class Group(Mapping):
                     if self._root._phony_dims_mode == "sort":
                         name += self._root._max_dim_id + 1
                     name = "phony_dim_{}".format(name)
-                    self._dimensions[name] = size
+                    self._dimensions.add_phony(name, size)
 
         self._initialized = True
 

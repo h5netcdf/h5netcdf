@@ -677,6 +677,13 @@ def test_invalid_netcdf4(tmp_local_or_remote_netcdf):
             pass
 
 
+def test_fake_phony_dims(tmp_local_or_remote_netcdf):
+    # tests writing of dimension with phony naming scheme
+    # see https://github.com/h5netcdf/h5netcdf/issues/178
+    with h5netcdf.File(tmp_local_or_remote_netcdf, mode="w") as ds:
+        ds.dimensions["phony_dim_0"] = 3
+
+
 def check_invalid_netcdf4_mixed(var, i):
     pdim = "phony_dim_{}".format(i)
     assert var["foo1"].dimensions[0] == "y1"

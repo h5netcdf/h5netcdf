@@ -21,13 +21,17 @@ class Dimensions(MutableMapping):
 
     def __setitem__(self, name, size):
         # creating new dimensions
-        phony = "phony_dim" in name
-        if not self._group._root._writable and not phony:
+        if not self._group._root._writable:
             raise RuntimeError("H5NetCDF: Write to read only")
         if name in self._objects:
             raise ValueError("dimension %r already exists" % name)
 
         self._objects[name] = Dimension(self._group, name, size, create_h5ds=True)
+
+    def add_phony(self, name, size):
+        self._objects[name] = Dimension(
+            self._group, name, size, create_h5ds=False, phony=True
+        )
 
     def add(self, name):
         # adding dimensions which are already created in the file
@@ -56,7 +60,7 @@ def _join_h5paths(parent_path, child_path):
 
 
 class Dimension(object):
-    def __init__(self, parent, name, size=None, create_h5ds=False):
+    def __init__(self, parent, name, size=None, create_h5ds=False, phony=False):
         """NetCDF4 Dimension constructor.
 
         Parameters
@@ -69,9 +73,11 @@ class Dimension(object):
             Size of the Netcdf4 Dimension. Defaults to None (unlimited).
         create_h5ds : bool
             For internal use only.
+        phony : bool
+            For internal use only.
         """
         self._parent_ref = weakref.ref(parent)
-        self._phony = "phony_dim" in name
+        self._phony = phony
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
         self._name = name
