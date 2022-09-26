@@ -288,7 +288,9 @@ class BaseVariable(object):
                 [
                     shape[i]
                     if isinstance(k, np.ndarray) or k.stop is None
-                    else k.stop if k.stop > h5ds_shape[i] else h5ds_shape[i]
+                    else k.stop
+                    if k.stop > h5ds_shape[i]
+                    else h5ds_shape[i]
                     for i, k in enumerate(key0)
                 ]
             )

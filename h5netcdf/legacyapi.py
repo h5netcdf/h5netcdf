@@ -5,7 +5,6 @@ import numpy as np
 
 from . import core
 
-
 #: default netcdf fillvalues
 default_fillvals = {
     "S1": "\x00",
@@ -229,7 +228,7 @@ class Group(core.Group, HasAttributesMixin):
             fletcher32=fletcher32,
             chunks=chunksizes,
             fillvalue=fill_value,
-            **kwds
+            **kwds,
         )
 
 
