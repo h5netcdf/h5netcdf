@@ -6,6 +6,31 @@ import numpy as np
 from . import core
 
 
+#: default netcdf fillvalues
+default_fillvals = {
+    "S1": "\x00",
+    "i1": -127,
+    "u1": 255,
+    "i2": -32767,
+    "u2": 65535,
+    "i4": -2147483647,
+    "u4": 4294967295,
+    "i8": -9223372036854775806,
+    "u8": 18446744073709551614,
+    "f4": 9.969209968386869e36,
+    "f8": 9.969209968386869e36,
+}
+
+
+def _get_default_fillvalue(dtype):
+    kind = np.dtype(dtype).kind
+    fillvalue = None
+    if kind in ["u", "i", "f"]:
+        size = np.dtype(dtype).itemsize
+        fillvalue = default_fillvals[f"{kind}{size}"]
+    return fillvalue
+
+
 def _check_return_dtype_endianess(endian="native"):
     little_endian = sys.byteorder == "little"
     endianess = "="
