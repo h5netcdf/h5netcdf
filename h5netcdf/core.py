@@ -275,6 +275,31 @@ class BaseVariable(object):
         """Return NumPy dtype object giving the variable’s type."""
         return self._h5ds.dtype
 
+    def _get_padding(self, key):
+        """Return padding if needed, defaults to False."""
+        padding = False
+        if self.dtype != str and self.dtype.kind in ["f", "i", "u"]:
+            key0 = _expanded_indexer(key, self.ndim)
+            key0 = _transform_1d_boolean_indexers(key0)
+            # extract max shape of key vs hdf5-shape
+            h5ds_shape = self._h5ds.shape
+            shape = self.shape
+            max_shape = tuple(
+                [
+                    shape[i]
+                    if isinstance(k, np.ndarray) or k.stop is None
+                    else k.stop if k.stop > h5ds_shape[i] else h5ds_shape[i]
+                    for i, k in enumerate(key0)
+                ]
+            )
+            # check if hdf5 dataset dimensions are smaller than
+            # their respective netcdf dimensions
+            sdiff = [d0 - d1 for d0, d1 in zip(max_shape, h5ds_shape)]
+            # create padding only if hdf5 dataset is smaller than netcdf dimension
+            if sum(sdiff):
+                padding = [(0, s) for s in sdiff]
+        return padding
+
     def __array__(self, *args, **kwargs):
         return self._h5ds.__array__(*args, **kwargs)
 
@@ -283,7 +308,6 @@ class BaseVariable(object):
 
         if isinstance(self._parent._root, Dataset):
             # this is only for legacyapi
-            key = _expanded_indexer(key, self.ndim)
             # fix boolean indexing for affected versions
             # https://github.com/h5py/h5py/pull/2079
             # https://github.com/h5netcdf/h5netcdf/pull/125/
@@ -296,18 +320,17 @@ class BaseVariable(object):
             if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
 
-        # return array padded with fillvalue (both api)
-        if self.dtype != str and self.dtype.kind in ["f", "i", "u"]:
-            sdiff = [d0 - d1 for d0, d1 in zip(self.shape, self._h5ds.shape)]
-            if sum(sdiff):
-                fv = self.dtype.type(self._h5ds.fillvalue)
-                padding = [(0, s) for s in sdiff]
-                return np.pad(
-                    self._h5ds,
-                    pad_width=padding,
-                    mode="constant",
-                    constant_values=fv,
-                )[key]
+        # get padding
+        padding = self._get_padding(key)
+        # apply padding with fillvalue (both api)
+        if padding:
+            fv = self.dtype.type(self._h5ds.fillvalue)
+            return np.pad(
+                self._h5ds,
+                pad_width=padding,
+                mode="constant",
+                constant_values=fv,
+            )[key]
 
         return self._h5ds[key]
 
@@ -689,6 +712,14 @@ class Group(Mapping):
         if self._root._h5py.__name__ == "h5py":
             kwargs.update(dict(track_order=self._parent._track_order))
 
+        # handling default fillvalues for legacyapi
+        # see https://github.com/h5netcdf/h5netcdf/issues/182
+        from .legacyapi import Dataset, _get_default_fillvalue
+
+        fillval = fillvalue
+        if fillvalue is None and isinstance(self._parent._root, Dataset):
+            fillval = _get_default_fillvalue(dtype)
+
         # create hdf5 variable
         self._h5group.create_dataset(
             h5name,
@@ -696,7 +727,7 @@ class Group(Mapping):
             dtype=dtype,
             data=data,
             chunks=chunks,
-            fillvalue=fillvalue,
+            fillvalue=fillval,
             **kwargs,
         )
 
@@ -800,6 +831,12 @@ class Group(Mapping):
         """
         # if root-variable
         if name.startswith("/"):
+            # handling default fillvalues for legacyapi
+            # see https://github.com/h5netcdf/h5netcdf/issues/182
+            from .legacyapi import Dataset, _get_default_fillvalue
+
+            if fillvalue is None and isinstance(self._parent._root, Dataset):
+                fillvalue = _get_default_fillvalue(dtype)
             return self._root.create_variable(
                 name[1:],
                 dimensions,

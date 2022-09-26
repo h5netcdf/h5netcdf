@@ -1485,6 +1485,9 @@ def test_no_circular_references(tmp_local_netcdf):
 
 
 def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
+    # partially reimplemented due to performance reason in edge cases
+    # https://github.com/h5netcdf/h5netcdf/issues/182
+
     with netcdf_write_module.Dataset(tmp_local_netcdf, "w") as ds:
         f = ds.createGroup("test")
         f.createDimension("x", None)
@@ -1496,8 +1499,8 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
         dummy4 = f.createVariable("dummy4", float, ("x", "y"))
 
         dummy1[:] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-        dummy2[:] = [[1, 2, 3]]
-        dummy3[:] = [[1, 2, 3], [4, 5, 6]]
+        dummy2[1, :] = [4, 5, 6]
+        dummy3[0:2, :] = [[1, 2, 3], [4, 5, 6]]
 
         # don't mask, since h5netcdf doesn't do masking
         if netcdf_write_module == netCDF4:
@@ -1516,10 +1519,16 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
         f = ds["test"]
 
         np.testing.assert_allclose(f.variables["dummy1"][:], res1)
+        np.testing.assert_allclose(f.variables["dummy1"][1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy1"][1:2, :], [[4., 5., 6.]])
         assert f.variables["dummy1"].shape == (3, 3)
         np.testing.assert_allclose(f.variables["dummy2"][:], res2)
+        np.testing.assert_allclose(f.variables["dummy2"][1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy2"][1:2, :], [[4., 5., 6.]])
         assert f.variables["dummy2"].shape == (3, 3)
         np.testing.assert_allclose(f.variables["dummy3"][:], res3)
+        np.testing.assert_allclose(f.variables["dummy3"][1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy3"][1:2, :], [[4., 5., 6.]])
         assert f.variables["dummy3"].shape == (3, 3)
         np.testing.assert_allclose(f.variables["dummy4"][:], res4)
         assert f.variables["dummy4"].shape == (3, 3)
@@ -1527,12 +1536,20 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
     with legacyapi.Dataset(tmp_local_netcdf, "r") as ds:
         f = ds["test"]
         np.testing.assert_allclose(f.variables["dummy1"][:], res1)
+        np.testing.assert_allclose(f.variables["dummy1"][1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy1"][1:2, :], [[4., 5., 6.]])
+        np.testing.assert_allclose(f.variables["dummy1"]._h5ds[1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy1"]._h5ds[1:2, :], [[4., 5., 6.]])
         assert f.variables["dummy1"].shape == (3, 3)
         assert f.variables["dummy1"]._h5ds.shape == (3, 3)
         np.testing.assert_allclose(f.variables["dummy2"][:], res2)
+        np.testing.assert_allclose(f.variables["dummy2"][1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy2"][1:2, :], [[4., 5., 6.]])
         assert f.variables["dummy2"].shape == (3, 3)
-        assert f.variables["dummy2"]._h5ds.shape == (1, 3)
+        assert f.variables["dummy2"]._h5ds.shape == (2, 3)
         np.testing.assert_allclose(f.variables["dummy3"][:], res3)
+        np.testing.assert_allclose(f.variables["dummy3"][1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy3"][1:2, :], [[4., 5., 6.]])
         assert f.variables["dummy3"].shape == (3, 3)
         assert f.variables["dummy3"]._h5ds.shape == (2, 3)
         np.testing.assert_allclose(f.variables["dummy4"][:], res4)
@@ -1542,12 +1559,19 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
         f = ds["test"]
         np.testing.assert_allclose(f.variables["dummy1"][:], res1)
+        np.testing.assert_allclose(f.variables["dummy1"][:, :], res1)
+        np.testing.assert_allclose(f.variables["dummy1"][1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy1"][1:2, :], [[4., 5., 6.]])
         assert f.variables["dummy1"].shape == (3, 3)
         assert f.variables["dummy1"]._h5ds.shape == (3, 3)
         np.testing.assert_allclose(f.variables["dummy2"][:], res2)
+        np.testing.assert_allclose(f.variables["dummy2"][1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy2"][1:2, :], [[4., 5., 6.]])
         assert f.variables["dummy2"].shape == (3, 3)
-        assert f.variables["dummy2"]._h5ds.shape == (1, 3)
+        assert f.variables["dummy2"]._h5ds.shape == (2, 3)
         np.testing.assert_allclose(f.variables["dummy3"][:], res3)
+        np.testing.assert_allclose(f.variables["dummy3"][1, :], [4., 5., 6.])
+        np.testing.assert_allclose(f.variables["dummy3"][1:2, :], [[4., 5., 6.]])
         assert f.variables["dummy3"].shape == (3, 3)
         assert f.variables["dummy3"]._h5ds.shape == (2, 3)
         np.testing.assert_allclose(f.variables["dummy4"][:], res4)
