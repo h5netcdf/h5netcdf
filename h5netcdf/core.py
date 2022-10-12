@@ -284,16 +284,22 @@ class BaseVariable(object):
             # extract max shape of key vs hdf5-shape
             h5ds_shape = self._h5ds.shape
             shape = self.shape
+
+            # check for ndarray and list
+            # see https://github.com/pydata/xarray/issues/7154
+            # first get maximum index
+            max_index = [
+                max(k) + 1 if isinstance(k, (np.ndarray, list)) else k.stop
+                for k in key0
+            ]
+            # second convert to max shape
             max_shape = tuple(
                 [
-                    shape[i]
-                    if isinstance(k, np.ndarray) or k.stop is None
-                    else k.stop
-                    if k.stop > h5ds_shape[i]
-                    else h5ds_shape[i]
-                    for i, k in enumerate(key0)
+                    shape[i] if k is None else max(h5ds_shape[i], k)
+                    for i, k in enumerate(max_index)
                 ]
             )
+
             # check if hdf5 dataset dimensions are smaller than
             # their respective netcdf dimensions
             sdiff = [d0 - d1 for d0, d1 in zip(max_shape, h5ds_shape)]

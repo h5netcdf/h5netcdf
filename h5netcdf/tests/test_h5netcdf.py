@@ -1155,6 +1155,7 @@ def test_reading_unlimited_dimensions_created_with_c_api(tmp_local_netcdf):
         assert f["dummy2"].shape == (3, 2, 2)
         f.groups["test"]["dummy3"].shape == (3, 3)
         f.groups["test"]["dummy4"].shape == (0, 0)
+        assert f["dummy5"].shape == (2, 3)
 
 
 def test_reading_unused_unlimited_dimension(tmp_local_or_remote_netcdf):
@@ -1747,6 +1748,25 @@ def test_bool_slicing_length_one_dim(tmp_local_netcdf):
             assert error == str(e.value)
         else:
             ds["hello"][bool_slice, :]
+
+
+def test_fancy_indexing(tmp_local_netcdf):
+    # regression test for https://github.com/pydata/xarray/issues/7154
+    with h5netcdf.legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("x", None)
+        ds.createDimension("y", None)
+        ds.createVariable("hello", int, ("x", "y"), fill_value=0)
+        ds["hello"][:5, :10] = np.arange(5 * 10, dtype="int").reshape((5, 10))
+        ds.createVariable("hello2", int, ("x", "y"))
+        ds["hello2"][:10, :20] = np.arange(10 * 20, dtype="int").reshape((10, 20))
+
+    with legacyapi.Dataset(tmp_local_netcdf, "a") as ds:
+        np.testing.assert_array_equal(ds["hello"][1, [7, 8, 9]], [17, 18, 19])
+        np.testing.assert_array_equal(ds["hello"][1, [9, 10, 11]], [19, 0, 0])
+        np.testing.assert_array_equal(ds["hello"][1, slice(9, 12)], [19, 0, 0])
+        np.testing.assert_array_equal(ds["hello"][[2, 3, 4], 1], [21, 31, 41])
+        np.testing.assert_array_equal(ds["hello"][[4, 5, 6], 1], [41, 0, 0])
+        np.testing.assert_array_equal(ds["hello"][slice(4, 7), 1], [41, 0, 0])
 
 
 def test_h5py_chunking(tmp_local_netcdf):
