@@ -10,6 +10,8 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Add default netcdf fillvalues, pad only if necessary, adapt tests.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Fix regression in padding algorithm, add test.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 1.0.2 (August 2nd, 2022):
 
