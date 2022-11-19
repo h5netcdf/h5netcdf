@@ -1645,15 +1645,11 @@ def test_more_than_7_attr_creation(tmp_local_netcdf):
         # We don't expect any errors. This is effectively a void context manager
         expected_errors = memoryview(b"")
 
-    with expected_errors:
-        with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
+    with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
+        with expected_errors:
             for i in range(100):
                 h5file.attrs[f"key{i}"] = i
                 h5file.attrs[f"key{i}"] = 0
-    with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
-        for i in range(100):
-            h5file.attrs[f"key{i}"] = i
-            h5file.attrs[f"key{i}"] = 0
 
 
 # Add a test that is supposed to fail in relation to issue #136
