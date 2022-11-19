@@ -1026,7 +1026,7 @@ class File(Group):
         track_order_default = version.parse(h5py.__version__) >= version.parse("3.7.0")
         track_order = kwargs.pop("track_order", track_order_default)
 
-        if h5py_version_parsed >= version.parse("3.0.0"):
+        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
             self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         try:
             if isinstance(path, str):
