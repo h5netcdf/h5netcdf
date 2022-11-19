@@ -1638,7 +1638,19 @@ def test_track_order_specification(tmp_local_netcdf):
 # This should always work with the default file opening settings
 # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
 def test_more_than_7_attr_creation(tmp_local_netcdf):
-    with h5netcdf.File(tmp_local_netcdf, "w") as h5file:
+    h5py_version = version.parse(h5py.__version__)
+    if track_order and h5py_version < version.parse("3.7.0"):
+        expected_errors = pytest.raises(KeyError)
+    else:
+        # We don't expect any errors. This is effectively a void context manager
+        expected_errors = memoryview(b"")
+
+    with expected_errors:
+        with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
+            for i in range(100):
+                h5file.attrs[f"key{i}"] = i
+                h5file.attrs[f"key{i}"] = 0
+    with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
         for i in range(100):
             h5file.attrs[f"key{i}"] = i
             h5file.attrs[f"key{i}"] = 0
