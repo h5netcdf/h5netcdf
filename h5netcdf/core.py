@@ -988,6 +988,16 @@ class File(Group):
         phony_dims: 'sort', 'access'
             See :ref:`phony dims` for more details.
 
+        track_order: bool
+            Corresponds to the h5py.File `track_order` parameter. Unless
+            specified, the library will choose a default that enhances
+            compatibility with netCDF4-c. If h5py version 3.7.0 or greater is
+            installed, this parameter will be set to True by default.
+            track_order is required to be true to for netCDF4-c libraries to
+            append to a file. If an older version of h5py is detected, this
+            parameter will be set to False by default to work around a bug in
+            h5py limiting the number of attributes for a given variable.
+
         **kwargs:
             Additional keyword arguments to be passed to the ``h5py.File``
             constructor.
@@ -1007,24 +1017,16 @@ class File(Group):
         # standard
         # https://github.com/Unidata/netcdf-c/issues/2054
         # https://github.com/h5netcdf/h5netcdf/issues/128
-        # 2022/01/20: hmaarrfk
-        # However, it was found that this causes issues with attrs and h5py
-        # https://github.com/h5netcdf/h5netcdf/issues/136
-        # https://github.com/h5py/h5py/issues/1385
-        track_order = kwargs.pop("track_order", False)
+        # h5py versions less than 3.7.0 had a bug that limited the number of
+        # attributes when track_order was set to true by default.
+        # However, setting track_order to True helps with compatibility
+        # with netcdf4-c and generally, keeping track of how things were added
+        # to the dataset.
+        # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
+        track_order_default = version.parse(h5py.__version__) >= version.parse("3.7.0")
+        track_order = kwargs.pop("track_order", track_order_default)
 
-        # When the issues with track_order in h5py are resolved, we
-        # can consider uncommenting the code below
-        # if not track_order:
-        #     self._closed = True
-        #     raise ValueError(
-        #         f"track_order, if specified must be set to to True (got {track_order})"
-        #         "to conform to the netCDF4 file format. Please see "
-        #         "https://github.com/h5netcdf/h5netcdf/issues/130 "
-        #         "for more details."
-        #     )
-
-        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
+        if h5py_version_parsed >= version.parse("3.0.0"):
             self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         try:
             if isinstance(path, str):

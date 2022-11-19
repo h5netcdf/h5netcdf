@@ -1176,11 +1176,7 @@ def test_reading_special_datatype_created_with_c_api(tmp_local_netcdf):
         pass
 
 
-def test_nc4_non_coord(tmp_local_netcdf):
-    # Track order True is the new default for versions after 0.12.0
-    # 0.12.0 defaults to `track_order=False`
-    # Ensure that the tests order the variables in their creation order
-    # not alphabetical order
+def test_track_order_for_variable_creation(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as f:
         f.dimensions = {"x": None, "y": 2}
         f.create_variable("test", dimensions=("x",), dtype=np.int64)
@@ -1191,8 +1187,21 @@ def test_nc4_non_coord(tmp_local_netcdf):
         assert f.dimensions["x"].size == 0
         assert f.dimensions["x"].isunlimited()
         assert f.dimensions["y"].size == 2
-        assert list(f.variables) == ["y", "test"]
-        assert list(f._h5group.keys()) == ["_nc4_non_coord_y", "test", "x", "y"]
+        if version.parse(h5py.__version__) >= version.parse("3.7.0"):
+            assert list(f.variables) == ["test", "y"]
+
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions = {"x": None, "y": 2}
+        f.create_variable("y", dimensions=("x",), dtype=np.int64)
+        f.create_variable("test", dimensions=("x",), dtype=np.int64)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert list(f.dimensions) == ["x", "y"]
+        assert f.dimensions["x"].size == 0
+        assert f.dimensions["x"].isunlimited()
+        assert f.dimensions["y"].size == 2
+        if version.parse(h5py.__version__) >= version.parse("3.7.0"):
+            assert list(f.variables) == ["y", "test"]
 
 
 def test_overwrite_existing_file(tmp_local_netcdf):
@@ -1613,13 +1622,14 @@ def test_creation_with_h5netcdf_edit_with_netcdf4(tmp_local_netcdf):
         np.testing.assert_array_equal(variable[...].data, 10)
 
 
-# https://github.com/h5netcdf/h5netcdf/issues/136
-@pytest.mark.skip(reason="h5py bug with track_order")
-def test_track_order_false(tmp_local_netcdf):
-    # track_order must be specified as True or not specified at all
-    # https://github.com/h5netcdf/h5netcdf/issues/130
-    with pytest.raises(ValueError):
-        h5netcdf.File(tmp_local_netcdf, "w", track_order=False)
+def test_track_order_specification(tmp_local_netcdf):
+    # While netcdf4-c has historically only allowed track_order to be True
+    # There doesn't seem to be a good reason for this
+    # https://github.com/Unidata/netcdf-c/issues/2054 historically, h5netcdf
+    # has not specified this parameter (leaving it implicitely as False)
+    # We want to make sure we allow both here
+    with h5netcdf.File(tmp_local_netcdf, "w", track_order=False):
+        pass
 
     with h5netcdf.File(tmp_local_netcdf, "w", track_order=True):
         pass
@@ -1640,18 +1650,10 @@ def test_more_than_7_attr_creation(tmp_local_netcdf):
 # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
 @pytest.mark.parametrize("track_order", [False, True])
 def test_more_than_7_attr_creation_track_order(tmp_local_netcdf, track_order):
-    h5py_version = version.parse(h5py.__version__)
-    if track_order and h5py_version < version.parse("3.7.0"):
-        expected_errors = pytest.raises(KeyError)
-    else:
-        # We don't expect any errors. This is effectively a void context manager
-        expected_errors = memoryview(b"")
-
-    with expected_errors:
-        with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
-            for i in range(100):
-                h5file.attrs[f"key{i}"] = i
-                h5file.attrs[f"key{i}"] = 0
+    with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
+        for i in range(100):
+            h5file.attrs[f"key{i}"] = i
+            h5file.attrs[f"key{i}"] = 0
 
 
 def test_group_names(tmp_local_netcdf):
