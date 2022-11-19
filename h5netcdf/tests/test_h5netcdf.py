@@ -1848,7 +1848,7 @@ def test_h5netcdf_chunking(tmp_local_netcdf):
 
 def test_create_invalid_netcdf_catch_error(tmp_local_netcdf):
     # see https://github.com/h5netcdf/h5netcdf/issues/138
-    with h5netcdf.File("test.nc", "w") as f:
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
         try:
             f.create_variable("test", ("x", "y"), data=np.ones((10, 10), dtype="bool"))
         except CompatibilityError:
@@ -1856,8 +1856,8 @@ def test_create_invalid_netcdf_catch_error(tmp_local_netcdf):
         assert repr(f.dimensions) == "<h5netcdf.Dimensions: >"
 
 
-def test_dimensions_in_parent_groups():
-    with netCDF4.Dataset("test_netcdf.nc", mode="w") as ds:
+def test_dimensions_in_parent_groups(tmpdir):
+    with netCDF4.Dataset(tmpdir.join("test_netcdf.nc"), mode="w") as ds:
         ds0 = ds
         for i in range(10):
             ds = ds.createGroup(f"group{i:02d}")
@@ -1867,7 +1867,7 @@ def test_dimensions_in_parent_groups():
         var = ds0["group00"].createVariable("x", float, ("x", "y"))
         var[:] = np.ones((10, 20))
 
-    with legacyapi.Dataset("test_legacy.nc", mode="w") as ds:
+    with legacyapi.Dataset(tmpdir.join("test_legacy.nc"), mode="w") as ds:
         ds0 = ds
         for i in range(10):
             ds = ds.createGroup(f"group{i:02d}")
@@ -1877,8 +1877,8 @@ def test_dimensions_in_parent_groups():
         var = ds0["group00"].createVariable("x", float, ("x", "y"))
         var[:] = np.ones((10, 20))
 
-    with h5netcdf.File("test_netcdf.nc", mode="r") as ds0:
-        with h5netcdf.File("test_legacy.nc", mode="r") as ds1:
+    with h5netcdf.File(tmpdir.join("test_netcdf.nc"), mode="r") as ds0:
+        with h5netcdf.File(tmpdir.join("test_legacy.nc"), mode="r") as ds1:
             assert repr(ds0.dimensions["x"]) == repr(ds1.dimensions["x"])
             assert repr(ds0.dimensions["y"]) == repr(ds1.dimensions["y"])
             assert repr(ds0["group00"]) == repr(ds1["group00"])
