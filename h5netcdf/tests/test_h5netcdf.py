@@ -1664,18 +1664,6 @@ def test_more_than_7_attr_creation_track_order(tmp_local_netcdf, track_order):
                 h5file.attrs[f"key{i}"] = 0
 
 
-# Add a test that is supposed to fail in relation to issue #136
-# We choose to monitor when h5py will have fixed their issue in our test suite
-# to enhance maintainability
-# https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
-@pytest.mark.parametrize("track_order", [False, True])
-def test_more_than_7_attr_creation_track_order(tmp_local_netcdf, track_order):
-    with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
-        for i in range(100):
-            h5file.attrs[f"key{i}"] = i
-            h5file.attrs[f"key{i}"] = 0
-
-
 def test_group_names(tmp_local_netcdf):
     # https://github.com/h5netcdf/h5netcdf/issues/68
     with netCDF4.Dataset(tmp_local_netcdf, mode="w") as ds:
