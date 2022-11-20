@@ -51,12 +51,17 @@ def _invalid_netcdf_feature(feature, allow):
 
 def _transform_1d_boolean_indexers(key):
     """Find and transform 1D boolean indexers to int"""
-    key = [
-        np.asanyarray(k).nonzero()[0]
-        if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
-        else k
-        for k in key
-    ]
+    # return key, if not iterable
+    try:
+        key = [
+            np.asanyarray(k).nonzero()[0]
+            if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
+            else k
+            for k in key
+        ]
+    except TypeError:
+        return key
+
     return tuple(key)
 
 
