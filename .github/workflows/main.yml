@@ -75,6 +75,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10"]
+        h5py-version: ["3.6", "3.7"]
     steps:
     - uses: actions/checkout@v2
     - name: Install micromamba
@@ -86,6 +87,7 @@ jobs:
           pip
           pytest
           wheel
+          h5py=${{ matrix.h5py-version }}
           netCDF4
     - name: Install h5netcdf
       run: |
