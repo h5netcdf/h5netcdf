@@ -3,3 +3,4 @@ build
 dist
 __pycache__
 .vscode
+h5netcdf/_version.py
