@@ -1189,6 +1189,7 @@ def test_track_order_for_variable_creation(tmp_local_netcdf):
         assert f.dimensions["y"].size == 2
         if version.parse(h5py.__version__) >= version.parse("3.7.0"):
             assert list(f.variables) == ["test", "y"]
+            assert list(f._h5group.keys()) == [ "x", "y", "test", "_nc4_non_coord_y"]
 
     with h5netcdf.File(tmp_local_netcdf, "w") as f:
         f.dimensions = {"x": None, "y": 2}
@@ -1202,6 +1203,7 @@ def test_track_order_for_variable_creation(tmp_local_netcdf):
         assert f.dimensions["y"].size == 2
         if version.parse(h5py.__version__) >= version.parse("3.7.0"):
             assert list(f.variables) == ["y", "test"]
+            assert list(f._h5group.keys()) == [ "x", "y", "_nc4_non_coord_y", "test"]
 
 
 def test_overwrite_existing_file(tmp_local_netcdf):
