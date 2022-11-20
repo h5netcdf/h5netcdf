@@ -111,7 +111,19 @@ class BaseVariable(object):
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
+
+        self._h5ds = self._root._h5file[self._h5path]
+        # fix name if _nc4_non_coord_
+        self._name = self._h5ds.name.replace("_nc4_non_coord_", "")
+
+
+        self._dtype = None
         self._dimensions = dimensions
+        if self._dimensions is not None:
+            all_dimensions = self._parent._all_dimensions
+            self._shape = tuple(all_dimensions[d].size for d in self.dimensions)
+        else:
+            self._shape = None
         self._initialized = True
 
     @property
@@ -123,23 +135,18 @@ class BaseVariable(object):
         return self._root_ref()
 
     @property
-    def _h5ds(self):
-        # Always refer to the root file and store not h5py object
-        # subclasses:
-        return self._root._h5file[self._h5path]
-
-    @property
     def name(self):
         """Return variable name."""
-        # fix name if _nc4_non_coord_
-        return self._h5ds.name.replace("_nc4_non_coord_", "")
+        return self._name
 
     def _lookup_dimensions(self):
-        attrs = self._h5ds.attrs
+        h5ds = self._h5ds
+        attrs = h5ds.attrs
         # coordinate variable and dimension, eg. 1D ("time") or 2D string variable
         if (
             "_Netcdf4Coordinates" in attrs
-            and attrs.get("CLASS", None) == b"DIMENSION_SCALE"
+            and "CLASS" in attrs
+            and attrs["CLASS"] == b"DIMENSION_SCALE"
         ):
             order_dim = {
                 value._dimid: key for key, value in self._parent._all_dimensions.items()
@@ -151,22 +158,26 @@ class BaseVariable(object):
         # extract hdf5 file references and get objects name
         if "DIMENSION_LIST" in attrs:
             # check if malformed variable and raise
-            if _unlabeled_dimension_mix(self._h5ds) == "labeled":
+            if _unlabeled_dimension_mix(h5ds) == "labeled":
                 # If a dimension has attached more than one scale for some reason, then
                 # take the last one. This is in line with netcdf-c and netcdf4-python.
+                dimension_list = list(attrs["DIMENSION_LIST"])
+                h5file_id = self._root._h5file.id
                 return tuple(
-                    self._root._h5file[ref[-1]].name.split("/")[-1]
-                    for ref in list(self._h5ds.attrs.get("DIMENSION_LIST", []))
+                    h5py.h5i.get_name(
+                        h5py.h5r.dereference(ref[-1], h5file_id)
+                    ).split(b"/")[-1].decode('utf-8')
+                    for ref in dimension_list
                 )
 
         # need to use the h5ds name here to distinguish from collision dimensions
-        child_name = self._h5ds.name.split("/")[-1]
+        child_name = self.name.split("/")[-1]
         if child_name in self._parent._all_dimensions:
             return (child_name,)
 
         dims = []
         phony_dims = defaultdict(int)
-        for axis, dim in enumerate(self._h5ds.dims):
+        for axis, dim in enumerate(h5ds.dims):
             if len(dim):
                 name = _name_from_dimension(dim)
             else:
@@ -181,7 +192,7 @@ class BaseVariable(object):
                     )
                 else:
                     # get current dimension
-                    dimsize = self._h5ds.shape[axis]
+                    dimsize = h5ds.shape[axis]
                     # get dimension names
                     dim_names = [
                         d.name
@@ -265,7 +276,10 @@ class BaseVariable(object):
     def shape(self):
         """Return current sizes of all variable dimensions."""
         # return actual dimensions sizes, this is in line with netcdf4-python
-        return tuple([self._parent._all_dimensions[d].size for d in self.dimensions])
+        if self._shape is None:
+            all_dimensions = self._parent._all_dimensions
+            self._shape = tuple(all_dimensions[d].size for d in self.dimensions)
+        return self._shape
 
     @property
     def ndim(self):
@@ -278,7 +292,9 @@ class BaseVariable(object):
     @property
     def dtype(self):
         """Return NumPy dtype object giving the variable’s type."""
-        return self._h5ds.dtype
+        if self._dtype is None:
+            self._dtype = self._h5ds.dtype
+        return self._dtype
 
     def _get_padding(self, key):
         """Return padding if needed, defaults to False."""
