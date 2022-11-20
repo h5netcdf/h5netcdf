@@ -1176,7 +1176,13 @@ def test_reading_special_datatype_created_with_c_api(tmp_local_netcdf):
         pass
 
 
-def test_track_order_for_variable_creation(tmp_local_netcdf):
+def test_nc4_non_coord(tmp_local_netcdf):
+    # Here we generate a few variables and coordinates
+    # The default should be to track the order of creation
+    # Thus, on reopening the file, the order in which
+    # the variables are listed should be maintained
+    # y   --   refers to the coordinate y
+    # _nc4_non_coord_y  --  refers to the data y
     with h5netcdf.File(tmp_local_netcdf, "w") as f:
         f.dimensions = {"x": None, "y": 2}
         f.create_variable("test", dimensions=("x",), dtype=np.int64)
@@ -1189,7 +1195,7 @@ def test_track_order_for_variable_creation(tmp_local_netcdf):
         assert f.dimensions["y"].size == 2
         if version.parse(h5py.__version__) >= version.parse("3.7.0"):
             assert list(f.variables) == ["test", "y"]
-            assert list(f._h5group.keys()) == [ "x", "y", "test", "_nc4_non_coord_y"]
+            assert list(f._h5group.keys()) == ["x", "y", "test", "_nc4_non_coord_y"]
 
     with h5netcdf.File(tmp_local_netcdf, "w") as f:
         f.dimensions = {"x": None, "y": 2}
@@ -1203,7 +1209,7 @@ def test_track_order_for_variable_creation(tmp_local_netcdf):
         assert f.dimensions["y"].size == 2
         if version.parse(h5py.__version__) >= version.parse("3.7.0"):
             assert list(f.variables) == ["y", "test"]
-            assert list(f._h5group.keys()) == [ "x", "y", "_nc4_non_coord_y", "test"]
+            assert list(f._h5group.keys()) == ["x", "y", "_nc4_non_coord_y", "test"]
 
 
 def test_overwrite_existing_file(tmp_local_netcdf):
