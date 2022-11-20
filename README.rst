@@ -241,15 +241,30 @@ to group access time. The created phony dimension naming will differ from
 Track Order
 ~~~~~~~~~~~
 
-In h5netcdf version 0.12.0 and earlier, `order tracking`_ was disabled in
-HDF5 file. As this is a requirement for the current netCDF4 standard,
-it has been enabled without deprecation as of version 0.13.0 `[*]`_.
+As of h5netcdf 1.1.0, if h5py 3.7.0 or greater is detected, the ``track_order``
+parameter is set to ``True`` enabling `order tracking`_ for newly created
+netCDF4 files. This helps ensure that files created with the h5netcdf library
+can be modified by the netCDF4-c and netCDF4-python implementation used in
+other software stacks. Since this change should be transparent to most users,
+it was made without deprecation.
 
-However in version 0.13.1 this has been reverted due to a bug in a core
-dependency of h5netcdf, h5py `upstream bug`_.
+Since track_order is set at creation time, any dataset that was created with
+``track_order=False`` (h5netcdf version 1.0.2 and older except for 0.13.0) will
+continue to opened with order tracker disabled.
 
-Datasets created with h5netcdf version 0.12.0 that are opened with
-newer versions of h5netcdf will continue to disable order tracker.
+The following describes the behavior of h5netcdf with respect to order tracking
+for a few key versions:
+
+- Version 0.12.0 and earlier, the ``track_order`` parameter`order was missing
+  and thus order tracking was implicitely set to ``False``.
+- Version 0.13.0 enabled order tracking by setting the parameter
+  ``track_order`` to ``True`` by default without deprecation.
+- Versions 0.13.1 to 1.0.2 set ``track_order`` to ``False`` due to a bug in a
+  core dependency of h5netcdf, h5py `upstream bug`_ which was resolved in h5py
+  3.7.0 with the help of the h5netcdf team.
+- In version 1.1.0, if h5py 3.7.0 or above is detected, the ``track_order``
+  parameter is set to ``True`` by default.
+
 
 .. _order tracking: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#creation_order
 .. _upstream bug: https://github.com/h5netcdf/h5netcdf/issues/136
