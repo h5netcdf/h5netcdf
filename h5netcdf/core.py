@@ -116,14 +116,8 @@ class BaseVariable(object):
         # fix name if _nc4_non_coord_
         self._name = self._h5ds.name.replace("_nc4_non_coord_", "")
 
-
         self._dtype = None
         self._dimensions = dimensions
-        if self._dimensions is not None:
-            all_dimensions = self._parent._all_dimensions
-            self._shape = tuple(all_dimensions[d].size for d in self.dimensions)
-        else:
-            self._shape = None
         self._initialized = True
 
     @property
@@ -276,10 +270,7 @@ class BaseVariable(object):
     def shape(self):
         """Return current sizes of all variable dimensions."""
         # return actual dimensions sizes, this is in line with netcdf4-python
-        if self._shape is None:
-            all_dimensions = self._parent._all_dimensions
-            self._shape = tuple(all_dimensions[d].size for d in self.dimensions)
-        return self._shape
+        return tuple([self._parent._all_dimensions[d].size for d in self.dimensions])
 
     @property
     def ndim(self):
