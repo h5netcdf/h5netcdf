@@ -86,7 +86,6 @@ class Dimension(object):
             self._root._phony_dim_count += 1
         else:
             self._root._max_dim_id += 1
-
         self._dimensionid = self._root._max_dim_id
         if self._phony:
             self._h5ds = None
