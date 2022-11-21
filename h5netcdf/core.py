@@ -166,7 +166,7 @@ class BaseVariable(object):
                 )
 
         # need to use the h5ds name here to distinguish from collision dimensions
-        child_name = self.name.split("/")[-1]
+        child_name = self._h5path.split("/")[-1]
         if child_name in self._parent._all_dimensions:
             return (child_name,)
 
