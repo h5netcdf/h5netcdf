@@ -7,6 +7,7 @@ from collections import ChainMap, Counter, OrderedDict, defaultdict
 from collections.abc import Mapping
 
 import h5py
+from h5py import h5i, h5r
 import numpy as np
 from packaging import version
 
@@ -114,7 +115,7 @@ class BaseVariable(object):
 
         self._h5ds = self._root._h5file[self._h5path]
         # fix name if _nc4_non_coord_
-        self._name = self._h5ds.name.replace("_nc4_non_coord_", "")
+        self._name = self._h5path.replace("_nc4_non_coord_", "")
 
         self._dtype = None
         self._dimensions = dimensions
@@ -158,8 +159,8 @@ class BaseVariable(object):
                 dimension_list = list(attrs["DIMENSION_LIST"])
                 h5file_id = self._root._h5file.id
                 return tuple(
-                    h5py.h5i.get_name(
-                        h5py.h5r.dereference(ref[-1], h5file_id)
+                    h5i.get_name(
+                        h5r.dereference(ref[-1], h5file_id)
                     ).split(b"/")[-1].decode('utf-8')
                     for ref in dimension_list
                 )
@@ -270,7 +271,7 @@ class BaseVariable(object):
     def shape(self):
         """Return current sizes of all variable dimensions."""
         # return actual dimensions sizes, this is in line with netcdf4-python
-        return tuple([self._parent._all_dimensions[d].size for d in self.dimensions])
+        return tuple(self._parent._all_dimensions[d].size for d in self.dimensions)
 
     @property
     def ndim(self):
