@@ -24,3 +24,6 @@ class Frozen(Mapping):
 
     def __repr__(self):
         return "%s(%r)" % (type(self).__name__, self._mapping)
+
+    def items(self):
+        return self._mapping.items()
