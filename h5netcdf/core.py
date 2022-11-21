@@ -284,9 +284,7 @@ class BaseVariable(object):
     @property
     def dtype(self):
         """Return NumPy dtype object giving the variable’s type."""
-        if self._dtype is None:
-            self._dtype = self._h5ds.dtype
-        return self._dtype
+        return self._h5ds.dtype
 
     def _get_padding(self, key):
         """Return padding if needed, defaults to False."""
