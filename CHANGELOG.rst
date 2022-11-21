@@ -12,6 +12,9 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Fix regression in padding algorithm, add test.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
+- Set ``track_order=True`` by default in created files if h5py 3.7.0 or 
+  greater is detected to help compatibility with netCDF4-c programs.
+  By `Mark Harfouche <https://github.com/hmaarrfk>`_.
 
 Version 1.0.2 (August 2nd, 2022):
 
