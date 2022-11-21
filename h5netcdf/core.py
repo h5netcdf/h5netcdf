@@ -442,11 +442,29 @@ class _LazyObjectLookup(Mapping):
         # check for _nc4_non_coord_ variable
         if key not in self._objects and "_nc4_non_coord_" + key in self._objects:
             key = "_nc4_non_coord_" + key
-        if self._objects[key] is not None:
-            return self._objects[key]
+        return self._lookup_key(key)
+
+    def _lookup_key(self, key):
+        value = self._objects[key]
+        if value is not None:
+            return value
         else:
-            self._objects[key] = self._object_cls(self._parent, key)
-            return self._objects[key]
+            value = self._object_cls(self._parent, key)
+            self._objects[key] = value
+            return value
+
+    def items(self):
+        # implement a "faster" items method than the one provided by
+        # abc.Collections.Mapping
+        # This is "faster" because we know that the keys
+        # are already in the LazyObject so we don't need to repeat the checks
+        # in the standard __getitem__ call
+        for name in self._objects:
+            value = self._lookup_key(name)
+            # fix variable name for variable which clashes with dim name
+            key = name.replace("_nc4_non_coord_", "")
+
+            yield (key, value)
 
 
 def _netcdf_dimension_but_not_variable(h5py_dataset):
