@@ -86,9 +86,15 @@ class Dimension(object):
             self._root._phony_dim_count += 1
         else:
             self._root._max_dim_id += 1
+
         self._dimensionid = self._root._max_dim_id
-        if parent._root._writable and create_h5ds and not self._phony:
+        if self._phony:
+            self._h5ds = None
+        elif parent._root._writable and create_h5ds:
+            # Create scale will create the self._h5ds object
             self._create_scale()
+        else:
+            self._h5ds = self._root._h5file[self._h5path]
         self._initialized = True
 
     @property
@@ -131,12 +137,6 @@ class Dimension(object):
         if self._phony:
             return False
         return self._h5ds.maxshape == (None,)
-
-    @property
-    def _h5ds(self):
-        if self._phony:
-            return None
-        return self._root._h5file[self._h5path]
 
     @property
     def _isscale(self):
@@ -184,6 +184,8 @@ class Dimension(object):
                 dtype=">f4",
                 **kwargs,
             )
+
+        self._h5ds = self._root._h5file[self._h5path]
         self._h5ds.attrs["_Netcdf4Dimid"] = np.array(self._dimid, dtype=np.int32)
 
         if len(self._h5ds.shape) > 1:
