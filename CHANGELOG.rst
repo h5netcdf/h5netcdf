@@ -1,6 +1,6 @@
 Change Log
 ----------
-Development Version:
+Version 1.1.0 (November 23rd, 2022):
 
 - Rework adding _FillValue-attribute, add tests.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
