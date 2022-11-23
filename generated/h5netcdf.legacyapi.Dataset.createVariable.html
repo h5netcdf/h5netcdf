@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>h5netcdf.legacyapi.Dataset.createVariable &#8212; h5netcdf - 1.0.2</title>
+    <title>h5netcdf.legacyapi.Dataset.createVariable &#8212; h5netcdf - 1.1.0</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -74,7 +74,7 @@
       
       
       
-      <h1 class="site-logo" id="site-title">h5netcdf - 1.0.2</h1>
+      <h1 class="site-logo" id="site-title">h5netcdf - 1.1.0</h1>
       
     </a>
 </div><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
@@ -426,21 +426,21 @@ title="Print to PDF"
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>varname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of the new variable. If given as a path, intermediate groups will be created,
+<li><p><strong>varname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of the new variable. If given as a path, intermediate groups will be created,
 if not existent.</p></li>
-<li><p><strong>datatype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v1.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.dtype</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Dataype of the new variable</p></li>
-<li><p><strong>dimensions</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – Tuple containing dimension name strings. Defaults to empty tuple, effectively
+<li><p><strong>datatype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v1.23)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.dtype</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Dataype of the new variable</p></li>
+<li><p><strong>dimensions</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – Tuple containing dimension name strings. Defaults to empty tuple, effectively
 creating a scalar variable.</p></li>
-<li><p><strong>zlib</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, variable data will be gzip compressed.</p></li>
-<li><p><strong>complevel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <em>optional</em>) – Integer between 1 and 9 defining compression level. Defaults to 4.
+<li><p><strong>zlib</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, variable data will be gzip compressed.</p></li>
+<li><p><strong>complevel</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <em>optional</em>) – Integer between 1 and 9 defining compression level. Defaults to 4.
 Ignored if <code class="docutils literal notranslate"><span class="pre">zlib=False</span></code>.</p></li>
-<li><p><strong>shuffle</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, HDF5 shuffle filter will be applied. Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.
+<li><p><strong>shuffle</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, HDF5 shuffle filter will be applied. Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.
 Ignored if <code class="docutils literal notranslate"><span class="pre">zlib=False</span></code>.</p></li>
-<li><p><strong>fletcher32</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, HDF5 Fletcher32 checksum algorithm is applied. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
-<li><p><strong>chunksizes</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>, <em>optional</em>) – Tuple of integers specifying the chunksizes of each variable dimension.
+<li><p><strong>fletcher32</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, HDF5 Fletcher32 checksum algorithm is applied. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>chunksizes</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>, <em>optional</em>) – Tuple of integers specifying the chunksizes of each variable dimension.
 Discussion on <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> chunksizes can be found in (<a class="reference external" href="https://github.com/h5netcdf/h5netcdf/issues/52">GH52</a>) and (<a class="reference external" href="https://github.com/h5netcdf/h5netcdf/pull/127">PR127</a>).</p></li>
 <li><p><strong>fill_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-scalar" title="(in NumPy v1.23)"><span class="xref std std-term">scalar</span></a>, <em>optional</em>) – Specify <code class="docutils literal notranslate"><span class="pre">_FillValue</span></code> for uninitialized parts of the variable. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>endian</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Control on-disk storage format.
+<li><p><strong>endian</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Control on-disk storage format.
 Can be any of <code class="docutils literal notranslate"><span class="pre">little</span></code>, <code class="docutils literal notranslate"><span class="pre">big</span></code> or <code class="docutils literal notranslate"><span class="pre">native</span></code> (default).</p></li>
 </ul>
 </dd>

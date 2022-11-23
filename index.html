@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 1.0.2</title>
+    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 1.1.0</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -73,7 +73,7 @@
       
       
       
-      <h1 class="site-logo" id="site-title">h5netcdf - 1.0.2</h1>
+      <h1 class="site-logo" id="site-title">h5netcdf - 1.1.0</h1>
       
     </a>
 </div><form class="bd-search d-flex align-items-center" action="search.html" method="get">
@@ -571,10 +571,10 @@ title="Print to PDF"
 <h1>h5netcdf: A Python interface for the netCDF4 file-format based on h5py<a class="headerlink" href="#h5netcdf-a-python-interface-for-the-netcdf4-file-format-based-on-h5py" title="Permalink to this headline">#</a></h1>
 <dl class="field-list simple">
 <dt class="field-odd">Release</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/v1.0.2">1.0.2</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/v1.1.0">1.1.0</a></p>
 </dd>
 <dt class="field-even">Date</dt>
-<dd class="field-even"><p>Aug 02, 2022</p>
+<dd class="field-even"><p>Nov 23, 2022</p>
 </dd>
 </dl>
 <p><strong>h5netcdf</strong> is an open source project and Python package that provides an interface
@@ -789,13 +789,28 @@ to group access time. The created phony dimension naming will differ from
 </section>
 <section id="track-order">
 <h3>Track Order<a class="headerlink" href="#track-order" title="Permalink to this headline">#</a></h3>
-<p>In h5netcdf version 0.12.0 and earlier, <a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#creation_order">order tracking</a> was disabled in
-HDF5 file. As this is a requirement for the current netCDF4 standard,
-it has been enabled without deprecation as of version 0.13.0 <a class="reference external" href="https://github.com/h5netcdf/h5netcdf/issues/128">[*]</a>.</p>
-<p>However in version 0.13.1 this has been reverted due to a bug in a core
-dependency of h5netcdf, h5py <a class="reference external" href="https://github.com/h5netcdf/h5netcdf/issues/136">upstream bug</a>.</p>
-<p>Datasets created with h5netcdf version 0.12.0 that are opened with
-newer versions of h5netcdf will continue to disable order tracker.</p>
+<p>As of h5netcdf 1.1.0, if h5py 3.7.0 or greater is detected, the <code class="docutils literal notranslate"><span class="pre">track_order</span></code>
+parameter is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> enabling <a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#creation_order">order tracking</a> for newly created
+netCDF4 files. This helps ensure that files created with the h5netcdf library
+can be modified by the netCDF4-c and netCDF4-python implementation used in
+other software stacks. Since this change should be transparent to most users,
+it was made without deprecation.</p>
+<p>Since track_order is set at creation time, any dataset that was created with
+<code class="docutils literal notranslate"><span class="pre">track_order=False</span></code> (h5netcdf version 1.0.2 and older except for 0.13.0) will
+continue to opened with order tracker disabled.</p>
+<p>The following describes the behavior of h5netcdf with respect to order tracking
+for a few key versions:</p>
+<ul class="simple">
+<li><p>Version 0.12.0 and earlier, the <code class="docutils literal notranslate"><span class="pre">track_order</span></code> parameter`order was missing
+and thus order tracking was implicitely set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p>Version 0.13.0 enabled order tracking by setting the parameter
+<code class="docutils literal notranslate"><span class="pre">track_order</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> by default without deprecation.</p></li>
+<li><p>Versions 0.13.1 to 1.0.2 set <code class="docutils literal notranslate"><span class="pre">track_order</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code> due to a bug in a
+core dependency of h5netcdf, h5py <a class="reference external" href="https://github.com/h5netcdf/h5netcdf/issues/136">upstream bug</a> which was resolved in h5py
+3.7.0 with the help of the h5netcdf team.</p></li>
+<li><p>In version 1.1.0, if h5py 3.7.0 or above is detected, the <code class="docutils literal notranslate"><span class="pre">track_order</span></code>
+parameter is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> by default.</p></li>
+</ul>
 </section>
 </section>
 <section id="history">

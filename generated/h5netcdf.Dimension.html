@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>h5netcdf.Dimension &#8212; h5netcdf - 1.0.2</title>
+    <title>h5netcdf.Dimension &#8212; h5netcdf - 1.1.0</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -74,7 +74,7 @@
       
       
       
-      <h1 class="site-logo" id="site-title">h5netcdf - 1.0.2</h1>
+      <h1 class="site-logo" id="site-title">h5netcdf - 1.1.0</h1>
       
     </a>
 </div><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
@@ -421,18 +421,19 @@ title="Print to PDF"
 <h1>h5netcdf.Dimension<a class="headerlink" href="#h5netcdf-dimension" title="Permalink to this headline">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="h5netcdf.Dimension">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">h5netcdf.</span></span><span class="sig-name descname"><span class="pre">Dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_h5ds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Dimension" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">h5netcdf.</span></span><span class="sig-name descname"><span class="pre">Dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_h5ds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phony</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Dimension" title="Permalink to this definition">#</a></dt>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="h5netcdf.Dimension.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_h5ds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Dimension.__init__" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_h5ds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phony</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Dimension.__init__" title="Permalink to this definition">#</a></dt>
 <dd><p>NetCDF4 Dimension constructor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>parent</strong> (<a class="reference internal" href="h5netcdf.Group.html#h5netcdf.Group" title="h5netcdf.Group"><code class="xref py py-class docutils literal notranslate"><span class="pre">h5netcdf.Group</span></code></a>) – Parent group.</p></li>
-<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of the dimension.</p></li>
-<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Size of the Netcdf4 Dimension. Defaults to None (unlimited).</p></li>
-<li><p><strong>create_h5ds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – For internal use only.</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of the dimension.</p></li>
+<li><p><strong>size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Size of the Netcdf4 Dimension. Defaults to None (unlimited).</p></li>
+<li><p><strong>create_h5ds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – For internal use only.</p></li>
+<li><p><strong>phony</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – For internal use only.</p></li>
 </ul>
 </dd>
 </dl>
@@ -445,7 +446,7 @@ title="Print to PDF"
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Dimension.__init__" title="h5netcdf.Dimension.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(parent, name[, size, create_h5ds])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Dimension.__init__" title="h5netcdf.Dimension.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(parent, name[, size, create_h5ds, ...])</p></td>
 <td><p>NetCDF4 Dimension constructor.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#h5netcdf.Dimension.group" title="h5netcdf.Dimension.group"><code class="xref py py-obj docutils literal notranslate"><span class="pre">group</span></code></a>()</p></td>

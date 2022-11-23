@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Change Log &#8212; h5netcdf - 1.0.2</title>
+    <title>Change Log &#8212; h5netcdf - 1.1.0</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -73,7 +73,7 @@
       
       
       
-      <h1 class="site-logo" id="site-title">h5netcdf - 1.0.2</h1>
+      <h1 class="site-logo" id="site-title">h5netcdf - 1.1.0</h1>
       
     </a>
 </div><form class="bd-search d-flex align-items-center" action="search.html" method="get">
@@ -418,6 +418,22 @@ title="Print to PDF"
                 
   <section id="change-log">
 <h1>Change Log<a class="headerlink" href="#change-log" title="Permalink to this headline">#</a></h1>
+<p>Version 1.1.0 (November 23rd, 2022):</p>
+<ul class="simple">
+<li><p>Rework adding _FillValue-attribute, add tests.
+By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a>.</p></li>
+<li><p>Add special add_phony method for creating phony dimensions, add test.
+By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a>.</p></li>
+<li><p>Rewrite _unlabeled_dimension_mix (labeled/unlabeled), add tests.
+By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a>.</p></li>
+<li><p>Add default netcdf fillvalues, pad only if necessary, adapt tests.
+By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a>.</p></li>
+<li><p>Fix regression in padding algorithm, add test.
+By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a>.</p></li>
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">track_order=True</span></code> by default in created files if h5py 3.7.0 or
+greater is detected to help compatibility with netCDF4-c programs.
+By <a class="reference external" href="https://github.com/hmaarrfk">Mark Harfouche</a>.</p></li>
+</ul>
 <p>Version 1.0.2 (August 2nd, 2022):</p>
 <ul class="simple">
 <li><p>Adapt boolean indexing as h5py 3.7.0 started supporting it.

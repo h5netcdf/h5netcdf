@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>h5netcdf.File &#8212; h5netcdf - 1.0.2</title>
+    <title>h5netcdf.File &#8212; h5netcdf - 1.1.0</title>
     
   <!-- Loaded before other Sphinx assets -->
   <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
@@ -74,7 +74,7 @@
       
       
       
-      <h1 class="site-logo" id="site-title">h5netcdf - 1.0.2</h1>
+      <h1 class="site-logo" id="site-title">h5netcdf - 1.1.0</h1>
       
     </a>
 </div><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
@@ -431,10 +431,18 @@ title="Print to PDF"
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">path-like</span></code>) – Location of the netCDF4 file to be accessed.</p></li>
 <li><p><strong>mode</strong> (<code class="docutils literal notranslate"><span class="pre">&quot;r&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;r+&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;w&quot;</span></code>) – A valid file access mode. Defaults to “r”.</p></li>
-<li><p><strong>invalid_netcdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Allow writing netCDF4 with data types and attributes that would
+<li><p><strong>invalid_netcdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Allow writing netCDF4 with data types and attributes that would
 otherwise not generate netCDF4 files that can be read by other
 applications. See <a class="reference internal" href="../index.html#invalid-netcdf"><span class="std std-ref">Invalid netCDF files</span></a> for more details.</p></li>
 <li><p><strong>phony_dims</strong> (<code class="docutils literal notranslate"><span class="pre">'sort'</span></code>, <code class="docutils literal notranslate"><span class="pre">'access'</span></code>) – See <a class="reference internal" href="../index.html#phony-dims"><span class="std std-ref">Datasets with missing dimension scales</span></a> for more details.</p></li>
+<li><p><strong>track_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.11)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Corresponds to the h5py.File <cite>track_order</cite> parameter. Unless
+specified, the library will choose a default that enhances
+compatibility with netCDF4-c. If h5py version 3.7.0 or greater is
+installed, this parameter will be set to True by default.
+track_order is required to be true to for netCDF4-c libraries to
+append to a file. If an older version of h5py is detected, this
+parameter will be set to False by default to work around a bug in
+h5py limiting the number of attributes for a given variable.</p></li>
 <li><p><strong>**kwargs</strong> – Additional keyword arguments to be passed to the <code class="docutils literal notranslate"><span class="pre">h5py.File</span></code>
 constructor.</p></li>
 </ul>
