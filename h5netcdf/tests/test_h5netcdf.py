@@ -1571,7 +1571,10 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
 
 
 # https://github.com/h5netcdf/h5netcdf/issues/136
-# @pytest.mark.skip(reason="h5py bug with track_order prevents editing with netCDF4")
+@pytest.mark.skipif(
+    version.parse(h5py.__version__) < version.parse("3.7.0"),
+    reason="h5py<3.7.0 bug with track_order prevents editing with netCDF4",
+)
 def test_creation_with_h5netcdf_edit_with_netcdf4(tmp_local_netcdf):
     # In version 0.12.0, the wrong file creation attributes were used
     # making netcdf4 unable to open files created by h5netcdf
