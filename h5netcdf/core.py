@@ -1026,8 +1026,7 @@ class File(Group):
         track_order_default = version.parse(h5py.__version__) >= version.parse("3.7.0")
         track_order = kwargs.pop("track_order", track_order_default)
 
-        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
-            self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
+        self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         try:
             if isinstance(path, str):
                 if path.startswith(("http://", "https://", "hdf5://")):
@@ -1053,17 +1052,11 @@ class File(Group):
                         path, mode, track_order=track_order, **kwargs
                     )
             else:  # file-like object
-                if version.parse(h5py.__version__) < version.parse("2.9.0"):
-                    raise TypeError(
-                        "h5py version ({}) must be greater than 2.9.0 to load "
-                        "file-like objects.".format(h5py.__version__)
-                    )
-                else:
-                    self._preexisting_file = mode in {"r", "r+", "a"}
-                    self._h5py = h5py
-                    self._h5file = self._h5py.File(
-                        path, mode, track_order=track_order, **kwargs
-                    )
+                self._preexisting_file = mode in {"r", "r+", "a"}
+                self._h5py = h5py
+                self._h5file = self._h5py.File(
+                    path, mode, track_order=track_order, **kwargs
+                )
         except Exception:
             self._closed = True
             raise
@@ -1089,18 +1082,17 @@ class File(Group):
                 )
 
         # string decoding
-        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
-            if "legacy" in self._cls_name:
-                if self.decode_vlen_strings is not None:
-                    msg = (
-                        "'decode_vlen_strings' keyword argument is not allowed in h5netcdf "
-                        "legacy API."
-                    )
-                    raise TypeError(msg)
-                self.decode_vlen_strings = True
-            else:
-                if self.decode_vlen_strings is None:
-                    self.decode_vlen_strings = False
+        if "legacy" in self._cls_name:
+            if self.decode_vlen_strings is not None:
+                msg = (
+                    "'decode_vlen_strings' keyword argument is not allowed in h5netcdf "
+                    "legacy API."
+                )
+                raise TypeError(msg)
+            self.decode_vlen_strings = True
+        else:
+            if self.decode_vlen_strings is None:
+                self.decode_vlen_strings = False
 
         self._max_dim_id = -1
         # This maps keeps track of all HDF5 datasets corresponding to this group.
