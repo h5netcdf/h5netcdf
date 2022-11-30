@@ -1,5 +1,13 @@
 Change Log
 ----------
+
+Development Version:
+
+- Remove h5py2 compatibility code, remove h5py2 CI runs, mention NEP29 as
+  upstream dependency support strategy
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and
+  `Mark Harfouche <https://github.com/hmaarrfk>`_.
+
 Version 1.1.0 (November 23rd, 2022):
 
 - Rework adding _FillValue-attribute, add tests.

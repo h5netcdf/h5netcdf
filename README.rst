@@ -43,8 +43,7 @@ Install
 
 Ensure you have a recent version of h5py installed (I recommend using `conda`_ or
 the community effort `conda-forge`_).
-At least version 2.1 is required (for dimension scales); versions 2.3 and newer
-have been verified to work, though some tests only pass on h5py 2.6. Then::
+At least version 3.0 is required. Then::
 
     $ pip install h5netcdf
 
@@ -52,8 +51,14 @@ Or if you are already using conda::
 
     $ conda install h5netcdf
 
+Note:
+
+From version 1.2. h5netcdf tries to align with a `nep29`_-like support policy with regard
+to it's upstream dependencies.
+
 .. _conda: https://conda.io/
 .. _conda-forge: https://conda-forge.org/
+.. _nep29: https://numpy.org/neps/nep-0029-deprecation_policy.html
 
 Usage
 -----

@@ -57,10 +57,7 @@ def tmp_local_or_remote_netcdf(request, tmpdir, hsds_up):
 
 @pytest.fixture(params=[True, False])
 def decode_vlen_strings(request):
-    if version.parse(h5py.__version__) >= version.parse("3.0.0"):
-        return dict(decode_vlen_strings=request.param)
-    else:
-        return {}
+    return dict(decode_vlen_strings=request.param)
 
 
 @pytest.fixture(params=[netCDF4, legacyapi])
@@ -489,8 +486,6 @@ def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):
 
 
 def test_fileobj(decode_vlen_strings):
-    if version.parse(h5py.__version__) < version.parse("2.9.0"):
-        pytest.skip("h5py > 2.9.0 required to test file-like objects")
     fileobj = tempfile.TemporaryFile()
     write_h5netcdf(fileobj)
     read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings)
@@ -561,12 +556,8 @@ def test_optional_netcdf4_attrs(tmp_local_or_remote_netcdf):
         f.create_dataset("foo", data=foo_data)
         f.create_dataset("x", data=np.arange(5))
         f.create_dataset("y", data=np.arange(10))
-        if version.parse(h5py.__version__) < version.parse("2.10.0"):
-            f["foo"].dims.create_scale(f["x"])
-            f["foo"].dims.create_scale(f["y"])
-        else:
-            f["x"].make_scale()
-            f["y"].make_scale()
+        f["x"].make_scale()
+        f["y"].make_scale()
         f["foo"].dims[0].attach_scale(f["x"])
         f["foo"].dims[1].attach_scale(f["y"])
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
@@ -594,10 +585,6 @@ def test_error_handling(tmp_local_or_remote_netcdf):
             ds.create_group("subgroup")
 
 
-@pytest.mark.skipif(
-    version.parse(h5py.__version__) < version.parse("3.0.0"),
-    reason="not needed with h5py < 3.0",
-)
 def test_decode_string_error(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)
     with pytest.raises(TypeError):
@@ -717,14 +704,9 @@ def test_invalid_netcdf4_mixed(tmp_local_or_remote_netcdf):
         for k, v in var2.items():
             f.create_dataset(k, data=np.arange(v))
 
-        if version.parse(h5py.__version__) < version.parse("2.10.0"):
-            f["foo2"].dims.create_scale(f["x1"])
-            f["foo2"].dims.create_scale(f["y1"])
-            f["foo2"].dims.create_scale(f["z1"])
-        else:
-            f["x1"].make_scale()
-            f["y1"].make_scale()
-            f["z1"].make_scale()
+        f["x1"].make_scale()
+        f["y1"].make_scale()
+        f["z1"].make_scale()
         f["foo2"].dims[0].attach_scale(f["x1"])
         f["foo2"].dims[1].attach_scale(f["y1"])
         f["foo2"].dims[2].attach_scale(f["z1"])
@@ -757,14 +739,9 @@ def test_invalid_netcdf_malformed_dimension_scales(tmp_local_or_remote_netcdf):
         f.create_dataset("y", data=np.arange(5))
         f.create_dataset("z", data=np.arange(5))
 
-        if version.parse(h5py.__version__) < version.parse("2.10.0"):
-            f["foo1"].dims.create_scale(f["x"])
-            f["foo1"].dims.create_scale(f["y"])
-            f["foo1"].dims.create_scale(f["z"])
-        else:
-            f["x"].make_scale()
-            f["y"].make_scale()
-            f["z"].make_scale()
+        f["x"].make_scale()
+        f["y"].make_scale()
+        f["z"].make_scale()
         f["foo1"].dims[0].attach_scale(f["x"])
 
     with raises(ValueError):
@@ -1354,10 +1331,7 @@ def create_netcdf_dimensions(ds, idx):
     collide[...] = np.arange(5 + idx)
     non_collide[...] = np.arange(5 + idx) + 10
     sample[0 : 2 + idx, : 2 + idx] = np.ones((2 + idx, 2 + idx))
-    if version.parse(h5py.__version__) >= version.parse("3.0.0"):
-        ship[0] = list("Skiff     ")
-    else:
-        ship[0] = string_to_char(np.array("Skiff     ", dtype="|S1"))
+    ship[0] = list("Skiff     ")
 
 
 def create_h5netcdf_dimensions(ds, idx):
@@ -1386,10 +1360,7 @@ def create_h5netcdf_dimensions(ds, idx):
     g.variables["collide"][...] = np.arange(5 + idx)
     g.variables["non_collide"][...] = np.arange(5 + idx) + 10
     g.variables["sample"][0 : 2 + idx, : 2 + idx] = np.ones((2 + idx, 2 + idx))
-    if version.parse(h5py.__version__) >= version.parse("3.0.0"):
-        g.variables["ship"][0] = list("Skiff     ")
-    else:
-        g.variables["ship"][0] = string_to_char(np.array("Skiff     ", dtype="|S1"))
+    g.variables["ship"][0] = list("Skiff     ")
 
 
 def check_netcdf_dimensions(tmp_netcdf, write_module, read_module):
@@ -1600,7 +1571,10 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
 
 
 # https://github.com/h5netcdf/h5netcdf/issues/136
-@pytest.mark.skip(reason="h5py bug with track_order prevents editing with netCDF4")
+@pytest.mark.skipif(
+    version.parse(h5py.__version__) < version.parse("3.7.0"),
+    reason="h5py<3.7.0 bug with track_order prevents editing with netCDF4",
+)
 def test_creation_with_h5netcdf_edit_with_netcdf4(tmp_local_netcdf):
     # In version 0.12.0, the wrong file creation attributes were used
     # making netcdf4 unable to open files created by h5netcdf
@@ -1966,25 +1940,18 @@ def test_array_attributes(tmp_local_netcdf):
         assert ds.attrs["unicode_list"] == unicode
 
         # bytes and strings are received as strings for h5py3
-        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
-            ascii = "ascii"
-            foobar = "foobar"
-        # and bytes for h5py2
-        else:
-            ascii = b"ascii"
-            foobar = b"foobar"
+        ascii = "ascii"
+        foobar = "foobar"
         assert ds.attrs["ascii"] == "ascii"
         assert ds.attrs["ascii_0dim"] == ascii
         assert ds.attrs["ascii_1dim"] == ascii
         assert ds.attrs["ascii_array"] == [ascii, foobar]
-        # list is decoded for h5py2
         assert ds.attrs["ascii_list"] == "ascii"
 
         assert ds.attrs["bytes"] == ascii
         assert ds.attrs["bytes_0dim"] == ascii
         assert ds.attrs["bytes_1dim"] == ascii
         assert ds.attrs["bytes_array"] == [ascii, foobar]
-        # list is decoded for h5py2
         assert ds.attrs["bytes_list"] == "ascii"
 
         assert ds.attrs["unicode_fixed"] == unicode
@@ -2017,25 +1984,18 @@ def test_array_attributes(tmp_local_netcdf):
         assert ds.unicode_list == unicode
 
         # bytes and strings are received as strings for h5py3
-        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
-            ascii = "ascii"
-            foobar = "foobar"
-        # and bytes for h5py2
-        else:
-            ascii = b"ascii"
-            foobar = b"foobar"
+        ascii = "ascii"
+        foobar = "foobar"
         assert ds.ascii == "ascii"
         assert ds.ascii_0dim == ascii
         assert ds.ascii_1dim == ascii
         assert ds.ascii_array == [ascii, foobar]
-        # list is decoded for h5py2
         assert ds.ascii_list == "ascii"
 
         assert ds.bytes == ascii
         assert ds.bytes_0dim == ascii
         assert ds.bytes_1dim == ascii
         assert ds.bytes_array == [ascii, foobar]
-        # list is decoded for h5py2
         assert ds.bytes_list == "ascii"
 
         assert ds.unicode_fixed == unicode
@@ -2078,9 +2038,7 @@ def test_array_attributes(tmp_local_netcdf):
         assert ds.bytes_0dim == ascii
         assert ds.bytes_1dim == ascii
         assert ds.bytes_array == [ascii, "foobar"]
-        # writing/reading lists is broken with h5py2/netCDF4
-        if version.parse(h5py.__version__) >= version.parse("3.0.0"):
-            assert ds.bytes_list == ascii
+        assert ds.bytes_list == ascii
 
         assert ds.unicode_fixed == unicode
         assert ds.unicode_fixed_0dim == unicode

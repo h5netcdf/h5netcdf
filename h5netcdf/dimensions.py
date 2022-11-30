@@ -4,7 +4,6 @@ from collections.abc import MutableMapping
 
 import h5py
 import numpy as np
-from packaging.version import Version
 
 
 class Dimensions(MutableMapping):
@@ -209,10 +208,7 @@ class Dimension(object):
         )
         # don't re-create scales if they already exist.
         if not self._root._h5py.h5ds.is_scale(self._h5ds.id):
-            if Version(h5py.__version__) < Version("2.10.0"):
-                self._h5ds.dims.create_scale(self._h5ds, scale_name)
-            else:
-                self._h5ds.make_scale(scale_name)
+            self._h5ds.make_scale(scale_name)
 
     def _attach_scale(self, refs):
         """Attach dimension scale to references"""
