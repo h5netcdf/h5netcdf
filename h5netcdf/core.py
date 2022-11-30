@@ -290,6 +290,9 @@ class BaseVariable(object):
     if version.parse("3.0.0") <= h5py_version < version.parse("3.7.0"):
         def __getitem__(self, key):
             from .legacyapi import Dataset
+            # load these here since they are quite expensive to access
+            root = self._root
+            h5ds = root._h5file[self._h5path]
 
             if isinstance(self._parent._root, Dataset):
                 # this is only for legacyapi
@@ -298,9 +301,8 @@ class BaseVariable(object):
                 # https://github.com/h5netcdf/h5netcdf/pull/125/
                 key = _transform_1d_boolean_indexers(key)
 
-            h5ds = self._h5ds
-            if getattr(self._root, "decode_vlen_strings", False):
-                string_info = self._root._h5py.check_string_dtype(h5ds.dtype)
+            if getattr(root, "decode_vlen_strings", False):
+                string_info = root._h5py.check_string_dtype(h5ds.dtype)
                 if string_info and string_info.length is None:
                     return self._h5ds.asstr()[key]
 
@@ -319,12 +321,13 @@ class BaseVariable(object):
             return h5ds[key]
     else:
         def __getitem__(self, key):
+            # load these here since they are quite expensive to access
             root = self._root
             h5ds = root._h5file[self._h5path]
             if self._h5path == "/images":
                 return h5ds[key]
 
-            if root.decode_vlen_strings:
+            if getattr(root, "decode_vlen_strings", False):
                 string_info = root._h5py.check_string_dtype(h5ds.dtype)
                 if string_info and string_info.length is None:
                     return h5ds.asstr()[key]
