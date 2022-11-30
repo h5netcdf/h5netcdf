@@ -5,7 +5,7 @@ import warnings
 import weakref
 from collections import ChainMap, Counter, OrderedDict, defaultdict
 from collections.abc import Mapping
-from functools import lru_cache
+from functools import cached_property
 
 import h5py
 import numpy as np
@@ -386,28 +386,23 @@ class BaseVariable(object):
 
 
 class Variable(BaseVariable):
-    @property
-    @lru_cache
+    @cached_property
     def chunks(self):
         return self._h5ds.chunks
 
-    @property
-    @lru_cache
+    @cached_property
     def compression(self):
         return self._h5ds.compression
 
-    @property
-    @lru_cache
+    @cached_property
     def compression_opts(self):
         return self._h5ds.compression_opts
 
-    @property
-    @lru_cache
+    @cached_property
     def fletcher32(self):
         return self._h5ds.fletcher32
 
-    @property
-    @lru_cache
+    @cached_property
     def shuffle(self):
         return self._h5ds.shuffle
 
