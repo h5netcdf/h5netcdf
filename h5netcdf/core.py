@@ -298,8 +298,9 @@ class BaseVariable(object):
                 # https://github.com/h5netcdf/h5netcdf/pull/125/
                 key = _transform_1d_boolean_indexers(key)
 
+            h5ds = self._h5ds
             if getattr(self._root, "decode_vlen_strings", False):
-                string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
+                string_info = self._root._h5py.check_string_dtype(h5ds.dtype)
                 if string_info and string_info.length is None:
                     return self._h5ds.asstr()[key]
 
@@ -307,15 +308,15 @@ class BaseVariable(object):
             padding = _get_padding(h5ds, self.shape, key)
             # apply padding with fillvalue (both api)
             if padding:
-                fv = self.dtype.type(self._h5ds.fillvalue)
+                fv = self.dtype.type(h5ds.fillvalue)
                 return np.pad(
-                    self._h5ds,
+                    h5ds,
                     pad_width=padding,
                     mode="constant",
                     constant_values=fv,
                 )[key]
 
-            return self._h5ds[key]
+            return h5ds[key]
     else:
         def __getitem__(self, key):
             root = self._root
