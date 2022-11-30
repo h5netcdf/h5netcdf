@@ -112,6 +112,7 @@ class BaseVariable(object):
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
         self._dimensions = dimensions
+        self._dtype = None
         self._initialized = True
 
     @property
@@ -278,74 +279,68 @@ class BaseVariable(object):
     @property
     def dtype(self):
         """Return NumPy dtype object giving the variable’s type."""
-        return self._h5ds.dtype
-
-    def _get_padding(self, key):
-        """Return padding if needed, defaults to False."""
-        padding = False
-        if self.dtype != str and self.dtype.kind in ["f", "i", "u"]:
-            key0 = _expanded_indexer(key, self.ndim)
-            key0 = _transform_1d_boolean_indexers(key0)
-            # extract max shape of key vs hdf5-shape
-            h5ds_shape = self._h5ds.shape
-            shape = self.shape
-
-            # check for ndarray and list
-            # see https://github.com/pydata/xarray/issues/7154
-            # first get maximum index
-            max_index = [
-                max(k) + 1 if isinstance(k, (np.ndarray, list)) else k.stop
-                for k in key0
-            ]
-            # second convert to max shape
-            max_shape = tuple(
-                [
-                    shape[i] if k is None else max(h5ds_shape[i], k)
-                    for i, k in enumerate(max_index)
-                ]
-            )
-
-            # check if hdf5 dataset dimensions are smaller than
-            # their respective netcdf dimensions
-            sdiff = [d0 - d1 for d0, d1 in zip(max_shape, h5ds_shape)]
-            # create padding only if hdf5 dataset is smaller than netcdf dimension
-            if sum(sdiff):
-                padding = [(0, s) for s in sdiff]
-        return padding
+        if self._dtype is None:
+            self._dtype = self._h5ds.dtype
+        return self._dtype
 
     def __array__(self, *args, **kwargs):
         return self._h5ds.__array__(*args, **kwargs)
 
-    def __getitem__(self, key):
-        from .legacyapi import Dataset
+    h5py_version = version.parse(h5py.__version__)
+    if version.parse("3.0.0") <= h5py_version < version.parse("3.7.0"):
+        def __getitem__(self, key):
+            from .legacyapi import Dataset
 
-        if isinstance(self._parent._root, Dataset):
-            # this is only for legacyapi
-            # fix boolean indexing for affected versions
-            # https://github.com/h5py/h5py/pull/2079
-            # https://github.com/h5netcdf/h5netcdf/pull/125/
-            h5py_version = version.parse(h5py.__version__)
-            if version.parse("3.0.0") <= h5py_version < version.parse("3.7.0"):
+            if isinstance(self._parent._root, Dataset):
+                # this is only for legacyapi
+                # fix boolean indexing for affected versions
+                # https://github.com/h5py/h5py/pull/2079
+                # https://github.com/h5netcdf/h5netcdf/pull/125/
                 key = _transform_1d_boolean_indexers(key)
 
-        if getattr(self._root, "decode_vlen_strings", False):
-            string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
-            if string_info and string_info.length is None:
-                return self._h5ds.asstr()[key]
+            if getattr(self._root, "decode_vlen_strings", False):
+                string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
+                if string_info and string_info.length is None:
+                    return self._h5ds.asstr()[key]
 
-        # get padding
-        padding = self._get_padding(key)
-        # apply padding with fillvalue (both api)
-        if padding:
-            fv = self.dtype.type(self._h5ds.fillvalue)
-            return np.pad(
-                self._h5ds,
-                pad_width=padding,
-                mode="constant",
-                constant_values=fv,
-            )[key]
+            # get padding
+            padding = _get_padding(h5ds, self.shape, key)
+            # apply padding with fillvalue (both api)
+            if padding:
+                fv = self.dtype.type(self._h5ds.fillvalue)
+                return np.pad(
+                    self._h5ds,
+                    pad_width=padding,
+                    mode="constant",
+                    constant_values=fv,
+                )[key]
 
-        return self._h5ds[key]
+            return self._h5ds[key]
+    else:
+        def __getitem__(self, key):
+            root = self._root
+            h5ds = root._h5file[self._h5path]
+            if self._h5path == "/images":
+                return h5ds[key]
+
+            if root.decode_vlen_strings:
+                string_info = root._h5py.check_string_dtype(h5ds.dtype)
+                if string_info and string_info.length is None:
+                    return h5ds.asstr()[key]
+
+            # get padding
+            padding = _get_padding(h5ds, self.shape, key)
+            # apply padding with fillvalue (both api)
+            if padding:
+                fv = self.dtype.type(h5ds.fillvalue)
+                return np.pad(
+                    h5ds,
+                    pad_width=padding,
+                    mode="constant",
+                    constant_values=fv,
+                )[key]
+
+            return h5ds[key]
 
     def __setitem__(self, key, value):
         from .legacyapi import Dataset
@@ -382,6 +377,40 @@ class BaseVariable(object):
             + ["Attributes:"]
             + ["    %s: %r" % (k, v) for k, v in self.attrs.items()]
         )
+
+
+def _get_padding(h5ds, shape, key):
+    """Return padding if needed, defaults to False."""
+    padding = False
+    dtype = h5ds.dtype
+    if dtype != str and dtype.kind in ["f", "i", "u"]:
+        key0 = _expanded_indexer(key, len(shape))
+        key0 = _transform_1d_boolean_indexers(key0)
+        # extract max shape of key vs hdf5-shape
+        h5ds_shape = h5ds.shape
+
+        # check for ndarray and list
+        # see https://github.com/pydata/xarray/issues/7154
+        # first get maximum index
+        max_index = [
+            max(k) + 1 if isinstance(k, (np.ndarray, list)) else k.stop
+            for k in key0
+        ]
+        # second convert to max shape
+        max_shape = tuple(
+            [
+                shape[i] if k is None else max(h5ds_shape[i], k)
+                for i, k in enumerate(max_index)
+            ]
+        )
+
+        # check if hdf5 dataset dimensions are smaller than
+        # their respective netcdf dimensions
+        sdiff = [d0 - d1 for d0, d1 in zip(max_shape, h5ds_shape)]
+        # create padding only if hdf5 dataset is smaller than netcdf dimension
+        if sum(sdiff):
+            padding = [(0, s) for s in sdiff]
+    return padding
 
 
 class Variable(BaseVariable):
