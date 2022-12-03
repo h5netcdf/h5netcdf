@@ -549,6 +549,24 @@ def test_attrs_api(tmp_local_or_remote_netcdf):
         assert sorted(ds["x"].attrs) == ["foo", "units"]
 
 
+def test_shape_is_tied_to_coordinate(tmp_local_or_remote_netcdf):
+    with h5netcdf.legacyapi.Dataset(
+        tmp_local_or_remote_netcdf,
+        "w",
+    ) as ds:
+        ds.createDimension("x", size=None)
+        ds.createVariable("xvar", int, ("x",))
+        ds["xvar"][:5] = np.arange(5)
+        assert ds["xvar"].shape == (5,)
+        ds.createVariable("yvar", int, ("x",))
+        ds["yvar"][:10] = np.arange(10)
+        assert ds["yvar"].shape == (10,)
+        # The shape of the xvar should change too
+        # this is in order to be in line with the behavior
+        # of netCDF4-c
+        assert ds["xvar"].shape == (10,)
+
+
 def test_optional_netcdf4_attrs(tmp_local_or_remote_netcdf):
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
     with h5.File(tmp_local_or_remote_netcdf, "w") as f:
