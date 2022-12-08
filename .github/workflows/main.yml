@@ -158,7 +158,9 @@ jobs:
         environment-name: h5netcdf-tests
         extra-specs: |
           python=${{ matrix.python-version }}
+          dask
           h5py
+          netCDF4
           packaging
           pandas
           pip
