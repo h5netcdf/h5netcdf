@@ -159,6 +159,7 @@ jobs:
         extra-specs: |
           python=${{ matrix.python-version }}
           h5py
+          netCDF4
           packaging
           pandas
           pip
