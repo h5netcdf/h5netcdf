@@ -13,7 +13,7 @@ from packaging import version
 from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
-from .utils import Frozen
+from .utils import Frozen, CompatibilityError
 
 try:
     import h5pyd
@@ -34,10 +34,6 @@ def _name_from_dimension(dim):
     # First value in a dimension is the actual dimension scale
     # which we'll use to extract the name.
     return dim[0].name.split("/")[-1]
-
-
-class CompatibilityError(Exception):
-    """Raised when using features that are not part of the NetCDF4 API."""
 
 
 def _invalid_netcdf_feature(feature, allow):
@@ -283,7 +279,7 @@ class BaseVariable(object):
     def _get_padding(self, key):
         """Return padding if needed, defaults to False."""
         padding = False
-        if self.dtype != str and self.dtype.kind in ["f", "i", "u"]:
+        if self.dtype != str and self.dtype.kind in ["f", "i", "u"] and self._h5ds.shape:
             key0 = _expanded_indexer(key, self.ndim)
             key0 = _transform_1d_boolean_indexers(key0)
             # extract max shape of key vs hdf5-shape
@@ -442,6 +438,8 @@ class _LazyObjectLookup(Mapping):
 
 
 def _netcdf_dimension_but_not_variable(h5py_dataset):
+    if h5py_dataset.shape is None:
+        return True
     return NOT_A_VARIABLE in h5py_dataset.attrs.get("NAME", b"")
 
 
@@ -511,14 +509,14 @@ class Group(Mapping):
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
                     # add dimension and retrieve size
                     self._dimensions.add(k)
+                    if not _netcdf_dimension_but_not_variable(v):
+                        self._variables.add(k)
                 else:
                     if self._root._phony_dims_mode is not None:
                         # check if malformed variable and raise
                         if _unlabeled_dimension_mix(v) == "unlabeled":
                             # if unscaled variable, get phony dimensions
                             phony_dims |= Counter(v.shape)
-
-                if not _netcdf_dimension_but_not_variable(v):
                     if isinstance(v, self._root._h5py.Dataset):
                         self._variables.add(k)
 

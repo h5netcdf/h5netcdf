@@ -5,6 +5,8 @@ from collections.abc import MutableMapping
 import h5py
 import numpy as np
 
+from .utils import CompatibilityError
+
 
 class Dimensions(MutableMapping):
     def __init__(self, group):
@@ -108,7 +110,24 @@ class Dimension(object):
     @property
     def size(self):
         """Return dimension size."""
-        size = len(self)
+        vars = self._parent._h5group["/"]
+        if not self._phony and self._h5ds.shape is None:
+            # the dimension is a null dataset, essentially just a shared name,
+            # and is only compatible with netCDF4 if all axes that reference
+            # the dimension have the same length
+            try:
+                reflist = self._h5ds.attrs.get("REFERENCE_LIST")
+            except KeyError:
+                msg = f"Dimension {self.name!r} has no discernable length."
+                raise CompatibilityError(msg)
+            ref_size = {vars[ref].shape[axis] for ref, axis in reflist}
+            try:
+                (size, ) = ref_size
+            except ValueError:
+                msg = f"Dimension {self.name!r} references axes of unequal length."
+                raise CompatibilityError(msg)
+        else:
+            size = len(self)
         if self.isunlimited():
             # return actual dimensions sizes, this is in line with netcdf4-python
             # get sizes from all connected variables and calculate max
@@ -117,7 +136,7 @@ class Dimension(object):
             reflist = self._h5ds.attrs.get("REFERENCE_LIST", None)
             if reflist is not None:
                 for ref, axis in reflist:
-                    var = self._parent._h5group["/"][ref]
+                    var = vars[ref]
                     size = max(var.shape[axis], size)
         return size
 
