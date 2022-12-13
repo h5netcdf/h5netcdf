@@ -735,7 +735,7 @@ def test_valid_null_dimension_scales(tmp_local_or_remote_netcdf):
     with h5.File(tmp_local_or_remote_netcdf, "w") as f:
         foo = f.create_dataset("foo", shape=(5,), dtype=float)
         x = f.create_dataset("x", shape=None, dtype=int)
-        x.make_scale("x")
+        x.make_scale()
         foo.dims[0].attach_scale(x)
 
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
@@ -749,9 +749,19 @@ def test_invalid_null_dimension_scales(tmp_local_or_remote_netcdf):
         foo1 = f.create_dataset("foo1", shape=(4,), dtype=float)
         foo2 = f.create_dataset("foo2", shape=(5,), dtype=float)
         x = f.create_dataset("x", shape=None, dtype=int)
-        x.make_scale("x")
+        x.make_scale()
         foo1.dims[0].attach_scale(x)
         foo2.dims[0].attach_scale(x)
+
+    with raises(CompatibilityError):
+        with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+            assert ds
+            print(ds)
+
+    with h5.File(tmp_local_or_remote_netcdf, "w") as f:
+        f.create_dataset("foo", shape=(4,), dtype=float)
+        x = f.create_dataset("x", shape=None, dtype=int)
+        x.make_scale()
 
     with raises(CompatibilityError):
         with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:

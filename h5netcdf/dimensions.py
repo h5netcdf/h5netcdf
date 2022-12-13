@@ -116,7 +116,7 @@ class Dimension(object):
             # and is only compatible with netCDF4 if all axes that reference
             # the dimension have the same length
             try:
-                reflist = self._h5ds.attrs.get("REFERENCE_LIST")
+                reflist = self._h5ds.attrs["REFERENCE_LIST"]
             except KeyError:
                 msg = f"Dimension {self.name!r} has no discernable length."
                 raise CompatibilityError(msg)
