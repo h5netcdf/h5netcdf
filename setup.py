@@ -33,6 +33,7 @@ setup(
     url="https://h5netcdf.org",
     python_requires=">=3.8",
     setup_requires=["setuptools_scm"],
+    use_scm_version=True,
     install_requires=["h5py", "packaging"],
     tests_require=["netCDF4", "pytest"],
     packages=find_packages(),
