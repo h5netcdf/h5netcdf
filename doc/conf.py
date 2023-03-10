@@ -47,8 +47,8 @@ extensions = [
 ]
 
 extlinks = {
-    "issue": ("https://github.com/h5netcdf/h5netcdf/issues/%s", "GH"),
-    "pull": ("https://github.com/h5netcdf/h5netcdf/pull/%s", "PR"),
+    "issue": ("https://github.com/h5netcdf/h5netcdf/issues/%s", "GH%s"),
+    "pull": ("https://github.com/h5netcdf/h5netcdf/pull/%s", "PR%s"),
 }
 
 # Add any paths that contain templates here, relative to this directory.

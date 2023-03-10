@@ -672,7 +672,7 @@ def test_fake_phony_dims(tmp_local_or_remote_netcdf):
 
 
 def check_invalid_netcdf4_mixed(var, i):
-    pdim = "phony_dim_{}".format(i)
+    pdim = f"phony_dim_{i}"
     assert var["foo1"].dimensions[0] == "y1"
     assert var["foo1"].dimensions[1] == "z1"
     assert var["foo1"].dimensions[2] == pdim
@@ -819,7 +819,7 @@ def test_failed_read_open_and_clean_delete(tmpdir):
     try:
         with h5netcdf.File(path, "r") as ds:
             assert ds
-    except IOError:
+    except OSError:
         pass
 
     # Look at garbage collection:
@@ -1910,7 +1910,7 @@ def test_array_attributes(tmp_local_netcdf):
         ds.attrs["unicode_fixed_0dim"] = np.array(unicode.encode("utf-8"), dtype=dt)
         ds.attrs["unicode_fixed_1dim"] = np.array([unicode.encode("utf-8")], dtype=dt)
         ds.attrs["unicode_fixed_arrary"] = np.array(
-            [unicode.encode("utf-8"), "foobár".encode("utf-8")], dtype=dt
+            [unicode.encode("utf-8"), "foobár".encode()], dtype=dt
         )
 
         dt = h5py.string_dtype("ascii", 10)

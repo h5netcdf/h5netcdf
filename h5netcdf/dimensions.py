@@ -40,8 +40,7 @@ class Dimensions(MutableMapping):
         raise NotImplementedError("cannot yet delete dimensions")
 
     def __iter__(self):
-        for key in self._objects:
-            yield key
+        yield from self._objects
 
     def __len__(self):
         return len(self._objects)
@@ -50,7 +49,7 @@ class Dimensions(MutableMapping):
         if self._group._root._closed:
             return "<Closed h5netcdf.Dimensions>"
         return "<h5netcdf.Dimensions: %s>" % ", ".join(
-            "%s=%r" % (k, v) for k, v in self._objects.items()
+            f"{k}={v!r}" for k, v in self._objects.items()
         )
 
 
@@ -58,7 +57,7 @@ def _join_h5paths(parent_path, child_path):
     return "/".join([parent_path.rstrip("/"), child_path.lstrip("/")])
 
 
-class Dimension(object):
+class Dimension:
     def __init__(self, parent, name, size=None, create_h5ds=False, phony=False):
         """NetCDF4 Dimension constructor.
 
@@ -241,5 +240,5 @@ class Dimension(object):
             special += " (phony_dim)"
         if self.isunlimited():
             special += " (unlimited)"
-        header = "<%s %r: size %s%s>" % (self._cls_name, self.name, self.size, special)
+        header = f"<{self._cls_name} {self.name!r}: size {self.size}{special}>"
         return "\n".join([header])
