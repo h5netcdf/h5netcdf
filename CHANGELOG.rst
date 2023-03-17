@@ -4,9 +4,12 @@ Change Log
 Development Version:
 
 - Remove h5py2 compatibility code, remove h5py2 CI runs, mention NEP29 as
-  upstream dependency support strategy
+  upstream dependency support strategy.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and
   `Mark Harfouche <https://github.com/hmaarrfk>`_.
+- Update to pyproject.toml-only build process, adapt CI, use `ruff` for linting, add .pre-commit-config.yaml.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 
 Version 1.1.0 (November 23rd, 2022):
 
@@ -20,7 +23,7 @@ Version 1.1.0 (November 23rd, 2022):
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Fix regression in padding algorithm, add test.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
-- Set ``track_order=True`` by default in created files if h5py 3.7.0 or 
+- Set ``track_order=True`` by default in created files if h5py 3.7.0 or
   greater is detected to help compatibility with netCDF4-c programs.
   By `Mark Harfouche <https://github.com/hmaarrfk>`_.
 

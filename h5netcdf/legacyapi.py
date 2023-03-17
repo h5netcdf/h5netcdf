@@ -47,7 +47,7 @@ def _check_return_dtype_endianess(endian="native"):
     return endianess
 
 
-class HasAttributesMixin(object):
+class HasAttributesMixin:
     _initialized = False
 
     def getncattr(self, name):
@@ -67,7 +67,7 @@ class HasAttributesMixin(object):
             return self.attrs[name]
         except KeyError:
             raise AttributeError(
-                "NetCDF: attribute {0}:{1} not found".format(type(self).__name__, name)
+                f"NetCDF: attribute {type(self).__name__}:{name} not found"
             )
 
     def __setattr__(self, name, value):
@@ -221,7 +221,7 @@ class Group(core.Group, HasAttributesMixin):
         # closer to netCDF4 chunking behavior
         kwds["chunking_heuristic"] = "h5netcdf"
 
-        return super(Group, self).create_variable(
+        return super().create_variable(
             varname,
             dimensions,
             dtype=datatype,

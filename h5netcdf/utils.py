@@ -23,4 +23,4 @@ class Frozen(Mapping):
         return key in self._mapping
 
     def __repr__(self):
-        return "%s(%r)" % (type(self).__name__, self._mapping)
+        return f"{type(self).__name__}({self._mapping!r})"

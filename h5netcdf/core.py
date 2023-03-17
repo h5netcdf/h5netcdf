@@ -106,7 +106,7 @@ def _expanded_indexer(key, ndim):
     return key[k1] + res_dims + key[k2]
 
 
-class BaseVariable(object):
+class BaseVariable:
     def __init__(self, parent, name, dimensions=None):
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
@@ -370,7 +370,7 @@ class BaseVariable(object):
     def __repr__(self):
         if self._parent._root._closed:
             return "<Closed %s>" % self._cls_name
-        header = "<%s %r: dimensions %s, shape %s, dtype %s>" % (
+        header = "<{} {!r}: dimensions {}, shape {}, dtype {}>".format(
             self._cls_name,
             self.name,
             self.dimensions,
@@ -380,7 +380,7 @@ class BaseVariable(object):
         return "\n".join(
             [header]
             + ["Attributes:"]
-            + ["    %s: %r" % (k, v) for k, v in self.attrs.items()]
+            + [f"    {k}: {v!r}" for k, v in self.attrs.items()]
         )
 
 
@@ -459,8 +459,8 @@ def _unlabeled_dimension_mix(h5py_dataset):
         elif dimset & {0}:
             name = h5py_dataset.name.split("/")[-1]
             raise ValueError(
-                "malformed variable {0} has mixing of labeled and "
-                "unlabeled dimensions.".format(name)
+                f"malformed variable {name} has mixing of labeled and "
+                "unlabeled dimensions."
             )
         else:
             status = "labeled"
@@ -535,7 +535,7 @@ class Group(Mapping):
                     # for sort mode, we need to add precalculated max_dim_id + 1
                     if self._root._phony_dims_mode == "sort":
                         name += self._root._max_dim_id + 1
-                    name = "phony_dim_{}".format(name)
+                    name = f"phony_dim_{name}"
                     self._dimensions.add_phony(name, size)
 
         self._initialized = True
@@ -946,17 +946,17 @@ class Group(Mapping):
             + ["    %s" % g for g in self.groups]
             + ["Variables:"]
             + [
-                "    %s: %r %s" % (k, v.dimensions, v.dtype)
+                f"    {k}: {v.dimensions!r} {v.dtype}"
                 for k, v in self.variables.items()
             ]
             + ["Attributes:"]
-            + ["    %s: %r" % (k, v) for k, v in self.attrs.items()]
+            + [f"    {k}: {v!r}" for k, v in self.attrs.items()]
         )
 
     def __repr__(self):
         if self._root._closed:
             return "<Closed %s>" % self._cls_name
-        header = "<%s %r (%s members)>" % (self._cls_name, self.name, len(self))
+        header = f"<{self._cls_name} {self.name!r} ({len(self)} members)>"
         return "\n".join([header] + self._repr_body())
 
     def resize_dimension(self, dim, size):
@@ -1039,7 +1039,7 @@ class File(Group):
                         with h5pyd.File(path, "r", **kwargs) as f:  # noqa
                             pass
                         self._preexisting_file = True
-                    except IOError:
+                    except OSError:
                         self._preexisting_file = False
                     self._h5py = h5pyd
                     self._h5file = self._h5py.File(
@@ -1097,7 +1097,7 @@ class File(Group):
         self._max_dim_id = -1
         # This maps keeps track of all HDF5 datasets corresponding to this group.
         self._all_h5groups = ChainMap(self._h5group)
-        super(File, self).__init__(self, self._h5path)
+        super().__init__(self, self._h5path)
         # get maximum dimension id and count of labeled dimensions
         if self._writable:
             self._max_dim_id = self._get_maximum_dimension_id()
@@ -1142,7 +1142,7 @@ class File(Group):
 
         if description is not None:
             _invalid_netcdf_feature(
-                "{} dtypes".format(description),
+                f"{description} dtypes",
                 self.invalid_netcdf,
             )
 
@@ -1166,7 +1166,7 @@ class File(Group):
         if self._writable:
             # only write `_NCProperties` in newly created files
             if not self._preexisting_file and not self.invalid_netcdf:
-                _NC_PROPERTIES = "version=2,h5netcdf=%s,hdf5=%s,%s=%s" % (
+                _NC_PROPERTIES = "version=2,h5netcdf={},hdf5={},{}={}".format(
                     __version__,
                     self._h5py.version.hdf5_version,
                     self._h5py.__name__,
@@ -1214,7 +1214,7 @@ class File(Group):
     def __repr__(self):
         if self._closed:
             return "<Closed %s>" % self._cls_name
-        header = "<%s %r (mode %s)>" % (
+        header = "<{} {!r} (mode {})>".format(
             self._cls_name,
             self.filename.split("/")[-1],
             self.mode,
