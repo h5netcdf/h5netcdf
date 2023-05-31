@@ -173,11 +173,10 @@ class BaseVariable:
                 # if unlabeled dimensions are found
                 if self._root._phony_dims_mode is None:
                     raise ValueError(
-                        "variable %r has no dimension scale "
-                        "associated with axis %s. \n"
-                        "Use phony_dims=%r for sorted naming or "
-                        "phony_dims=%r for per access naming."
-                        % (self.name, axis, "sort", "access")
+                        f"variable {self.name!r} has no dimension scale "
+                        f"associated with axis {axis}. \n"
+                        f"Use phony_dims='sort' for sorted naming or "
+                        f"phony_dims='access' for per access naming."
                     )
                 else:
                     # get current dimension
@@ -933,17 +932,16 @@ class Group(Mapping):
         return (
             ["Dimensions:"]
             + [
-                "    %s: %s"
-                % (
+                "    {}: {}".format(
                     k,
-                    ("Unlimited (current: %s)" % self._dimensions[k].size)
+                    f"Unlimited (current: {self._dimensions[k].size})"
                     if v is None
                     else v,
                 )
                 for k, v in self.dimensions.items()
             ]
             + ["Groups:"]
-            + ["    %s" % g for g in self.groups]
+            + [f"    {g}" for g in self.groups]
             + ["Variables:"]
             + [
                 f"    {k}: {v.dimensions!r} {v.dtype}"
@@ -955,7 +953,7 @@ class Group(Mapping):
 
     def __repr__(self):
         if self._root._closed:
-            return "<Closed %s>" % self._cls_name
+            return f"<Closed {self._cls_name}>"
         header = f"<{self._cls_name} {self.name!r} ({len(self)} members)>"
         return "\n".join([header] + self._repr_body())
 
@@ -1075,10 +1073,9 @@ class File(Group):
             self._phony_dim_count = 0
             if phony_dims not in ["sort", "access"]:
                 raise ValueError(
-                    "unknown value %r for phony_dims\n"
-                    "Use phony_dims=%r for sorted naming, "
-                    "phony_dims=%r for per access naming."
-                    % (phony_dims, "sort", "access")
+                    f"unknown value {phony_dims!r} for phony_dims\n"
+                    "Use phony_dims='sort' for sorted naming, "
+                    "phony_dims='access' for per access naming."
                 )
 
         # string decoding
