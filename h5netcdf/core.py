@@ -861,6 +861,8 @@ class Group(Mapping):
             )
         # else split groups and iterate child groups
         keys = name.split("/")
+        if not keys[-1]:
+            raise ValueError("name parameter cannot be an empty string")
         group = self
         for k in keys[:-1]:
             group = group._require_child_group(k)
