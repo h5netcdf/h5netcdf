@@ -51,10 +51,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install micromamba
-      uses: mamba-org/provision-with-micromamba@main
+      uses: mamba-org/setup-micromamba@v1
       with:
         environment-name: h5netcdf-tests
-        extra-specs: |
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py_version}}-${{env.TODAY}}"
+        create-args: >-
           python=${{ matrix.python-version }}
           pip
           pytest
@@ -82,14 +84,17 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install micromamba
-      uses: mamba-org/provision-with-micromamba@main
+      uses: mamba-org/setup-micromamba@v1
       with:
         environment-name: h5netcdf-tests
-        extra-specs: |
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5pyd-${{env.TODAY}}"
+        create-args: >-
           python=${{ matrix.python-version }}
           pip
           pytest
           wheel
+          h5py
           netCDF4
     - name: Install h5netcdf
       run: |
@@ -114,14 +119,17 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install micromamba
-      uses: mamba-org/provision-with-micromamba@main
+      uses: mamba-org/setup-micromamba@v1
       with:
         environment-name: h5netcdf-tests
-        extra-specs: |
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-netcdf4_nightly-${{env.TODAY}}"
+        create-args: >-
           python=${{ matrix.python-version }}
           pip
           pytest
           wheel
+          h5py
           libnetcdf
           cftime
     - name: Install netCDF4 from GitHub
@@ -150,12 +158,12 @@ jobs:
         repository: "pydata/xarray"
         fetch-depth: 0
     - name: Install micromamba
-      uses: mamba-org/provision-with-micromamba@main
+      uses: mamba-org/setup-micromamba@v1
       with:
-        channels: conda-forge
-        environment-file: false
         environment-name: h5netcdf-tests
-        extra-specs: |
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-xarray_nightly-${{env.TODAY}}"
+        create-args: >-
           python=${{ matrix.python-version }}
           dask
           h5py
@@ -186,14 +194,17 @@ jobs:
       with:
         fetch-depth: 0
     - name: Install micromamba
-      uses: mamba-org/provision-with-micromamba@main
+      uses: mamba-org/setup-micromamba@v1
       with:
         environment-name: h5netcdf-docs
-        extra-specs: |
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-docs-${{env.TODAY}}"
+        create-args: >-
           python=3.11
           pip
           pytest
           wheel
+          h5py
           netCDF4
           sphinx
           sphinx-book-theme>=0.3.2
@@ -219,7 +230,7 @@ jobs:
 
   upload-pypi:
     if: github.event_name == 'release'
-    needs: [lint, build_1, sphinx_doc]
+    needs: [lint, build_0, sphinx_doc]
     name: deploy to pypi
     runs-on: ubuntu-latest
     defaults:

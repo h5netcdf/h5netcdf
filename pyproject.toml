@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 name = "h5netcdf"
 description = "netCDF4 via h5py"
 requires-python = ">=3.9"
-license = {file = "LICENSE.txt"}
+license = {file = "LICENSE"}
 authors = [
     { name = "Stephan Hoyer", email = "shoyer@gmail.com" },
     { name = "Kai Mühlbauer", email = "kmuehlbauer@wradlib.org" },
