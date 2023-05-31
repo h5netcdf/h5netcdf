@@ -94,6 +94,7 @@ jobs:
           pip
           pytest
           wheel
+          h5py
           netCDF4
     - name: Install h5netcdf
       run: |
@@ -127,6 +128,7 @@ jobs:
           pip
           pytest
           wheel
+          h5py
           libnetcdf
           cftime
     - name: Install netCDF4 from GitHub
