@@ -9,10 +9,12 @@ Development Version:
   `Mark Harfouche <https://github.com/hmaarrfk>`_.
 - Update to pyproject.toml-only build process, adapt CI, use `ruff` for linting, add .pre-commit-config.yaml.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- Maintenance CI (use setup-micromamba), fix hsds, fix tests, fix license
+- Maintenance CI (use setup-micromamba), fix hsds, fix tests, fix license.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- Raise early with h5py-error
+- Raise early with h5py-error.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Add simple test to ensure that the shape is stored in the coordinates.
+  By `Mark Harfouche <https://github.com/hmaarrfk>`_.
 
 Version 1.1.0 (November 23rd, 2022):
 
