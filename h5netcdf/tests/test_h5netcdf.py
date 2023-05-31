@@ -1001,14 +1001,25 @@ def test_creating_variables_with_unlimited_dimensions(tmp_local_or_remote_netcdf
         np.testing.assert_allclose(f.variables["dummy3"], np.zeros((3, 2)))
 
         # Writing to a variable with an unlimited dimension raises
-        with pytest.raises(TypeError) as e:
+        if tmp_local_or_remote_netcdf.startswith(remote_h5):
+            # We don't expect any errors. This is effectively a void context manager
+            expected_errors = memoryview(b"")
+        else:
+            expected_errors = pytest.raises(TypeError)
+        with expected_errors as e:
             f.variables["dummy3"][:] = np.ones((5, 2))
-        assert e.value.args[0] == "Can't broadcast (5, 2) -> (3, 2)"
+        if not tmp_local_or_remote_netcdf.startswith(remote_h5):
+            assert e.value.args[0] == "Can't broadcast (5, 2) -> (3, 2)"
         assert f.variables["dummy3"].shape == (3, 2)
         assert f.variables["dummy3"]._h5ds.maxshape == (None, 2)
         assert f["x"].shape == (3,)
         assert f.dimensions["x"].size == 3
-        np.testing.assert_allclose(f.variables["dummy3"], np.zeros((3, 2)))
+        if tmp_local_or_remote_netcdf.startswith(remote_h5):
+            # h5pyd writes the data, but does not expand the dimensions
+            np.testing.assert_allclose(f.variables["dummy3"], np.ones((3, 2)))
+        else:
+            # original data is kept for h5py
+            np.testing.assert_allclose(f.variables["dummy3"], np.zeros((3, 2)))
 
     # Close and read again to also test correct parsing of unlimited
     # dimensions.
@@ -1063,8 +1074,16 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
         assert g.variables["dummy5"].shape == (3, 3)
 
         # broadcast writing
-        f.variables["dummy3"][...] = [[1, 2, 3]]
-        np.testing.assert_allclose(f.variables["dummy3"], [[1, 2, 3], [1, 2, 3]])
+        if tmp_local_or_remote_netcdf.startswith(remote_h5):
+            expected_errors = pytest.raises(OSError)
+        else:
+            # We don't expect any errors. This is effectively a void context manager
+            expected_errors = memoryview(b"")
+        with expected_errors as e:
+            f.variables["dummy3"][...] = [[1, 2, 3]]
+            np.testing.assert_allclose(f.variables["dummy3"], [[1, 2, 3], [1, 2, 3]])
+        if tmp_local_or_remote_netcdf.startswith(remote_h5):
+            assert "Got asyncio.IncompleteReadError" in e.value.args[0]
 
 
 def test_c_api_can_read_unlimited_dimensions(tmp_local_netcdf):
