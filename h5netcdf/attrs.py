@@ -98,6 +98,4 @@ class Attributes(MutableMapping):
         return len(self._h5attrs) - hidden_count
 
     def __repr__(self):
-        return "\n".join(
-            ["%r" % type(self)] + ["%s: %r" % (k, v) for k, v in self.items()]
-        )
+        return "\n".join(["%r" % type(self)] + [f"{k}: {v!r}" for k, v in self.items()])
