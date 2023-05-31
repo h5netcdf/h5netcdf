@@ -9,6 +9,8 @@ Development Version:
   `Mark Harfouche <https://github.com/hmaarrfk>`_.
 - Update to pyproject.toml-only build process, adapt CI, use `ruff` for linting, add .pre-commit-config.yaml.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Maintenance CI (use setup-micromamba), fix hsds, fix tests, fix license
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 
 Version 1.1.0 (November 23rd, 2022):
