@@ -230,7 +230,7 @@ jobs:
 
   upload-pypi:
     if: github.event_name == 'release'
-    needs: [lint, build_1, sphinx_doc]
+    needs: [lint, build_0, sphinx_doc]
     name: deploy to pypi
     runs-on: ubuntu-latest
     defaults:

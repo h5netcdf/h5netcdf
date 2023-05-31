@@ -26,7 +26,7 @@ def set_hsds_root():
     sys.argv.extend(["-e", os.environ["HS_ENDPOINT"]])
     sys.argv.extend(["-u", "admin"])
     sys.argv.extend(["-p", "admin"])
-    sys.argv.extend(["-b", os.environ["BUCKET_NAME"]])
+    sys.argv.extend(["--bucket", os.environ["BUCKET_NAME"]])
     sys.argv.append("/home/")
     hstouch()
 
@@ -34,7 +34,7 @@ def set_hsds_root():
     sys.argv.extend(["-e", os.environ["HS_ENDPOINT"]])
     sys.argv.extend(["-u", "admin"])
     sys.argv.extend(["-p", "admin"])
-    sys.argv.extend(["-b", os.environ["BUCKET_NAME"]])
+    sys.argv.extend(["--bucket", os.environ["BUCKET_NAME"]])
     sys.argv.extend(["-o", os.environ["HS_USERNAME"]])
     sys.argv.append(f'/home/{os.environ["HS_USERNAME"]}/')
     hstouch()
