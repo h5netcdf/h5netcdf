@@ -11,7 +11,8 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Maintenance CI (use setup-micromamba), fix hsds, fix tests, fix license
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-
+- Raise early with h5py-error
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.1.0 (November 23rd, 2022):
 

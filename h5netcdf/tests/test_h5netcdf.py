@@ -580,6 +580,8 @@ def test_error_handling(tmp_local_or_remote_netcdf):
         ds.create_variable("x", ("x",), dtype=float)
         with raises(ValueError):
             ds.create_variable("x", ("x",), dtype=float)
+        with raises(ValueError):
+            ds.create_variable("y/", ("x",), dtype=float)
         ds.create_group("subgroup")
         with raises(ValueError):
             ds.create_group("subgroup")
