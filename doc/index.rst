@@ -45,7 +45,7 @@ via `h5py`_ or `h5pyd`_, without relying on the Unidata netCDF library.
 History
 -------
 
-The project was started in early 2015. The first commit was made on on 7th of April in 2015
+The project was started in early 2015. The first commit was made on 7th of April in 2015
 by Stephan Hoyer. The first `official` ``h5netcdf`` announcement was made by Stephan on the
 `xarray issue tracker`_ only one day later.
 
