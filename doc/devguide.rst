@@ -42,10 +42,9 @@ Continuous Integration
 ``h5netcdf`` uses GitHub Actions for Continuous Integration (CI). On every ``push`` to a repository branch
 or a PullRequest branch several checks are performed:
 
-- Lint checks (``flake8``, ``isort``, ``black``)
-- Unit tests with ``h5py2=2.10.0`` (Python 3.7, 3.8, 3.9) on Ubuntu
-- Unit tests with latest ``h5py3`` (Python 3.7, 3.8, 3.9, 3.10) on Ubuntu
-- Documentation build, artifacts are made availabe to download
+- Lint and style checks (``ruff``, ``black``)
+- Unit tests with latest ``h5py3`` (Python 3.9, 3.10, 3.11) facilitating GitHub Ubuntu worker
+- Documentation build, artifacts are made available to download
 - On release, source-tarball and universal wheel is uploaded to PyPI and documentation is made available
   on `h5netcdf GitHub Pages`_
 
@@ -78,8 +77,8 @@ Release Workflow
     * check all needed dependencies are listed in setup.py
 2. Create release
     * draft `new github release`_
-    * tag version (eg `v0.11.0`) `@ Target: main`
-    * set release title (eg. `release 0.11.0`)
+    * tag version (eg `v1.2.0`) `@ Target: main`
+    * set release title (eg. `release 1.2.0`)
     * add release description (eg. `bugfix-release`), tbd.
 
 This will start the CI workflow once again. The workflow creates `sdist` and universal `wheel` and uploads it to PyPI.

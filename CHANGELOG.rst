@@ -1,18 +1,18 @@
 Change Log
 ----------
 
-Development Version:
+Version 1.2.0 (June 2nd, 2023):
 
 - Remove h5py2 compatibility code, remove h5py2 CI runs, mention NEP29 as
   upstream dependency support strategy.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and
   `Mark Harfouche <https://github.com/hmaarrfk>`_.
 - Update to pyproject.toml-only build process, adapt CI, use `ruff` for linting, add .pre-commit-config.yaml.
-  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Maintenance CI (use setup-micromamba), fix hsds, fix tests, fix license.
-  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Raise early with h5py-error.
-  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 - Add simple test to ensure that the shape is stored in the coordinates.
   By `Mark Harfouche <https://github.com/hmaarrfk>`_.
 
