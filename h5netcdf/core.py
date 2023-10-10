@@ -114,6 +114,10 @@ class BaseVariable:
         self._dimensions = dimensions
         self._h5ds = self._root._h5file[self._h5path]
         self._initialized = True
+        weakref.finalize(parent._root, self._close)
+
+    def _close(self):
+        self._h5ds = None
 
     @property
     def _parent(self):

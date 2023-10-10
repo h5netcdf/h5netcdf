@@ -91,7 +91,11 @@ class Dimension:
             self._create_scale()
         else:
             self._h5ds = self._root._h5file[self._h5path]
+        weakref.finalize(self._root, self._close)
         self._initialized = True
+
+    def _close(self):
+        self._h5ds = None
 
     @property
     def _root(self):
