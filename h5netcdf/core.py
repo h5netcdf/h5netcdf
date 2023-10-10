@@ -43,8 +43,8 @@ class CompatibilityError(Exception):
 def _invalid_netcdf_feature(feature, allow):
     if not allow:
         msg = (
-            "{} are not a supported NetCDF feature, and are not allowed by "
-            "h5netcdf unless invalid_netcdf=True.".format(feature)
+            f"{feature} are not a supported NetCDF feature, and are not allowed by "
+            "h5netcdf unless invalid_netcdf=True."
         )
         raise CompatibilityError(msg)
 
@@ -1033,7 +1033,7 @@ class File(Group):
                     if no_h5pyd:
                         raise ImportError(
                             "No module named 'h5pyd'. h5pyd is required for "
-                            "opening urls: {}".format(path)
+                            f"opening urls: {path}"
                         )
                     try:
                         with h5pyd.File(path, "r", **kwargs) as f:  # noqa
