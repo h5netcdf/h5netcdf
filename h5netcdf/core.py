@@ -1247,7 +1247,7 @@ def _get_default_chunksizes(dimsizes, dtype):
 
     # Determine the optimal chunk size in bytes using a PyTables expression.
     # This is kept as a float.
-    dset_size = np.product(chunks[~is_unlimited]) * type_size
+    dset_size = np.prod(chunks[~is_unlimited]) * type_size
     target_size = CHUNK_BASE * (2 ** np.log10(dset_size / (1024 * 1024)))
 
     if target_size > CHUNK_MAX:
@@ -1266,7 +1266,7 @@ def _get_default_chunksizes(dimsizes, dtype):
 
         idx = i % ndims
 
-        chunk_bytes = np.product(chunks) * type_size
+        chunk_bytes = np.prod(chunks) * type_size
 
         done = (
             chunk_bytes < target_size
@@ -1276,10 +1276,10 @@ def _get_default_chunksizes(dimsizes, dtype):
         if done:
             break
 
-        if np.product(chunks) == 1:
+        if np.prod(chunks) == 1:
             break  # Element size larger than CHUNK_MAX
 
-        nelem_unlim = np.product(chunks[is_unlimited])
+        nelem_unlim = np.prod(chunks[is_unlimited])
 
         if nelem_unlim == 1 or is_unlimited[idx]:
             chunks[idx] = np.ceil(chunks[idx] / 2.0)
