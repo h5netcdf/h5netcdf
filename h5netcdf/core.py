@@ -1029,7 +1029,10 @@ class File(Group):
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         try:
             if isinstance(path, str):
-                if path.startswith(("http://", "https://", "hdf5://")):
+                if (
+                    path.startswith(("http://", "https://", "hdf5://"))
+                    and "driver" not in kwargs
+                ):
                     if no_h5pyd:
                         raise ImportError(
                             "No module named 'h5pyd'. h5pyd is required for "
