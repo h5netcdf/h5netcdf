@@ -2176,8 +2176,11 @@ def test_vlen_string_dataset_fillvalue(tmp_local_netcdf, decode_vlen_strings):
         assert ds["x1"]._FillValue == fill_value1
 
 
+@pytest.mark.skipif("ros3" not in h5py.registered_drivers())
 def test_ros3():
-    fname = "https://www.unidata.ucar.edu/software/netcdf/examples/OMI-Aura_L2-example.nc"
+    fname = (
+        "https://www.unidata.ucar.edu/software/netcdf/examples/OMI-Aura_L2-example.nc"
+    )
     f = h5netcdf.File(fname, "r", driver="ros3")
     assert "Temperature" in list(f)
     f.close()

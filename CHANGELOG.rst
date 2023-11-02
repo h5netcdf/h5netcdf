@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development Version:
+
+- Add ros3 support by checking `driver`-kwarg.
+  By `Ezequiel Cimadevilla Alvarez <https://github.com/zequihg50>`_
+
 Version 1.2.0 (June 2nd, 2023):
 
 - Remove h5py2 compatibility code, remove h5py2 CI runs, mention NEP29 as
