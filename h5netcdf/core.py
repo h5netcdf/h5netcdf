@@ -109,19 +109,18 @@ def _expanded_indexer(key, ndim):
 
 class BaseVariable:
     def __init__(self, parent, name, dimensions=None):
-        self._parent_ref = weakref.ref(parent)
-        self._root_ref = weakref.ref(parent._root)
+        self._parent = parent
         self._h5path = _join_h5paths(parent.name, name)
         self._dimensions = dimensions
         self._initialized = True
 
-    @property
+    @cached_property
     def _parent(self):
-        return self._parent_ref()
+        return self._parent
 
-    @property
+    @cached_property
     def _root(self):
-        return self._root_ref()
+        return self._parent._root
 
     @cached_property
     def _h5ds(self):
