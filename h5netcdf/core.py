@@ -5,6 +5,7 @@ import warnings
 import weakref
 from collections import ChainMap, Counter, OrderedDict, defaultdict
 from collections.abc import Mapping
+from functools import cached_property
 
 import h5py
 import numpy as np
@@ -122,7 +123,7 @@ class BaseVariable:
     def _root(self):
         return self._root_ref()
 
-    @property
+    @cached_property
     def _h5ds(self):
         # Always refer to the root file and store not h5py object
         # subclasses:
