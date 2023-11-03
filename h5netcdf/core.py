@@ -109,18 +109,19 @@ def _expanded_indexer(key, ndim):
 
 class BaseVariable:
     def __init__(self, parent, name, dimensions=None):
-        self._parent = parent
+        self._parent_ref = weakref.ref(parent)
+        self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
         self._dimensions = dimensions
         self._initialized = True
 
     @cached_property
     def _parent(self):
-        return self._parent
+        return self._parent_ref()
 
     @cached_property
     def _root(self):
-        return self._parent._root
+        return self._root_ref()
 
     @cached_property
     def _h5ds(self):
@@ -411,7 +412,7 @@ class _LazyObjectLookup(Mapping):
         self._object_cls = object_cls
         self._objects = OrderedDict()
 
-    @property
+    @cached_property
     def _parent(self):
         return self._parent_ref()
 
