@@ -1,7 +1,7 @@
 import weakref
 from collections import OrderedDict
 from collections.abc import MutableMapping
-
+from functools import cached_property
 import h5py
 import numpy as np
 
@@ -130,11 +130,15 @@ class Dimension:
             return False
         return self._h5ds.maxshape == (None,)
 
+    @cached_property
+    def _h5file(self):
+        return self._root._h5file
+
     @property
     def _h5ds(self):
         if self._phony:
             return None
-        return self._root._h5file[self._h5path]
+        return self._h5file[self._h5path]
 
     @property
     def _isscale(self):

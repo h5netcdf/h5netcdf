@@ -385,23 +385,23 @@ class BaseVariable:
 
 
 class Variable(BaseVariable):
-    @property
+    @cached_property
     def chunks(self):
         return self._h5ds.chunks
 
-    @property
+    @cached_property
     def compression(self):
         return self._h5ds.compression
 
-    @property
+    @cached_property
     def compression_opts(self):
         return self._h5ds.compression_opts
 
-    @property
+    @cached_property
     def fletcher32(self):
         return self._h5ds.fletcher32
 
-    @property
+    @cached_property
     def shuffle(self):
         return self._h5ds.shuffle
 
@@ -911,19 +911,19 @@ class Group(Mapping):
 
     sync = flush
 
-    @property
+    @cached_property
     def groups(self):
         return Frozen(self._groups)
 
-    @property
+    @cached_property
     def variables(self):
         return Frozen(self._variables)
 
-    @property
+    @cached_property
     def dims(self):
         return Frozen(self._dimensions)
 
-    @property
+    @cached_property
     def attrs(self):
         return Attributes(
             self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
@@ -1148,11 +1148,11 @@ class File(Group):
                 self.invalid_netcdf,
             )
 
-    @property
+    @cached_property
     def mode(self):
         return self._h5file.mode
 
-    @property
+    @cached_property
     def filename(self):
         return self._h5file.filename
 
