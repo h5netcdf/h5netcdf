@@ -128,7 +128,7 @@ class BaseVariable:
         # subclasses:
         return self._root._h5file[self._h5path]
 
-    @property
+    @cached_property
     def name(self):
         """Return variable name."""
         # fix name if _nc4_non_coord_
@@ -253,7 +253,7 @@ class BaseVariable:
         if self._h5ds.shape != new_shape:
             self._h5ds.resize(new_shape)
 
-    @property
+    @cached_property
     def dimensions(self):
         """Return variable dimension names."""
         if self._dimensions is None:
@@ -266,7 +266,7 @@ class BaseVariable:
         # return actual dimensions sizes, this is in line with netcdf4-python
         return tuple([self._parent._all_dimensions[d].size for d in self.dimensions])
 
-    @property
+    @cached_property
     def ndim(self):
         """Return number variable dimensions"""
         return len(self.shape)
@@ -274,7 +274,7 @@ class BaseVariable:
     def __len__(self):
         return self.shape[0]
 
-    @property
+    @cached_property
     def dtype(self):
         """Return NumPy dtype object giving the variable’s type."""
         return self._h5ds.dtype
@@ -357,7 +357,7 @@ class BaseVariable:
             self._maybe_resize_dimensions(key, value)
         self._h5ds[key] = value
 
-    @property
+    @cached_property
     def attrs(self):
         """Return variable attributes."""
         return Attributes(
