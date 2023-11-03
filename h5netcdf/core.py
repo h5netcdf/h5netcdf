@@ -548,7 +548,7 @@ class Group(Mapping):
     def _parent(self):
         return self._parent_ref()
 
-    @property
+    @cached_property
     def _h5group(self):
         # Always refer to the root file and store not h5py object
         # subclasses:
