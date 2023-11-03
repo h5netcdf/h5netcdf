@@ -554,7 +554,7 @@ class Group(Mapping):
         # subclasses:
         return self._root._h5file[self._h5path]
 
-    @property
+    @cached_property
     def _track_order(self):
         if self._root._h5py.__name__ == "h5pyd":
             return False
@@ -569,7 +569,7 @@ class Group(Mapping):
         order_indexed = bool(attr_creation_order & CRT_ORDER_INDEXED)
         return order_tracked and order_indexed
 
-    @property
+    @cached_property
     def name(self):
         from .legacyapi import Dataset
 
@@ -902,7 +902,7 @@ class Group(Mapping):
     def __len__(self):
         return len(self.variables) + len(self.groups)
 
-    @property
+    @cached_property
     def parent(self):
         return self._parent
 
