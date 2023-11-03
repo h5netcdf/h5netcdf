@@ -1068,7 +1068,6 @@ class File(Group):
 
         self._mode = mode
         self._writable = mode != "r"
-        self._root_ref = weakref.ref(self)
         self._h5path = "/"
         self.invalid_netcdf = invalid_netcdf
 
