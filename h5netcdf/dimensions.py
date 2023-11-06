@@ -93,11 +93,11 @@ class Dimension:
     def _root(self):
         return self._root_ref()
 
-    @property
+    @cached_property
     def _parent(self):
         return self._parent_ref()
 
-    @property
+    @cached_property
     def name(self):
         """Return dimension name."""
         if self._phony:
@@ -120,6 +120,7 @@ class Dimension:
                     size = max(var.shape[axis], size)
         return size
 
+    @cached_property
     def group(self):
         """Return parent group."""
         return self._parent
@@ -140,11 +141,11 @@ class Dimension:
             return None
         return self._h5file[self._h5path]
 
-    @property
+    @cached_property
     def _isscale(self):
         return h5py.h5ds.is_scale(self._h5ds.id)
 
-    @property
+    @cached_property
     def _dimid(self):
         if self._phony:
             return False
@@ -167,7 +168,7 @@ class Dimension:
                 for var, dim in refs:
                     self._parent._all_h5groups[var].resize(size, dim)
 
-    @property
+    @cached_property
     def _scale_refs(self):
         """Return dimension scale references"""
         return list(self._h5ds.attrs.get("REFERENCE_LIST", []))
@@ -225,7 +226,7 @@ class Dimension:
             for var, dim in refs:
                 self._parent._all_h5groups[var].dims[dim].detach_scale(self._h5ds)
 
-    @property
+    @cached_property
     def _maxsize(self):
         return None if self.isunlimited() else self.size
 

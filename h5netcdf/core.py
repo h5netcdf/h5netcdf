@@ -540,7 +540,7 @@ class Group(Mapping):
 
         self._initialized = True
 
-    @property
+    @cached_property
     def _root(self):
         return self._root_ref()
 
