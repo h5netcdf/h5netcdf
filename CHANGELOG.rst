@@ -1,10 +1,13 @@
 Change Log
 ----------
 
-Development Version:
+Version 1.3.0 (November 7th, 2023):
 
 - Add ros3 support by checking `driver`-kwarg.
   By `Ezequiel Cimadevilla Alvarez <https://github.com/zequihg50>`_
+- Code and CI maintenance.
+  By `Mark Harfouche <https://github.com/hmaarrfk>`_ and
+  `Kai Mühlbauer <https://github.com/kmuehlbauer>`_.
 
 Version 1.2.0 (June 2nd, 2023):
 
