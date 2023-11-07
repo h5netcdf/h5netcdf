@@ -17,6 +17,8 @@ from pytest import raises
 import h5netcdf
 from h5netcdf import legacyapi
 from h5netcdf.core import NOT_A_VARIABLE, CompatibilityError
+from h5netcdf.utils import _get_cached_properties
+
 
 try:
     import h5pyd
@@ -2191,8 +2193,6 @@ def test_ros3():
 
 def test_dimensions_property_cache(tmp_local_netcdf):
     """Test property caching in Dimension and Dimensions class."""
-    from h5netcdf.utils import _get_cached_properties
-
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions["x"] = 2
         ds.dimensions["y"] = 2
@@ -2215,8 +2215,6 @@ def test_dimensions_property_cache(tmp_local_netcdf):
 
 
 def _check_dimensions_raises(dimensions):
-    from h5netcdf.utils import _get_cached_properties
-
     for dim in dimensions:
         for attr in _get_cached_properties(dimensions[dim]):
             with pytest.raises(AttributeError):
@@ -2224,8 +2222,6 @@ def _check_dimensions_raises(dimensions):
 
 
 def _access_dimensions(dimensions):
-    from h5netcdf.utils import _get_cached_properties
-
     for dim in dimensions:
         for attr in _get_cached_properties(dimensions[dim]):
             prop = attr.replace("_cached_", "")
@@ -2236,8 +2232,6 @@ def _access_dimensions(dimensions):
 
 def test_dimensions_property_cache_clear(tmp_local_netcdf):
     """Test property caching in Dimension and Dimensions class."""
-    from h5netcdf.utils import _get_cached_properties
-
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions["x"] = 2
         ds.dimensions["y"] = 2
@@ -2257,8 +2251,6 @@ def test_dimensions_property_cache_clear(tmp_local_netcdf):
 
 
 def _access_ds(ds):
-    from h5netcdf.utils import _get_cached_properties
-
     for attr in _get_cached_properties(ds):
         prop = attr.replace("_cached_", "")
         if not hasattr(ds, prop):
@@ -2267,8 +2259,6 @@ def _access_ds(ds):
 
 def test_file_property_cache(tmp_local_netcdf):
     """Test property caching in the File class."""
-    from h5netcdf.utils import _get_cached_properties
-
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions["x"] = 4
         ds.dimensions["y"] = 5
@@ -2298,8 +2288,6 @@ def test_file_property_cache(tmp_local_netcdf):
 
 
 def _access_variables(variables):
-    from h5netcdf.utils import _get_cached_properties
-
     for attr in _get_cached_properties(variables):
         prop = attr.replace("_cached_", "")
         if not hasattr(variables, prop):
@@ -2311,16 +2299,12 @@ def _access_variables(variables):
 
 
 def _check_ds_raises(ds):
-    from h5netcdf.utils import _get_cached_properties
-
     for attr in _get_cached_properties(ds):
         with pytest.raises(AttributeError):
             delattr(ds, attr)
 
 
 def _check_variables_raises(variables):
-    from h5netcdf.utils import _get_cached_properties
-
     for attr in _get_cached_properties(variables):
         with pytest.raises(AttributeError):
             delattr(variables, attr)
