@@ -4,6 +4,7 @@ import random
 import re
 import string
 import tempfile
+from unittest import mock
 from os import environ as env
 
 import h5py
@@ -2186,3 +2187,74 @@ def test_ros3():
     f = h5netcdf.File(fname, "r", driver="ros3")
     assert "Temperature" in list(f)
     f.close()
+
+
+def test_dimensions_property_cache(tmp_local_netcdf):
+    """Test property caching in Dimension and Dimensions class."""
+    from h5netcdf.utils import _get_cached_properties
+
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions["x"] = 2
+        ds.dimensions["y"] = 2
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        # Properties in Dimensions class are cached at file access so can be cleared readily
+        for attr in _get_cached_properties(ds.dimensions):
+            delattr(ds.dimensions, attr)
+
+        # Properties in Dimension class are cached only when accessed, so initially clearing raises
+        _check_dimensions_raises(ds.dimensions)
+
+        # Access the normal properties that should get diverted to the cached variant for mode="r"
+        _access_dimensions(ds.dimensions)
+
+        # Now all the dimension properties are cached, so can be cleared
+        for dim in ds.dimensions:
+            for attr in _get_cached_properties(ds.dimensions[dim]):
+                delattr(ds.dimensions[dim], attr)
+
+
+def _check_dimensions_raises(dimensions):
+    from h5netcdf.utils import _get_cached_properties
+
+    for dim in dimensions:
+        for attr in _get_cached_properties(dimensions[dim]):
+            with pytest.raises(AttributeError):
+                delattr(dimensions[dim], attr)
+
+
+def _access_dimensions(dimensions):
+    from h5netcdf.utils import _get_cached_properties
+
+    for dim in dimensions:
+        for attr in _get_cached_properties(dimensions[dim]):
+            prop = attr.replace("_cached_", "")
+            if not hasattr(dimensions[dim], prop):
+                prop = "_" + prop
+            _ = getattr(dimensions[dim], prop)
+
+
+def test_dimensions_property_cache_clear(tmp_local_netcdf):
+    """Test property caching in Dimension and Dimensions class."""
+    from h5netcdf.utils import _get_cached_properties
+
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions["x"] = 2
+        ds.dimensions["y"] = 2
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        # Access all cacheable properties in Dimensions and Dimension classes
+        for attr in _get_cached_properties(ds.dimensions):
+            prop = attr.replace("_cached_", "")
+            if not hasattr(ds.dimensions, prop):
+                prop = "_" + prop
+            _ = getattr(ds.dimensions, prop)
+        _access_dimensions(ds.dimensions)
+
+        ds.dimensions.clear_caches()
+
+        # Trying to clear any of these again should raise AttributeError
+        for attr in _get_cached_properties(ds.dimensions):
+            with pytest.raises(AttributeError):
+                delattr(ds.dimensions, attr)
+        _check_dimensions_raises(ds.dimensions)
