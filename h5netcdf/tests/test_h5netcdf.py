@@ -2244,11 +2244,7 @@ def test_dimensions_property_cache_clear(tmp_local_netcdf):
 
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
         # Access all cacheable properties in Dimensions and Dimension classes
-        for attr in _get_cached_properties(ds.dimensions):
-            prop = attr.replace("_cached_", "")
-            if not hasattr(ds.dimensions, prop):
-                prop = "_" + prop
-            _ = getattr(ds.dimensions, prop)
+        _access_ds(ds)
         _access_dimensions(ds.dimensions)
 
         ds.dimensions.clear_caches()
@@ -2258,3 +2254,77 @@ def test_dimensions_property_cache_clear(tmp_local_netcdf):
             with pytest.raises(AttributeError):
                 delattr(ds.dimensions, attr)
         _check_dimensions_raises(ds.dimensions)
+
+
+def _access_ds(ds):
+    from h5netcdf.utils import _get_cached_properties
+
+    for attr in _get_cached_properties(ds):
+        prop = attr.replace("_cached_", "")
+        if not hasattr(ds, prop):
+            prop = "_" + prop
+        _ = getattr(ds, prop)
+
+def test_file_property_cache(tmp_local_netcdf):
+    """Test property caching in the File class."""
+    from h5netcdf.utils import _get_cached_properties
+
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions["x"] = 4
+        ds.dimensions["y"] = 5
+
+        v = ds.create_variable("foo", ("x", "y"), float, chunks=(4, 5))
+        v[...] = 1
+        v.attrs["units"] = "meters"
+
+        g = ds.create_group("test")
+        v2 = g.create_variable("bar", ("x", "y"), float, chunks=(4, 5))
+        v2[...] = 1
+        v2.attrs["units"] = "meters"
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        # Access all properties that are cacheable
+        _access_ds(ds)
+        _access_dimensions(ds.dimensions)
+        _access_variables(ds._variables)
+        _access_variables(ds._groups)
+        # Clear the caches
+        ds.clear_caches()
+        # Now all the cached variables should be cleared and raise AttributeError
+        _check_ds_raises(ds)
+        _check_dimensions_raises(ds.dimensions)
+        _check_variables_raises(ds._variables)
+        _check_variables_raises(ds._groups)
+
+
+def _access_variables(variables):
+    from h5netcdf.utils import _get_cached_properties
+
+    for attr in _get_cached_properties(variables):
+        prop = attr.replace("_cached_", "")
+        if not hasattr(variables, prop):
+            prop = "_" + prop
+        _ = getattr(variables, prop)
+    for _, var in variables._objects.items():
+        for attr in _get_cached_properties(var):
+            _ = getattr(var, attr)
+
+
+def _check_ds_raises(ds):
+    from h5netcdf.utils import _get_cached_properties
+
+    for attr in _get_cached_properties(ds):
+        with pytest.raises(AttributeError):
+            delattr(ds, attr)
+
+
+def _check_variables_raises(variables):
+    from h5netcdf.utils import _get_cached_properties
+
+    for attr in _get_cached_properties(variables):
+        with pytest.raises(AttributeError):
+            delattr(variables, attr)
+    for _, var in variables._objects.items():
+        for attr in _get_cached_properties(var):
+            with pytest.raises(AttributeError):
+                delattr(var, attr)
