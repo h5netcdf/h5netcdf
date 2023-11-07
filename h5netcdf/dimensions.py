@@ -15,14 +15,8 @@ class Dimensions(MutableMapping):
         self._objects = OrderedDict()
         self._mode = group._root.mode
 
-    @cached_property
-    def _cached_group(self):
-        return self._group_ref()
-
     @property
     def _group(self):
-        if self._mode == "r":
-            return self._cached_group
         return self._group_ref()
 
     def __getitem__(self, name):
