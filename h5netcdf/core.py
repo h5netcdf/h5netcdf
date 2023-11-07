@@ -111,25 +111,44 @@ class BaseVariable:
     def __init__(self, parent, name, dimensions=None):
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
+        self._mode = parent._root.mode
         self._h5path = _join_h5paths(parent.name, name)
         self._dimensions = dimensions
         self._initialized = True
 
     @cached_property
+    def _cached_parent(self):
+        return self._parent_ref()
+
+    @property
     def _parent(self):
+        if self._mode == "r":
+            return self._cached_parent
         return self._parent_ref()
 
     @cached_property
+    def _cached_root(self):
+        return self._root_ref()
+
+    @property
     def _root(self):
+        if self._mode == "r":
+            return self._cached_root
         return self._root_ref()
 
     @cached_property
-    def _h5ds(self):
-        # Always refer to the root file and store not h5py object
-        # subclasses:
+    def _cached_h5ds(self):
         return self._root._h5file[self._h5path]
 
-    @cached_property
+    @property
+    def _h5ds(self):
+        # Always refer to the root file and store not h5py object
+        # subclasses
+        if self._mode == "r":
+            return self._cached_h5ds
+        return self._root._h5file[self._h5path]
+
+    @property
     def name(self):
         """Return variable name."""
         # fix name if _nc4_non_coord_
@@ -254,7 +273,7 @@ class BaseVariable:
         if self._h5ds.shape != new_shape:
             self._h5ds.resize(new_shape)
 
-    @cached_property
+    @property
     def dimensions(self):
         """Return variable dimension names."""
         if self._dimensions is None:
@@ -268,14 +287,20 @@ class BaseVariable:
         return tuple([self._parent._all_dimensions[d].size for d in self.dimensions])
 
     @cached_property
+    def _cached_ndim(self):
+        return len(self.shape)
+
+    @property
     def ndim(self):
         """Return number variable dimensions"""
+        if self._mode == "r":
+            return self._cached_ndim
         return len(self.shape)
 
     def __len__(self):
         return self.shape[0]
 
-    @cached_property
+    @property
     def dtype(self):
         """Return NumPy dtype object giving the variable’s type."""
         return self._h5ds.dtype
@@ -359,8 +384,17 @@ class BaseVariable:
         self._h5ds[key] = value
 
     @cached_property
+    def _cached_attrs(self):
+        return self._get_attrs()
+
+    @property
     def attrs(self):
         """Return variable attributes."""
+        if self._mode == "r":
+            return self._cached_attrs
+        return self._get_attrs()
+
+    def _get_attrs(self):
         return Attributes(
             self._h5ds.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
         )
@@ -385,23 +419,23 @@ class BaseVariable:
 
 
 class Variable(BaseVariable):
-    @cached_property
+    @property
     def chunks(self):
         return self._h5ds.chunks
 
-    @cached_property
+    @property
     def compression(self):
         return self._h5ds.compression
 
-    @cached_property
+    @property
     def compression_opts(self):
         return self._h5ds.compression_opts
 
-    @cached_property
+    @property
     def fletcher32(self):
         return self._h5ds.fletcher32
 
-    @cached_property
+    @property
     def shuffle(self):
         return self._h5ds.shuffle
 
@@ -409,11 +443,18 @@ class Variable(BaseVariable):
 class _LazyObjectLookup(Mapping):
     def __init__(self, parent, object_cls):
         self._parent_ref = weakref.ref(parent)
+        self._mode = parent._root.mode
         self._object_cls = object_cls
         self._objects = OrderedDict()
 
     @cached_property
+    def _cached_parent(self):
+        return self._parent_ref()
+
+    @property
     def _parent(self):
+        if self._mode == "r":
+            return self._cached_parent
         return self._parent_ref()
 
     def __setitem__(self, name, obj):
@@ -484,6 +525,7 @@ class Group(Mapping):
         """
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
+        self.mode = parent._root._h5file.mode
         self._h5path = _join_h5paths(parent._h5path, name)
 
         self._dimensions = Dimensions(self)
@@ -541,7 +583,13 @@ class Group(Mapping):
         self._initialized = True
 
     @cached_property
+    def _cached_root(self):
+        return self._root_ref()
+
+    @property
     def _root(self):
+        if self.mode == "r":
+            return self._cached_root
         return self._root_ref()
 
     @property
@@ -549,13 +597,28 @@ class Group(Mapping):
         return self._parent_ref()
 
     @cached_property
+    def _cached_h5group(self):
+        return self._root._h5file[self._h5path]
+
+    @property
     def _h5group(self):
         # Always refer to the root file and store not h5py object
         # subclasses:
+        if self.mode == "r":
+            return self._cached_h5group
         return self._root._h5file[self._h5path]
 
     @cached_property
+    def _cached_track_order(self):
+        self._get_track_order()
+
+    @property
     def _track_order(self):
+        if self.mode == "r":
+            return self._cached_track_order
+        return self._get_track_order()
+
+    def _get_track_order(self):
         if self._root._h5py.__name__ == "h5pyd":
             return False
         # TODO: make a suggestion to upstream to create a property
@@ -570,7 +633,16 @@ class Group(Mapping):
         return order_tracked and order_indexed
 
     @cached_property
+    def _cached_name(self):
+        return self._get_name()
+
+    @property
     def name(self):
+        if self.mode == "r":
+            return self._cached_name
+        return self._get_name()
+
+    def _get_name(self):
         from .legacyapi import Dataset
 
         name = self._h5group.name
@@ -902,7 +974,7 @@ class Group(Mapping):
     def __len__(self):
         return len(self.variables) + len(self.groups)
 
-    @cached_property
+    @property
     def parent(self):
         return self._parent
 
@@ -911,20 +983,29 @@ class Group(Mapping):
 
     sync = flush
 
-    @cached_property
+    @property
     def groups(self):
         return Frozen(self._groups)
 
-    @cached_property
+    @property
     def variables(self):
         return Frozen(self._variables)
 
-    @cached_property
+    @property
     def dims(self):
         return Frozen(self._dimensions)
 
     @cached_property
+    def _cached_attrs(self):
+        return self._get_attrs()
+
+    @property
     def attrs(self):
+        if self.mode == "r":
+            return self._cached_attrs
+        return self._get_attrs()
+
+    def _get_attrs(self):
         return Attributes(
             self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
         )
@@ -1067,10 +1148,11 @@ class File(Group):
         else:
             self._closed = False
 
-        self._mode = mode
         self._writable = mode != "r"
         self._h5path = "/"
         self.invalid_netcdf = invalid_netcdf
+
+        self.mode = self._h5file.mode
 
         # phony dimension handling
         self._phony_dims_mode = phony_dims
@@ -1148,11 +1230,7 @@ class File(Group):
                 self.invalid_netcdf,
             )
 
-    @cached_property
-    def mode(self):
-        return self._h5file.mode
-
-    @cached_property
+    @property
     def filename(self):
         return self._h5file.filename
 
