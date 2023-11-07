@@ -22,7 +22,7 @@ class Dimensions(MutableMapping):
     @property
     def _group(self):
         if self._mode == "r":
-            return self._group_ref()
+            return self._cached_group
         return self._group_ref()
 
     def __getitem__(self, name):
