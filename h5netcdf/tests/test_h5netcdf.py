@@ -2257,6 +2257,7 @@ def _access_ds(ds):
             prop = "_" + prop
         _ = getattr(ds, prop)
 
+
 def test_file_property_cache(tmp_local_netcdf):
     """Test property caching in the File class."""
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
