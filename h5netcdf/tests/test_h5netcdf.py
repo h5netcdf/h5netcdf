@@ -4,7 +4,6 @@ import random
 import re
 import string
 import tempfile
-from unittest import mock
 from os import environ as env
 
 import h5py
@@ -18,7 +17,6 @@ import h5netcdf
 from h5netcdf import legacyapi
 from h5netcdf.core import NOT_A_VARIABLE, CompatibilityError
 from h5netcdf.utils import _get_cached_properties
-
 
 try:
     import h5pyd
