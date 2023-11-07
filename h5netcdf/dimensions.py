@@ -6,6 +6,8 @@ from functools import cached_property
 import h5py
 import numpy as np
 
+from .utils import _clear_class_caches
+
 
 class Dimensions(MutableMapping):
     def __init__(self, group):
@@ -59,6 +61,15 @@ class Dimensions(MutableMapping):
         return "<h5netcdf.Dimensions: %s>" % ", ".join(
             f"{k}={v!r}" for k, v in self._objects.items()
         )
+
+    def clear_caches(self):
+        """Clear cached properties."""
+        _clear_class_caches(self)
+        self._clear_object_caches()
+
+    def _clear_object_caches(self):
+        for _, obj in self._objects.items():
+            _clear_class_caches(obj)
 
 
 def _join_h5paths(parent_path, child_path):

@@ -14,7 +14,7 @@ from packaging import version
 from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
-from .utils import Frozen
+from .utils import Frozen, _clear_class_caches
 
 try:
     import h5pyd
@@ -417,6 +417,10 @@ class BaseVariable:
             + [f"    {k}: {v!r}" for k, v in self.attrs.items()]
         )
 
+    def clear_caches(self):
+        """Clear all cached properties."""
+        _clear_class_caches(self)
+
 
 class Variable(BaseVariable):
     @property
@@ -480,6 +484,16 @@ class _LazyObjectLookup(Mapping):
         else:
             self._objects[key] = self._object_cls(self._parent, key)
             return self._objects[key]
+
+    def clear_caches(self):
+        """Clear all cached properties."""
+        _clear_class_caches(self)
+        self._clear_objects()
+
+    def _clear_objects(self):
+        for _, obj in self._objects.items():
+            if obj is not None:
+                obj.clear_caches()
 
 
 def _netcdf_dimension_but_not_variable(h5py_dataset):
@@ -1049,6 +1063,10 @@ class Group(Mapping):
         """
         self._dimensions[dim]._resize(size)
 
+    def clear_caches(self):
+        """Clear all cached properties."""
+        _clear_class_caches(self)
+
 
 class File(Group):
     def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, **kwargs):
@@ -1278,6 +1296,7 @@ class File(Group):
     def close(self):
         if not self._closed:
             self.flush()
+            self.clear_caches()
             self._h5file.close()
             self._closed = True
 
@@ -1300,6 +1319,13 @@ class File(Group):
             self.mode,
         )
         return "\n".join([header] + self._repr_body())
+
+    def clear_caches(self):
+        """Clear all cached properties."""
+        _clear_class_caches(self)
+        self._groups.clear_caches()
+        self._variables.clear_caches()
+        self._dimensions.clear_caches()
 
 
 def _get_default_chunksizes(dimsizes, dtype):
