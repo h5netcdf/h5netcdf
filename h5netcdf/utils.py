@@ -26,8 +26,12 @@ class Frozen(Mapping):
         return f"{type(self).__name__}({self._mapping!r})"
 
 
+def _get_cached_properties(cls):
+    return [attr for attr in cls.__dir__() if attr.startswith("_cached")]
+
+
 def _clear_class_caches(cls):
-    attrs = [attr for attr in cls.__dir__() if attr.startswith("_cached")]
+    attrs = _get_cached_properties(cls)
     for attr in attrs:
         try:
             delattr(cls, attr)
