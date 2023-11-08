@@ -1323,9 +1323,12 @@ class File(Group):
     def clear_caches(self):
         """Clear all cached properties."""
         _clear_class_caches(self)
-        self._groups.clear_caches()
-        self._variables.clear_caches()
-        self._dimensions.clear_caches()
+        if hasattr(self, "_groups"):
+            self._groups.clear_caches()
+        if hasattr(self, "_variables"):
+            self._variables.clear_caches()
+        if hasattr(self, "_dimensions"):
+            self._dimensions.clear_caches()
 
 
 def _get_default_chunksizes(dimsizes, dtype):
