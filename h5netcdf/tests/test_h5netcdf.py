@@ -2186,3 +2186,19 @@ def test_ros3():
     f = h5netcdf.File(fname, "r", driver="ros3")
     assert "Temperature" in list(f)
     f.close()
+
+
+@pytest.mark.skipif(
+    "ros3" not in h5py.registered_drivers(), reason="ros3 not available"
+)
+def test_ros3_driver_kwds():
+    fname = (
+        "https://www.unidata.ucar.edu/software/netcdf/examples/OMI-Aura_L2-example.nc"
+    )
+    driver_kwds = {
+        "secret_id": b"",
+        "secret_key": b"",
+    }
+    f = h5netcdf.File(fname, "r", driver="ros3", driver_kwds=driver_kwds)
+    assert "Temperature" in list(f)
+    f.close()

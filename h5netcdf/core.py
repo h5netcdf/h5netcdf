@@ -1049,6 +1049,11 @@ class File(Group):
                         path, mode, track_order=track_order, **kwargs
                     )
                 else:
+                    driver_kws = kwargs.pop("driver_kwds", dict())
+                    if driver_kws is None:
+                        driver_kws = dict()
+                    kwargs.update(driver_kws)
+
                     self._preexisting_file = os.path.exists(path) and mode != "w"
                     self._h5py = h5py
                     self._h5file = self._h5py.File(
