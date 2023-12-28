@@ -85,9 +85,17 @@ class Dimension:
         else:
             self._root._max_dim_id += 1
         self._dimensionid = self._root._max_dim_id
-        if parent._root._writable and create_h5ds and not self._phony:
+        if self._phony:
+            self._h5ds = None
+        elif parent._root._writable and create_h5ds:
             self._create_scale()
+        else:
+            self._h5ds = self._root._h5file[self._h5path]
+        weakref.finalize(self._root, self._close)
         self._initialized = True
+
+    def _close(self):
+        self._h5ds = None
 
     @property
     def _root(self):
@@ -102,7 +110,8 @@ class Dimension:
         """Return dimension name."""
         if self._phony:
             return self._name
-        return self._h5ds.name.split("/")[-1]
+        name = self._h5ds.name
+        return name.split("/")[-1]
 
     @property
     def size(self):
@@ -129,12 +138,6 @@ class Dimension:
         if self._phony:
             return False
         return self._h5ds.maxshape == (None,)
-
-    @property
-    def _h5ds(self):
-        if self._phony:
-            return None
-        return self._root._h5file[self._h5path]
 
     @property
     def _isscale(self):
@@ -182,6 +185,16 @@ class Dimension:
                 dtype=">f4",
                 **kwargs,
             )
+        # This initialization function is typicalled called to repopulate the
+        # infomation stored in the dataset which may have changed for a variety
+        # of reasons:
+        #    1. The h5 dataset is newly created. Therefore we need a reference to it.
+        #    2. The h5 dataset changed in a material way (dtype or shape) and
+        #       thus we need a new reference to it.
+        #
+        #  We thus create the reference to it here, so as to avoid
+        #  repeatidly creating it.
+        self._h5ds = self._root._h5file[self._h5path]
         self._h5ds.attrs["_Netcdf4Dimid"] = np.array(self._dimid, dtype=np.int32)
 
         if len(self._h5ds.shape) > 1:

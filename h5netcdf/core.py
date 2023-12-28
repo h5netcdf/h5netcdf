@@ -112,7 +112,12 @@ class BaseVariable:
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
         self._dimensions = dimensions
+        self._h5ds = self._root._h5file[self._h5path]
         self._initialized = True
+        weakref.finalize(parent._root, self._close)
+
+    def _close(self):
+        self._h5ds = None
 
     @property
     def _parent(self):
@@ -121,12 +126,6 @@ class BaseVariable:
     @property
     def _root(self):
         return self._root_ref()
-
-    @property
-    def _h5ds(self):
-        # Always refer to the root file and store not h5py object
-        # subclasses:
-        return self._root._h5file[self._h5path]
 
     @property
     def name(self):
