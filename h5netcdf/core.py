@@ -5,6 +5,7 @@ import warnings
 import weakref
 from collections import ChainMap, Counter, OrderedDict, defaultdict
 from collections.abc import Mapping
+from functools import cached_property
 
 import h5py
 import numpy as np
@@ -13,7 +14,7 @@ from packaging import version
 from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
-from .utils import Frozen
+from .utils import Frozen, _clear_class_caches
 
 try:
     import h5pyd
@@ -110,22 +111,41 @@ class BaseVariable:
     def __init__(self, parent, name, dimensions=None):
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
+        self._mode = parent._root.mode
         self._h5path = _join_h5paths(parent.name, name)
         self._dimensions = dimensions
         self._initialized = True
 
-    @property
-    def _parent(self):
+    @cached_property
+    def _cached_parent(self):
         return self._parent_ref()
 
     @property
-    def _root(self):
+    def _parent(self):
+        if self._mode == "r":
+            return self._cached_parent
+        return self._parent_ref()
+
+    @cached_property
+    def _cached_root(self):
         return self._root_ref()
+
+    @property
+    def _root(self):
+        if self._mode == "r":
+            return self._cached_root
+        return self._root_ref()
+
+    @cached_property
+    def _cached_h5ds(self):
+        return self._root._h5file[self._h5path]
 
     @property
     def _h5ds(self):
         # Always refer to the root file and store not h5py object
-        # subclasses:
+        # subclasses
+        if self._mode == "r":
+            return self._cached_h5ds
         return self._root._h5file[self._h5path]
 
     @property
@@ -266,9 +286,15 @@ class BaseVariable:
         # return actual dimensions sizes, this is in line with netcdf4-python
         return tuple([self._parent._all_dimensions[d].size for d in self.dimensions])
 
+    @cached_property
+    def _cached_ndim(self):
+        return len(self.shape)
+
     @property
     def ndim(self):
         """Return number variable dimensions"""
+        if self._mode == "r":
+            return self._cached_ndim
         return len(self.shape)
 
     def __len__(self):
@@ -357,9 +383,18 @@ class BaseVariable:
             self._maybe_resize_dimensions(key, value)
         self._h5ds[key] = value
 
+    @cached_property
+    def _cached_attrs(self):
+        return self._get_attrs()
+
     @property
     def attrs(self):
         """Return variable attributes."""
+        if self._mode == "r":
+            return self._cached_attrs
+        return self._get_attrs()
+
+    def _get_attrs(self):
         return Attributes(
             self._h5ds.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
         )
@@ -381,6 +416,10 @@ class BaseVariable:
             + ["Attributes:"]
             + [f"    {k}: {v!r}" for k, v in self.attrs.items()]
         )
+
+    def clear_caches(self):
+        """Clear all cached properties."""
+        _clear_class_caches(self)
 
 
 class Variable(BaseVariable):
@@ -408,11 +447,18 @@ class Variable(BaseVariable):
 class _LazyObjectLookup(Mapping):
     def __init__(self, parent, object_cls):
         self._parent_ref = weakref.ref(parent)
+        self._mode = parent._root.mode
         self._object_cls = object_cls
         self._objects = OrderedDict()
 
+    @cached_property
+    def _cached_parent(self):
+        return self._parent_ref()
+
     @property
     def _parent(self):
+        if self._mode == "r":
+            return self._cached_parent
         return self._parent_ref()
 
     def __setitem__(self, name, obj):
@@ -438,6 +484,16 @@ class _LazyObjectLookup(Mapping):
         else:
             self._objects[key] = self._object_cls(self._parent, key)
             return self._objects[key]
+
+    def clear_caches(self):
+        """Clear all cached properties."""
+        _clear_class_caches(self)
+        self._clear_objects()
+
+    def _clear_objects(self):
+        for _, obj in self._objects.items():
+            if obj is not None:
+                obj.clear_caches()
 
 
 def _netcdf_dimension_but_not_variable(h5py_dataset):
@@ -483,6 +539,7 @@ class Group(Mapping):
         """
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
+        self.mode = parent._root._h5file.mode
         self._h5path = _join_h5paths(parent._h5path, name)
 
         self._dimensions = Dimensions(self)
@@ -539,22 +596,43 @@ class Group(Mapping):
 
         self._initialized = True
 
+    @cached_property
+    def _cached_root(self):
+        return self._root_ref()
+
     @property
     def _root(self):
+        if self.mode == "r":
+            return self._cached_root
         return self._root_ref()
 
     @property
     def _parent(self):
         return self._parent_ref()
 
+    @cached_property
+    def _cached_h5group(self):
+        return self._root._h5file[self._h5path]
+
     @property
     def _h5group(self):
         # Always refer to the root file and store not h5py object
         # subclasses:
+        if self.mode == "r":
+            return self._cached_h5group
         return self._root._h5file[self._h5path]
+
+    @cached_property
+    def _cached_track_order(self):
+        self._get_track_order()
 
     @property
     def _track_order(self):
+        if self.mode == "r":
+            return self._cached_track_order
+        return self._get_track_order()
+
+    def _get_track_order(self):
         if self._root._h5py.__name__ == "h5pyd":
             return False
         # TODO: make a suggestion to upstream to create a property
@@ -568,8 +646,17 @@ class Group(Mapping):
         order_indexed = bool(attr_creation_order & CRT_ORDER_INDEXED)
         return order_tracked and order_indexed
 
+    @cached_property
+    def _cached_name(self):
+        return self._get_name()
+
     @property
     def name(self):
+        if self.mode == "r":
+            return self._cached_name
+        return self._get_name()
+
+    def _get_name(self):
         from .legacyapi import Dataset
 
         name = self._h5group.name
@@ -922,8 +1009,17 @@ class Group(Mapping):
     def dims(self):
         return Frozen(self._dimensions)
 
+    @cached_property
+    def _cached_attrs(self):
+        return self._get_attrs()
+
     @property
     def attrs(self):
+        if self.mode == "r":
+            return self._cached_attrs
+        return self._get_attrs()
+
+    def _get_attrs(self):
         return Attributes(
             self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
         )
@@ -966,6 +1062,10 @@ class Group(Mapping):
         zero) where necessary.
         """
         self._dimensions[dim]._resize(size)
+
+    def clear_caches(self):
+        """Clear all cached properties."""
+        _clear_class_caches(self)
 
 
 class File(Group):
@@ -1066,11 +1166,11 @@ class File(Group):
         else:
             self._closed = False
 
-        self._mode = mode
         self._writable = mode != "r"
-        self._root_ref = weakref.ref(self)
         self._h5path = "/"
         self.invalid_netcdf = invalid_netcdf
+
+        self.mode = self._h5file.mode
 
         # phony dimension handling
         self._phony_dims_mode = phony_dims
@@ -1149,10 +1249,6 @@ class File(Group):
             )
 
     @property
-    def mode(self):
-        return self._h5file.mode
-
-    @property
     def filename(self):
         return self._h5file.filename
 
@@ -1200,6 +1296,7 @@ class File(Group):
     def close(self):
         if not self._closed:
             self.flush()
+            self.clear_caches()
             self._h5file.close()
             self._closed = True
 
@@ -1222,6 +1319,16 @@ class File(Group):
             self.mode,
         )
         return "\n".join([header] + self._repr_body())
+
+    def clear_caches(self):
+        """Clear all cached properties."""
+        _clear_class_caches(self)
+        if hasattr(self, "_groups"):
+            self._groups.clear_caches()
+        if hasattr(self, "_variables"):
+            self._variables.clear_caches()
+        if hasattr(self, "_dimensions"):
+            self._dimensions.clear_caches()
 
 
 def _get_default_chunksizes(dimsizes, dtype):

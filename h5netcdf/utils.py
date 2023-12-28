@@ -24,3 +24,16 @@ class Frozen(Mapping):
 
     def __repr__(self):
         return f"{type(self).__name__}({self._mapping!r})"
+
+
+def _get_cached_properties(cls):
+    return [attr for attr in cls.__dir__() if attr.startswith("_cached")]
+
+
+def _clear_class_caches(cls):
+    attrs = _get_cached_properties(cls)
+    for attr in attrs:
+        try:
+            delattr(cls, attr)
+        except AttributeError:
+            pass

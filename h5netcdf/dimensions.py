@@ -1,15 +1,19 @@
 import weakref
 from collections import OrderedDict
 from collections.abc import MutableMapping
+from functools import cached_property
 
 import h5py
 import numpy as np
+
+from .utils import _clear_class_caches
 
 
 class Dimensions(MutableMapping):
     def __init__(self, group):
         self._group_ref = weakref.ref(group)
         self._objects = OrderedDict()
+        self._mode = group._root.mode
 
     @property
     def _group(self):
@@ -52,6 +56,15 @@ class Dimensions(MutableMapping):
             f"{k}={v!r}" for k, v in self._objects.items()
         )
 
+    def clear_caches(self):
+        """Clear cached properties."""
+        _clear_class_caches(self)
+        self._clear_object_caches()
+
+    def _clear_object_caches(self):
+        for _, obj in self._objects.items():
+            _clear_class_caches(obj)
+
 
 def _join_h5paths(parent_path, child_path):
     return "/".join([parent_path.rstrip("/"), child_path.lstrip("/")])
@@ -75,6 +88,7 @@ class Dimension:
             For internal use only.
         """
         self._parent_ref = weakref.ref(parent)
+        self._mode = parent._root.mode
         self._phony = phony
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
@@ -93,13 +107,28 @@ class Dimension:
     def _root(self):
         return self._root_ref()
 
+    @cached_property
+    def _cached_parent(self):
+        return self._parent_ref()
+
     @property
     def _parent(self):
+        if self._mode == "r":
+            return self._cached_parent
         return self._parent_ref()
+
+    @cached_property
+    def _cached_name(self):
+        return self._get_name()
 
     @property
     def name(self):
         """Return dimension name."""
+        if self._mode == "r":
+            return self._cached_name
+        return self._get_name()
+
+    def _get_name(self):
         if self._phony:
             return self._name
         return self._h5ds.name.split("/")[-1]
@@ -120,6 +149,7 @@ class Dimension:
                     size = max(var.shape[axis], size)
         return size
 
+    @property
     def group(self):
         """Return parent group."""
         return self._parent
@@ -131,17 +161,45 @@ class Dimension:
         return self._h5ds.maxshape == (None,)
 
     @property
-    def _h5ds(self):
-        if self._phony:
-            return None
-        return self._root._h5file[self._h5path]
+    def _h5file(self):
+        return self._root._h5file
+
+    @cached_property
+    def _cached_h5ds(self):
+        return self._get_h5ds()
 
     @property
-    def _isscale(self):
+    def _h5ds(self):
+        if self._mode == "r":
+            return self._cached_h5ds
+        return self._get_h5ds()
+
+    def _get_h5ds(self):
+        if self._phony:
+            return None
+        return self._h5file[self._h5path]
+
+    @cached_property
+    def _cached_isscale(self):
         return h5py.h5ds.is_scale(self._h5ds.id)
 
     @property
+    def _isscale(self):
+        if self._mode == "r":
+            return self._cached_isscale
+        return h5py.h5ds.is_scale(self._h5ds.id)
+
+    @cached_property
+    def _cached_dimid(self):
+        return self._get_dimid()
+
+    @property
     def _dimid(self):
+        if self._mode == "r":
+            return self._cached_dimid
+        return self._get_dimid()
+
+    def _get_dimid(self):
         if self._phony:
             return False
         return self._h5ds.attrs.get("_Netcdf4Dimid", self._dimensionid)
@@ -163,9 +221,15 @@ class Dimension:
                 for var, dim in refs:
                     self._parent._all_h5groups[var].resize(size, dim)
 
+    @cached_property
+    def _cached_scale_refs(self):
+        return list(self._h5ds.attrs.get("REFERENCE_LIST", []))
+
     @property
     def _scale_refs(self):
         """Return dimension scale references"""
+        if self._mode == "r":
+            return self._cached_scale_refs
         return list(self._h5ds.attrs.get("REFERENCE_LIST", []))
 
     def _create_scale(self):
@@ -221,8 +285,14 @@ class Dimension:
             for var, dim in refs:
                 self._parent._all_h5groups[var].dims[dim].detach_scale(self._h5ds)
 
+    @cached_property
+    def _cached_maxsize(self):
+        return None if self.isunlimited() else self.size
+
     @property
     def _maxsize(self):
+        if self._mode == "r":
+            return self._cached_maxsize
         return None if self.isunlimited() else self.size
 
     def __len__(self):
