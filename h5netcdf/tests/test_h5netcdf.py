@@ -15,7 +15,7 @@ from pytest import raises
 
 import h5netcdf
 from h5netcdf import legacyapi
-from h5netcdf.core import NOT_A_VARIABLE, CompatibilityError
+from h5netcdf.core import NOT_A_VARIABLE, CompatibilityError, EnumType
 
 try:
     import h5pyd
@@ -164,6 +164,16 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     v = ds.createVariable("var_len_str", str, ("x"))
     v[0] = "foo"
 
+    enum_dict = dict(one=1, two=2, three=3, missing=255)
+    enum_type = ds.createEnumType(np.uint8, "enum_t", enum_dict)
+    v = ds.createVariable(
+        "enum_var",
+        enum_type,
+        ("x",),
+        fill_value=enum_dict["missing"],
+    )
+    v[0:3] = [1, 2, 3]
+
     ds.close()
 
 
@@ -214,6 +224,13 @@ def write_h5netcdf(tmp_netcdf):
     v = ds.create_variable("var_len_str", ("x",), dtype=dt)
     v[0] = _vlen_string
 
+    enum_dict = dict(one=1, two=2, three=3, missing=255)
+    enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict)
+    v = ds.create_variable(
+        "enum_var", ("x",), dtype=enum_type, fillvalue=enum_dict["missing"]
+    )
+    v[0:3] = [1, 2, 3]
+
     ds.close()
 
 
@@ -231,6 +248,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     )
     assert set(ds.variables) == set(
         [
+            "enum_var",
             "foo",
             "y",
             "z",
@@ -241,6 +259,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
             "foo_unlimited",
         ]
     )
+
+    assert set(ds.enumtypes) == set(["enum_t"])
 
     assert set(ds.groups) == set(["subgroup"])
     assert ds.parent is None
@@ -325,6 +345,12 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.shape == (10,)
     assert "y" in ds.groups["subgroup"].dimensions
 
+    enum_dict = dict(one=1, two=2, three=3, missing=255)
+    enum_type = ds.enumtypes["enum_t"]
+    assert enum_type.enum_dict == enum_dict
+    v = ds.variables["enum_var"]
+    assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
+
     ds.close()
 
 
@@ -342,6 +368,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     )
     variables = set(
         [
+            "enum_var",
             "foo",
             "z",
             "intscalar",
@@ -439,6 +466,12 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
 
     assert ds["/subgroup/y_var"].shape == (10,)
     assert ds["/subgroup"].dimensions["y"].size == 10
+
+    enum_dict = dict(one=1, two=2, three=3, missing=255)
+    enum_type = ds.enumtypes["enum_t"]
+    assert enum_type.enum_dict == enum_dict
+    v = ds.variables["enum_var"]
+    assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
 
     ds.close()
 
@@ -2186,3 +2219,178 @@ def test_ros3():
     f = h5netcdf.File(fname, "r", driver="ros3")
     assert "Temperature" in list(f)
     f.close()
+
+
+def test_enum_type(tmp_local_netcdf):
+    # test EnumType
+    enum_dict = dict(one=1, two=2, three=3, missing=255)
+    enum_dict2 = dict(one=1, two=2, three=3, missing=254)
+
+    # first with new API
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
+        ds.dimensions = {"enum_dim": 4}
+        enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict)
+        v = ds.create_variable(
+            "enum_var", ("enum_dim",), dtype=enum_type, fillvalue=enum_dict["missing"]
+        )
+        v[0:3] = [1, 2, 3]
+        with pytest.raises(ValueError) as e:
+            v[3] = 5
+        assert "assign illegal value(s)" in e.value.args[0]
+
+        g = ds.create_group("test")
+        enum_type2 = g.create_enumtype(np.uint8, "enum_t2", enum_dict2)
+        with pytest.raises(TypeError, match="EnumType not found in group"):
+            ds.create_variable(
+                "enum_var2",
+                ("enum_dim",),
+                dtype=enum_type2,
+                fillvalue=enum_dict2["missing"],
+            )
+
+    # check, if new API can read them
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        enum_var = ds["enum_var"]
+        assert enum_type.enum_dict == enum_dict
+        assert array_equal(enum_var, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert enum_var.attrs["_FillValue"] == 255
+        assert enum_var.datatype == enum_type
+        assert enum_var.datatype.name == "enum_t"
+
+    # check if legacyapi can read them
+    with legacyapi.Dataset(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        enum_var = ds["enum_var"]
+        assert enum_type.enum_dict == enum_dict
+        assert array_equal(enum_var, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert enum_var.attrs["_FillValue"] == 255
+        assert enum_var.datatype == enum_type
+        assert enum_var.datatype.name == "enum_t"
+
+    # check if netCDF4-python can read them
+    with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        enum_var = ds["enum_var"]
+        assert enum_type.enum_dict == enum_dict
+        assert array_equal(enum_var, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert enum_var._FillValue == 255
+        assert repr(enum_var.datatype) == repr(enum_type)
+        assert enum_var.datatype.name == "enum_t"
+
+    # second with legacyapi
+    with legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("enum_dim", 4)
+        enum_type = ds.createEnumType(np.uint8, "enum_t", enum_dict)
+        v = ds.createVariable(
+            "enum_var", enum_type, ("enum_dim",), fill_value=enum_dict["missing"]
+        )
+        v[0:3] = [1, 2, 3]
+        with pytest.raises(ValueError) as e:
+            v[3] = 5
+        assert "assign illegal value(s)" in e.value.args[0]
+
+        g = ds.create_group("test")
+        enum_type2 = g.create_enumtype(np.uint8, "enum_t2", enum_dict2)
+        with pytest.raises(TypeError, match="EnumType not found in group"):
+            ds.create_variable(
+                "enum_var2",
+                ("enum_dim",),
+                dtype=enum_type2,
+                fillvalue=enum_dict2["missing"],
+            )
+
+    # check, if new API can read them
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        enum_var = ds["enum_var"]
+        assert enum_type.enum_dict == enum_dict
+        assert array_equal(enum_var, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert enum_var.attrs["_FillValue"] == 255
+        assert enum_var.datatype == enum_type
+        assert enum_var.datatype.name == "enum_t"
+
+    # check if legacyapi can read them
+    with legacyapi.Dataset(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        enum_var = ds["enum_var"]
+        assert enum_type.enum_dict == enum_dict
+        assert array_equal(enum_var, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert enum_var.attrs["_FillValue"] == 255
+        assert enum_var.datatype == enum_type
+        assert enum_var.datatype.name == "enum_t"
+
+    # check if netCDF4-python can read them
+    with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        enum_var = ds["enum_var"]
+        assert enum_type.enum_dict == enum_dict
+        assert array_equal(enum_var, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert enum_var._FillValue == 255
+        assert repr(enum_var.datatype) == repr(enum_type)
+        assert enum_var.datatype.name == "enum_t"
+
+    # third with netCDF4 api
+    with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("enum_dim", 4)
+        enum_type = ds.createEnumType(np.uint8, "enum_t", enum_dict)
+        v = ds.createVariable(
+            "enum_var", enum_type, ("enum_dim",), fill_value=enum_dict["missing"]
+        )
+        v[0:3] = [1, 2, 3]
+        with pytest.raises(ValueError, match="assign illegal value to Enum variable"):
+            v[3] = 5
+
+    # check, if new API can read them
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        enum_var = ds["enum_var"]
+        assert enum_type.enum_dict == enum_dict
+        assert array_equal(enum_var, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert enum_var.attrs["_FillValue"] == 255
+        assert enum_var.datatype == enum_type
+        assert enum_var.datatype.name == "enum_t"
+
+    # check if legacyapi can read them
+    with legacyapi.Dataset(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        enum_var = ds["enum_var"]
+        assert enum_type.enum_dict == enum_dict
+        assert array_equal(enum_var, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert enum_var.attrs["_FillValue"] == 255
+        assert enum_var.datatype == enum_type
+        assert enum_var.datatype.name == "enum_t"
+
+    # check if netCDF4-python can read them
+    with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        enum_var = ds["enum_var"]
+        assert enum_type.enum_dict == enum_dict
+        assert array_equal(enum_var, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert enum_var._FillValue == 255
+        assert repr(enum_var.datatype) == repr(enum_type)
+        assert enum_var.datatype.name == "enum_t"
+
+
+def test_enum_type_creation(tmp_local_netcdf, netcdf_write_module):
+    enum_dict = dict(one=1, two=2, three=3, missing=255)
+    with netcdf_write_module.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createEnumType(np.uint8, "enum_t", enum_dict)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        assert enum_type.enum_dict == enum_dict
+        assert enum_type.name == "enum_t"
+        assert isinstance(enum_type, EnumType)
+
+    with legacyapi.Dataset(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        assert enum_type.enum_dict == enum_dict
+        assert enum_type.name == "enum_t"
+        assert isinstance(enum_type, legacyapi.EnumType)
+
+    with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+        enum_type = ds.enumtypes["enum_t"]
+        assert enum_type.enum_dict == enum_dict
+        assert enum_type.name == "enum_t"
+        assert isinstance(enum_type, netCDF4.EnumType)

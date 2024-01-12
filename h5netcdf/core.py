@@ -1,5 +1,5 @@
 # For details on how netCDF4 builds on HDF5:
-# http://www.unidata.ucar.edu/software/netcdf/docs/file_format_specifications.html#netcdf_4_spec
+# https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec
 import os.path
 import warnings
 import weakref
@@ -106,13 +106,11 @@ def _expanded_indexer(key, ndim):
     return key[k1] + res_dims + key[k2]
 
 
-class BaseVariable:
-    def __init__(self, parent, name, dimensions=None):
+class BaseObject:
+    def __init__(self, parent, name):
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
-        self._dimensions = dimensions
-        self._initialized = True
 
     @property
     def _parent(self):
@@ -130,9 +128,50 @@ class BaseVariable:
 
     @property
     def name(self):
+        """Return object name."""
+        return self._h5ds.name
+
+    @property
+    def dtype(self):
+        """Return NumPy dtype giving object’s dtype."""
+        return self._h5ds.dtype
+
+
+class EnumType(BaseObject):
+    _cls_name = "h5netcdf.EnumType"
+
+    def __init__(self, parent, name):
+        """Create netCDF4 EnumType."""
+        super().__init__(parent, name)
+
+    @property
+    def enum_dict(self):
+        return self.dtype.metadata["enum"]
+
+    @property
+    def name(self):
+        """Return enum name."""
+        # strip hdf5 path
+        return super().name.split("/")[-1]
+
+    def __repr__(self):
+        if self._parent._root._closed:
+            return "<Closed %s>" % self._cls_name
+        header = f"<{self._cls_name}: name = {self.name!r}, numpy dtype = {self.dtype}, fields/values =  {self.enum_dict}"
+        return header
+
+
+class BaseVariable(BaseObject):
+    def __init__(self, parent, name, dimensions=None):
+        super().__init__(parent, name)
+        self._dimensions = dimensions
+        self._initialized = True
+
+    @property
+    def name(self):
         """Return variable name."""
         # fix name if _nc4_non_coord_
-        return self._h5ds.name.replace("_nc4_non_coord_", "")
+        return super().name.replace("_nc4_non_coord_", "")
 
     def _lookup_dimensions(self):
         attrs = self._h5ds.attrs
@@ -268,16 +307,20 @@ class BaseVariable:
 
     @property
     def ndim(self):
-        """Return number variable dimensions"""
+        """Return number of variable dimensions."""
         return len(self.shape)
 
     def __len__(self):
         return self.shape[0]
 
     @property
-    def dtype(self):
-        """Return NumPy dtype object giving the variable’s type."""
-        return self._h5ds.dtype
+    def datatype(self):
+        """Return numpy dtype or user defined type."""
+        if h5py.check_enum_dtype(self.dtype) is not None:
+            for tid in self._parent._all_enumtypes.values():
+                if self._h5ds.id.get_type().equal(tid._h5ds.id):
+                    return tid
+        return self.dtype
 
     def _get_padding(self, key):
         """Return padding if needed, defaults to False."""
@@ -348,6 +391,16 @@ class BaseVariable:
 
     def __setitem__(self, key, value):
         from .legacyapi import Dataset
+
+        # check if provided values match enumtype values
+        if isinstance(self.datatype, EnumType):
+            mask = np.isin(value, list(self.datatype.enum_dict.values()))
+            wrong = set(np.asanyarray(value)[~mask])
+            if not mask.all():
+                raise ValueError(
+                    f"Trying to assign illegal value(s) {wrong!r} to Enum variable {self.name!r}."
+                    f" Valid values are {dict(self.datatype.enum_dict)!r}."
+                )
 
         if isinstance(self._parent._root, Dataset):
             # resize on write only for legacyapi
@@ -470,6 +523,7 @@ def _unlabeled_dimension_mix(h5py_dataset):
 class Group(Mapping):
     _variable_cls = Variable
     _dimension_cls = Dimension
+    _enumtype_cls = EnumType
 
     @property
     def _group_cls(self):
@@ -486,13 +540,16 @@ class Group(Mapping):
         self._h5path = _join_h5paths(parent._h5path, name)
 
         self._dimensions = Dimensions(self)
+        self._enumtypes = _LazyObjectLookup(self, self._enumtype_cls)
 
         # this map keeps track of all dimensions
         if parent is self:
             self._all_dimensions = ChainMap(self._dimensions)
+            self._all_enumtypes = ChainMap(self._enumtypes)
         else:
             self._all_dimensions = parent._all_dimensions.new_child(self._dimensions)
             self._all_h5groups = parent._all_h5groups.new_child(self._h5group)
+            self._all_enumtypes = parent._all_enumtypes.new_child(self._enumtypes)
 
         self._variables = _LazyObjectLookup(self, self._variable_cls)
         self._groups = _LazyObjectLookup(self, self._group_cls)
@@ -506,6 +563,11 @@ class Group(Mapping):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
                 self._groups.add(k)
+            # todo: add other user types here
+            elif isinstance(v, self._root._h5py.Datatype) and h5py.check_enum_dtype(
+                v.dtype
+            ):
+                self._enumtypes.add(k)
             else:
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
                     # add dimension and retrieve size
@@ -728,6 +790,16 @@ class Group(Mapping):
         # see https://github.com/h5netcdf/h5netcdf/issues/182
         from .legacyapi import Dataset, _get_default_fillvalue
 
+        # enum handling
+        if fillvalue is not None and dtype is not None:
+            if isinstance(dtype, EnumType):
+                # raise if enum type is not in current group hierarchy
+                if dtype.name not in self._parent._all_enumtypes:
+                    raise TypeError(
+                        f"Unable to create variable {name!r} with EnumType {dtype!r}. EnumType not found in group {self.name!r} or it's parents."
+                    )
+                dtype = dtype.dtype
+                fillvalue = np.array(fillvalue).astype(dtype)
         fillval = fillvalue
         if fillvalue is None and isinstance(self._parent._root, Dataset):
             fillval = _get_default_fillvalue(dtype)
@@ -773,12 +845,14 @@ class Group(Mapping):
             if variable.dtype is str:
                 value = fillvalue
             else:
+                # todo: this always checks for dtype.metadata
                 string_info = self._root._h5py.check_string_dtype(variable.dtype)
+                enum_info = self._root._h5py.check_enum_dtype(variable.dtype)
                 if (
                     string_info
                     and string_info.length is not None
                     and string_info.length > 1
-                ):
+                ) or enum_info:
                     value = fillvalue
                 else:
                     value = variable.dtype.type(fillvalue)
@@ -808,7 +882,7 @@ class Group(Mapping):
             Tuple containing dimension name strings. Defaults to empty tuple, effectively
             creating a scalar variable.
         dtype : numpy.dtype, str, optional
-            Dataype of the new variable. Defaults to None.
+            Datatype of the new variable. Defaults to None.
         fillvalue : scalar, optional
             Specify fillvalue for uninitialized parts of the variable. Defaults to ``None``.
         chunks : tuple, optional
@@ -841,6 +915,7 @@ class Group(Mapping):
         var : h5netcdf.Variable
             Variable class instance
         """
+
         # if root-variable
         if name.startswith("/"):
             # handling default fillvalues for legacyapi
@@ -919,6 +994,10 @@ class Group(Mapping):
         return Frozen(self._variables)
 
     @property
+    def enumtypes(self):
+        return Frozen(self._enumtypes)
+
+    @property
     def dims(self):
         return Frozen(self._dimensions)
 
@@ -966,6 +1045,23 @@ class Group(Mapping):
         zero) where necessary.
         """
         self._dimensions[dim]._resize(size)
+
+    def create_enumtype(self, datatype, datatype_name, enum_dict):
+        """Create EnumType.
+
+        datatype: np.dtype
+            A numpy integer dtype object describing the base type for the Enum.
+        datatype_name: string
+            A Python string containing a description of the Enum data type.
+        enum_dict: dict
+            A Python dictionary containing the Enum field/value pairs.
+        """
+        et = h5py.enum_dtype(enum_dict, basetype=datatype)
+        self._h5group[datatype_name] = et
+        # create enumtype class instance
+        enumtype = self._enumtype_cls(self, datatype_name)
+        self._enumtypes[datatype_name] = enumtype
+        return enumtype
 
 
 class File(Group):
@@ -1133,8 +1229,6 @@ class File(Group):
             description = "boolean"
         elif dtype == complex:
             description = "complex"
-        elif h5py.check_dtype(enum=dtype) is not None:
-            description = "enum"
         elif h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
         elif h5py.check_dtype(vlen=dtype) not in {None, str, bytes}:
