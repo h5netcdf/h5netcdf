@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development Version:
+
+- Add enum type.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.3.0 (November 7th, 2023):
 
 - Add ros3 support by checking `driver`-kwarg.

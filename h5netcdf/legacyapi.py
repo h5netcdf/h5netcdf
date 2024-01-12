@@ -112,15 +112,21 @@ class Variable(core.BaseVariable, HasAttributesMixin):
         return dt
 
 
+class EnumType(core.EnumType):
+    _cls_name = "h5netcdf.legacyapi.EnumType"
+
+
 class Group(core.Group, HasAttributesMixin):
     _cls_name = "h5netcdf.legacyapi.Group"
     _variable_cls = Variable
+    _enumtype_cls = EnumType
 
     @property
     def _group_cls(self):
         return Group
 
     createGroup = core.Group.create_group
+    createEnumType = core.Group.create_enumtype
 
     def createDimension(self, name, size):
         """Creates a new dimension with given name and size.
