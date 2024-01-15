@@ -2,7 +2,6 @@ import weakref
 from collections import OrderedDict
 from collections.abc import MutableMapping
 
-import h5py
 import numpy as np
 
 
@@ -138,7 +137,7 @@ class Dimension:
 
     @property
     def _isscale(self):
-        return h5py.h5ds.is_scale(self._h5ds.id)
+        return self._root._h5py.h5ds.is_scale(self._h5ds.id)
 
     @property
     def _dimid(self):
