@@ -316,9 +316,13 @@ class BaseVariable(BaseObject):
     @property
     def datatype(self):
         """Return numpy dtype or user defined type."""
-        if h5py.check_enum_dtype(self.dtype) is not None:
+        if (enum_dict := self._root._h5py.check_enum_dtype(self.dtype)) is not None:
             for tid in self._parent._all_enumtypes.values():
-                if self._h5ds.id.get_type().equal(tid._h5ds.id):
+                if self._root._h5py == h5py:
+                    found = self._h5ds.id.get_type().equal(tid._h5ds.id)
+                else:
+                    found = tid.enum_dict == enum_dict
+                if found:
                     return tid
         return self.dtype
 
@@ -393,13 +397,13 @@ class BaseVariable(BaseObject):
         from .legacyapi import Dataset
 
         # check if provided values match enumtype values
-        if isinstance(self.datatype, EnumType):
-            mask = np.isin(value, list(self.datatype.enum_dict.values()))
+        if enum_dict := self._root._h5py.check_enum_dtype(self.dtype):
+            mask = np.isin(value, list(enum_dict.values()))
             wrong = set(np.asanyarray(value)[~mask])
             if not mask.all():
                 raise ValueError(
                     f"Trying to assign illegal value(s) {wrong!r} to Enum variable {self.name!r}."
-                    f" Valid values are {dict(self.datatype.enum_dict)!r}."
+                    f" Valid values are {dict(enum_dict)!r}."
                 )
 
         if isinstance(self._parent._root, Dataset):
@@ -564,9 +568,9 @@ class Group(Mapping):
                 # instance
                 self._groups.add(k)
             # todo: add other user types here
-            elif isinstance(v, self._root._h5py.Datatype) and h5py.check_enum_dtype(
-                v.dtype
-            ):
+            elif isinstance(
+                v, self._root._h5py.Datatype
+            ) and self._root._h5py.check_enum_dtype(v.dtype):
                 self._enumtypes.add(k)
             else:
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
@@ -1056,7 +1060,7 @@ class Group(Mapping):
         enum_dict: dict
             A Python dictionary containing the Enum field/value pairs.
         """
-        et = h5py.enum_dtype(enum_dict, basetype=datatype)
+        et = self._root._h5py.enum_dtype(enum_dict, basetype=datatype)
         self._h5group[datatype_name] = et
         # create enumtype class instance
         enumtype = self._enumtype_cls(self, datatype_name)
@@ -1229,9 +1233,9 @@ class File(Group):
             description = "boolean"
         elif dtype == complex:
             description = "complex"
-        elif h5py.check_dtype(ref=dtype) is not None:
+        elif self._h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
-        elif h5py.check_dtype(vlen=dtype) not in {None, str, bytes}:
+        elif self._h5py.check_dtype(vlen=dtype) not in {None, str, bytes}:
             description = "non-string variable length"
         else:
             description = None
@@ -1270,7 +1274,7 @@ class File(Group):
                 )
                 self.attrs._h5attrs["_NCProperties"] = np.array(
                     _NC_PROPERTIES,
-                    dtype=h5py.string_dtype(
+                    dtype=self._h5py.string_dtype(
                         encoding="ascii", length=len(_NC_PROPERTIES)
                     ),
                 )
