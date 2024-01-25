@@ -94,7 +94,7 @@ jobs:
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
-        python -m pip install git+https://github.com/HDFGroup/hsds.git@0.8.0
+        python -m pip install git+https://github.com/HDFGroup/hsds.git@v0.8.0
         python -m pip install git+https://github.com/HDFGroup/h5pyd.git
     - name: Test with pytest
       run: |
