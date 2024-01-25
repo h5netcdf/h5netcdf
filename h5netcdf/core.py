@@ -137,17 +137,7 @@ class BaseObject:
         return self._h5ds.dtype
 
 
-class EnumType(BaseObject):
-    _cls_name = "h5netcdf.EnumType"
-
-    def __init__(self, parent, name):
-        """Create netCDF4 EnumType."""
-        super().__init__(parent, name)
-
-    @property
-    def enum_dict(self):
-        return self.dtype.metadata["enum"]
-
+class UserType(BaseObject):
     @property
     def name(self):
         """Return enum name."""
@@ -156,9 +146,20 @@ class EnumType(BaseObject):
 
     def __repr__(self):
         if self._parent._root._closed:
-            return "<Closed %s>" % self._cls_name
-        header = f"<{self._cls_name}: name = {self.name!r}, numpy dtype = {self.dtype}, fields/values =  {self.enum_dict}"
+            return f"<Closed {self._cls_name!r}>"
+        header = f"<class {self._cls_name!r}: name = {self.name!r}, numpy dtype = {self.dtype!r}"
         return header
+
+
+class EnumType(UserType):
+    _cls_name = "h5netcdf.EnumType"
+
+    @property
+    def enum_dict(self):
+        return self.dtype.metadata["enum"]
+
+    def __repr__(self):
+        return super().__repr__() + f", fields / values = {self.enum_dict!r}"
 
 
 class BaseVariable(BaseObject):
