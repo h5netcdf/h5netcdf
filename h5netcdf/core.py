@@ -638,7 +638,7 @@ def _check_fillvalue(self, fillvalue, dtype):
                     msg = (
                         f"Creating variable with default fill_value {0!r}"
                         f" which IS NOT defined in enum type {dtype!r}."
-                        f" This will be interpreted as '_UNDEFINED' by netcdf-c."
+                        f" Value {0!r} will be interpreted as '_UNDEFINED' by netcdf-c."
                     )
                     warnings.warn(msg, stacklevel=stacklevel)
         else:
@@ -650,7 +650,7 @@ def _check_fillvalue(self, fillvalue, dtype):
                     msg = (
                         f"Creating variable with specified fill_value {h5fillvalue!r}"
                         f" which IS NOT defined in enum type {dtype!r}."
-                        f" This will be interpreted as '_UNDEFINED' by netcdf-c."
+                        f" Value {0!r} will be interpreted as '_UNDEFINED' by netcdf-c."
                     )
                     warnings.warn(msg, stacklevel=stacklevel)
                 # 5. we need to raise if the fillvalue is not within the enum_dict
