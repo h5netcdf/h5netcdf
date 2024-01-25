@@ -3,7 +3,9 @@ Change Log
 
 Development Version:
 
-- Add enum type.
+- Add UserType class, add EnumType.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Refactor fillvalue and dtype handling for user types, enhance sanity checks and tests.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Update h5pyd testing.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
