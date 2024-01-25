@@ -140,6 +140,8 @@ class BaseObject:
 
 
 class UserType(BaseObject):
+    _cls_name = "h5netcdf.UserType"
+
     @property
     def name(self):
         """Return enum name."""
@@ -162,6 +164,18 @@ class EnumType(UserType):
 
     def __repr__(self):
         return super().__repr__() + f", fields / values = {self.enum_dict!r}"
+
+
+class VLType(UserType):
+    _cls_name = "h5netcdf.VLType"
+
+
+class CompoundType(UserType):
+    _cls_name = "h5netcdf.CompoundType"
+
+    @property
+    def dtype_view(self):
+        return self.dtype_view
 
 
 class BaseVariable(BaseObject):
@@ -563,7 +577,7 @@ def _check_dtype(self, dtype):
 
     # is user type is given extract underlying h5py object
     # we just use the h5py user type here
-    if isinstance(dtype, (EnumType,)):
+    if isinstance(dtype, (EnumType, VLType, CompoundType)):
         h5type = dtype._h5ds
         if dtype._root._h5file.filename != self._root._h5file.filename:
             raise TypeError(
@@ -574,14 +588,31 @@ def _check_dtype(self, dtype):
         # check if committed type can be accessed in current group hierarchy
         dname = dtype.name.split("/")[-1]
         if (
-            (user_type := self._all_enumtypes.get(dname)) is None
-        ) or user_type._h5ds.name != h5type.name:
+            (user_type := self._all_usertypes.get(dname)) is None
+        ) or self._root._h5file[user_type].name != h5type.name:
             msg = (
                 f"Given dtype {dtype.name!r} is not accessible in current group"
                 f" {self._h5group.name!r} or any parent group. Instead it's defined at"
                 f" {h5type.name!r}. Please create it in the current or any parent group."
             )
             raise TypeError(msg)
+    elif np.dtype(dtype).kind == "c":
+        itemsize = np.dtype(dtype).itemsize
+        try:
+            width = {8: "FLOAT", 16: "DOUBLE"}[itemsize]
+        except KeyError as e:
+            raise TypeError(
+                "Currently only 'complex64' and 'complex128' dtypes are allowed."
+            ) from e
+        dname = f"_PFNC_{width}_COMPLEX_TYPE"
+        # todo check compound type for existing complex types
+        #  which may be used her
+        # if dname is not available in current group-path
+        # create and commit type in current group
+        if dname not in self._all_cmptypes:
+            dtype = self.create_cmptype(dtype, dname).dtype
+        # get committed type from file
+        # return self._all_cmptypes[dname]._h5ds
 
     return dtype
 
@@ -670,6 +701,8 @@ class Group(Mapping):
     _variable_cls = Variable
     _dimension_cls = Dimension
     _enumtype_cls = EnumType
+    _vltype_cls = VLType
+    _cmptype_cls = CompoundType
 
     @property
     def _group_cls(self):
@@ -687,15 +720,25 @@ class Group(Mapping):
 
         self._dimensions = Dimensions(self)
         self._enumtypes = _LazyObjectLookup(self, self._enumtype_cls)
+        self._vltypes = _LazyObjectLookup(self, self._vltype_cls)
+        self._cmptypes = _LazyObjectLookup(self, self._cmptype_cls)
+        self._usertypes = dict()
 
         # this map keeps track of all dimensions
         if parent is self:
             self._all_dimensions = ChainMap(self._dimensions)
             self._all_enumtypes = ChainMap(self._enumtypes)
+            self._all_vltypes = ChainMap(self._vltypes)
+            self._all_cmptypes = ChainMap(self._cmptypes)
+            self._all_usertypes = ChainMap(self._usertypes)
+
         else:
             self._all_dimensions = parent._all_dimensions.new_child(self._dimensions)
             self._all_h5groups = parent._all_h5groups.new_child(self._h5group)
             self._all_enumtypes = parent._all_enumtypes.new_child(self._enumtypes)
+            self._all_vltypes = parent._all_vltypes.new_child(self._vltypes)
+            self._all_cmptypes = parent._all_cmptypes.new_child(self._cmptypes)
+            self._all_usertypes = parent._all_usertypes.new_child(self._usertypes)
 
         self._variables = _LazyObjectLookup(self, self._variable_cls)
         self._groups = _LazyObjectLookup(self, self._group_cls)
@@ -709,11 +752,14 @@ class Group(Mapping):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
                 self._groups.add(k)
-            # todo: add other user types here
-            elif isinstance(
-                v, self._root._h5py.Datatype
-            ) and self._root._h5py.check_enum_dtype(v.dtype):
-                self._enumtypes.add(k)
+            elif isinstance(v, self._root._h5py.Datatype):
+                if self._root._h5py.check_enum_dtype(v.dtype):
+                    self._enumtypes.add(k)
+                elif self._root._h5py.check_vlen_dtype(v.dtype):
+                    self._vltypes.add(k)
+                elif v.dtype.names is not None or "complex" in v.dtype.name:
+                    self._cmptypes.add(k)
+                self._usertypes[k] = v.name
             else:
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
                     # add dimension and retrieve size
@@ -1109,6 +1155,18 @@ class Group(Mapping):
         return Frozen(self._enumtypes)
 
     @property
+    def vltypes(self):
+        return Frozen(self._vltypes)
+
+    @property
+    def cmptypes(self):
+        return Frozen(self._cmptypes)
+
+    @property
+    def usertypes(self):
+        return Frozen(self._usertypes)
+
+    @property
     def dims(self):
         return Frozen(self._dimensions)
 
@@ -1173,8 +1231,43 @@ class Group(Mapping):
         self._h5group[datatype_name] = et
         # create enumtype class instance
         enumtype = self._enumtype_cls(self, datatype_name)
+        # enumtype = self._usertype_cls(self, datatype_name)
         self._enumtypes[datatype_name] = enumtype
+        self._usertypes[datatype_name] = enumtype._h5ds.name
         return enumtype
+
+    def create_vltype(self, datatype, datatype_name):
+        """Create VLType.
+        datatype: np.dtype
+            A numpy dtype object describing the base type.
+        datatype_name: string
+            A Python string containing a description of the VL data type.
+        """
+        # wrap in numpy dtype first
+        datatype = np.dtype(datatype)
+        et = self._root._h5py.vlen_dtype(datatype)
+        self._h5group[datatype_name] = et
+        # create vltype class instance
+        vltype = self._vltype_cls(self, datatype_name)
+        self._vltypes[datatype_name] = vltype
+        self._usertypes[datatype_name] = vltype._h5ds.name
+        return vltype
+
+    def create_cmptype(self, datatype, datatype_name):
+        """Create CompoundType.
+        datatype: np.dtype
+            A numpy dtype object describing the structured type.
+        datatype_name: string
+            A Python string containing a description of the compound data type.
+        """
+        # wrap in numpy dtype first
+        datatype = np.dtype(datatype)
+        self._h5group[datatype_name] = datatype
+        # create compound class instance
+        cmptype = self._cmptype_cls(self, datatype_name)
+        self._cmptypes[datatype_name] = cmptype
+        self._usertypes[datatype_name] = cmptype._h5ds.name
+        return cmptype
 
 
 class File(Group):
@@ -1352,12 +1445,8 @@ class File(Group):
 
         if dtype == bool:  # noqa
             description = "boolean"
-        elif dtype == complex:  # noqa
-            description = "complex"
         elif self._h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
-        elif self._h5py.check_dtype(vlen=dtype) not in {None, str, bytes}:
-            description = "non-string variable length"
         else:
             description = None
 
@@ -1387,7 +1476,11 @@ class File(Group):
         if self._writable:
             # only write `_NCProperties` in newly created files
             if not self._preexisting_file and not self.invalid_netcdf:
-                _NC_PROPERTIES = f"version=2,h5netcdf={__version__},hdf5={self._h5py.version.hdf5_version},{self._h5py.__name__}={self._h5py.__version__}"
+                _NC_PROPERTIES = (
+                    f"version=2,h5netcdf={__version__},"
+                    f"hdf5={self._h5py.version.hdf5_version},"
+                    f"{self._h5py.__name__}={self._h5py.__version__}"
+                )
                 self.attrs._h5attrs["_NCProperties"] = np.array(
                     _NC_PROPERTIES,
                     dtype=self._h5py.string_dtype(
@@ -1432,10 +1525,8 @@ class File(Group):
     def __repr__(self):
         if self._closed:
             return f"<Closed {self._cls_name}>"
-        header = "<{} {!r} (mode {})>".format(
-            self._cls_name,
-            self.filename.split("/")[-1],
-            self.mode,
+        header = (
+            f"<{self._cls_name} {os.path.basename(self.filename)!r} (mode {self.mode})>"
         )
         return "\n".join([header] + self._repr_body())
 

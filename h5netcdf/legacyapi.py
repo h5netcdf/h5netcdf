@@ -115,10 +115,25 @@ class EnumType(core.EnumType):
     _cls_name = "h5netcdf.legacyapi.EnumType"
 
 
+class VLType(core.VLType):
+    _cls_name = "h5netcdf.legacyapi.VLType"
+
+
+class CompoundType(core.CompoundType):
+    _cls_name = "h5netcdf.legacyapi.CompoundType"
+
+
+class UserType(core.UserType):
+    _cls_name = "h5netcdf.legacyapi.UserType"
+
+
 class Group(core.Group, HasAttributesMixin):
     _cls_name = "h5netcdf.legacyapi.Group"
     _variable_cls = Variable
     _enumtype_cls = EnumType
+    _vltype_cls = VLType
+    _cmptype_cls = CompoundType
+    _usertype_cls = UserType
 
     @property
     def _group_cls(self):
@@ -126,6 +141,8 @@ class Group(core.Group, HasAttributesMixin):
 
     createGroup = core.Group.create_group
     createEnumType = core.Group.create_enumtype
+    createVLType = core.Group.create_vltype
+    createCompoundType = core.Group.create_cmptype
 
     def createDimension(self, name, size):
         """Creates a new dimension with given name and size.
