@@ -54,9 +54,11 @@ def _transform_1d_boolean_indexers(key):
     # return key, if not iterable
     try:
         key = [
-            np.asanyarray(k).nonzero()[0]
-            if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
-            else k
+            (
+                np.asanyarray(k).nonzero()[0]
+                if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
+                else k
+            )
             for k in key
         ]
     except TypeError:
@@ -138,6 +140,8 @@ class BaseObject:
 
 
 class UserType(BaseObject):
+    _cls_name = "h5netcdf.UserType"
+
     @property
     def name(self):
         """Return enum name."""
@@ -160,6 +164,18 @@ class EnumType(UserType):
 
     def __repr__(self):
         return super().__repr__() + f", fields / values = {self.enum_dict!r}"
+
+
+class VLType(UserType):
+    _cls_name = "h5netcdf.VLType"
+
+
+class CompoundType(UserType):
+    _cls_name = "h5netcdf.CompoundType"
+
+    @property
+    def dtype_view(self):
+        return self.dtype_view
 
 
 class BaseVariable(BaseObject):
@@ -293,7 +309,7 @@ class BaseVariable(BaseObject):
         if self._h5ds.shape != new_shape:
             self._h5ds.resize(new_shape)
 
-    def _add_fillvalue(self, fillvalue):
+    def _add_fillvalue(self, fillvalue, dtype=None):
         """Add _FillValue attribute"""
 
         # trying to create correct type of fillvalue
@@ -312,7 +328,12 @@ class BaseVariable(BaseObject):
             else:
                 value = self.dtype.type(fillvalue)
 
-        self.attrs["_FillValue"] = value
+        # need to use create-function in order
+        # to provide correct committed/named type
+        if dtype is not None:
+            self.attrs._h5attrs.create("_FillValue", value, dtype=dtype)
+        else:
+            self.attrs["_FillValue"] = value
 
     @property
     def dimensions(self):
@@ -335,17 +356,55 @@ class BaseVariable(BaseObject):
     def __len__(self):
         return self.shape[0]
 
+    def _get_committed_type(self):
+        """Return committed user type"""
+        tname = self._h5ds._d(self._root._h5py.h5i.get_name(self._h5ds.id.get_type()))
+        if tname is None:
+            return tname
+        print("tname", tname)
+        print(self._h5ds.id.dtype)
+        tname = tname.split("/")[-1]
+
+        metadata = self.dtype.metadata if self.dtype.metadata else {}
+        if "enum" in metadata:
+            usertype = self._parent._all_enumtypes
+        elif "vlen" in metadata:
+            usertype = self._parent._all_vltypes
+        elif self.dtype.names is not None or "complex" in self.dtype.name:
+            usertype = self._parent._all_cmptypes
+        return usertype[tname]
+
+    def _get_h5type(self):
+        """Return HDF5 type"""
+        return self._h5ds.id.get_type()
+
     @property
     def datatype(self):
         """Return numpy dtype or user defined type."""
-        if (enum_dict := self._root._h5py.check_enum_dtype(self.dtype)) is not None:
-            for tid in self._parent._all_enumtypes.values():
-                if self._root._h5py == h5py:
-                    found = self._h5ds.id.get_type().equal(tid._h5ds.id)
-                else:
-                    found = tid.enum_dict == enum_dict
-                if found:
+        # first check committed type (works only for shared user types)
+        if self._root._h5py.__name__ == "h5py":
+            # retrieve committed type from file
+            if (ctype := self._get_committed_type()) is not None:
+                return ctype
+
+        # this is really painful as we have to iterate over all types
+        # and check equality
+        usertype = None
+        metadata = self.dtype.metadata if self.dtype.metadata else {}
+        if "enum" in metadata:
+            usertype = self._parent._all_enumtypes
+        elif "vlen" in metadata:
+            usertype = self._parent._all_vltypes
+        elif self.dtype.names is not None or "complex" in self.dtype.name:
+            usertype = self._parent._all_cmptypes
+
+        if usertype is not None:
+            for tid in usertype.values():
+                if self.dtype == tid.dtype and metadata == tid.dtype.metadata:
+                    print("UT", tid)
                     return tid
+
+        # fallback to just dtype
         return self.dtype
 
     def _get_padding(self, key):
@@ -567,7 +626,7 @@ def _check_dtype(self, dtype):
 
     # is user type is given extract underlying h5py object
     # we just use the h5py user type here
-    if isinstance(dtype, (EnumType,)):
+    if isinstance(dtype, (EnumType, VLType, CompoundType)):
         h5type = dtype._h5ds
         if dtype._root._h5file.filename != self._root._h5file.filename:
             raise TypeError(
@@ -576,16 +635,40 @@ def _check_dtype(self, dtype):
                 f" file {dtype._root._h5file.filename}"
             )
         # check if committed type can be accessed in current group hierarchy
-        dname = dtype.name.split("/")[-1]
-        if (
-            (user_type := self._all_enumtypes.get(dname)) is None
-        ) or user_type._h5ds.name != h5type.name:
+        user_type = self._get_usertype(dtype)
+        if user_type is None:
             msg = (
                 f"Given dtype {dtype.name!r} is not accessible in current group"
                 f" {self._h5group.name!r} or any parent group. Instead it's defined at"
                 f" {h5type.name!r}. Please create it in the current or any parent group."
             )
             raise TypeError(msg)
+        # this checks for committed types which are overridden by re-definitions
+        elif (actual := user_type._h5ds.name) != h5type.name:
+            msg = (
+                f"Given dtype {dtype.name!r} is defined at {h5type.name!r}."
+                f" Another dtype with same name is defined at {actual!r} and"
+                f" would override it."
+            )
+            raise TypeError(msg)
+        # return dtype, h5type
+
+    elif np.dtype(dtype).kind == "c":
+        itemsize = np.dtype(dtype).itemsize
+        try:
+            width = {8: "FLOAT", 16: "DOUBLE"}[itemsize]
+        except KeyError as e:
+            raise TypeError(
+                "Currently only 'complex64' and 'complex128' dtypes are allowed."
+            ) from e
+        dname = f"_PFNC_{width}_COMPLEX_TYPE"
+        # todo check compound type for existing complex types
+        #  which may be used here
+        # if dname is not available in current group-path
+        # create and commit type in current group
+        if dname not in self._all_cmptypes:
+            dtype = self.create_cmptype(dtype, dname)  # .dtype
+        # return self._cmptypes[dname]._h5ds
 
     return dtype
 
@@ -606,6 +689,8 @@ def _check_fillvalue(self, fillvalue, dtype):
         if isinstance(self._parent, Dataset):
             h5fillvalue = _get_default_fillvalue(dtype)
 
+    print("XX", dtype)
+    # print("XX", dtype.dtype)
     # handling for EnumType
     if dtype is not None and isinstance(dtype, EnumType):
         if fillvalue is None:
@@ -674,6 +759,8 @@ class Group(Mapping):
     _variable_cls = Variable
     _dimension_cls = Dimension
     _enumtype_cls = EnumType
+    _vltype_cls = VLType
+    _cmptype_cls = CompoundType
 
     @property
     def _group_cls(self):
@@ -691,15 +778,22 @@ class Group(Mapping):
 
         self._dimensions = Dimensions(self)
         self._enumtypes = _LazyObjectLookup(self, self._enumtype_cls)
+        self._vltypes = _LazyObjectLookup(self, self._vltype_cls)
+        self._cmptypes = _LazyObjectLookup(self, self._cmptype_cls)
 
         # this map keeps track of all dimensions
         if parent is self:
             self._all_dimensions = ChainMap(self._dimensions)
             self._all_enumtypes = ChainMap(self._enumtypes)
+            self._all_vltypes = ChainMap(self._vltypes)
+            self._all_cmptypes = ChainMap(self._cmptypes)
+
         else:
             self._all_dimensions = parent._all_dimensions.new_child(self._dimensions)
             self._all_h5groups = parent._all_h5groups.new_child(self._h5group)
             self._all_enumtypes = parent._all_enumtypes.new_child(self._enumtypes)
+            self._all_vltypes = parent._all_vltypes.new_child(self._vltypes)
+            self._all_cmptypes = parent._all_cmptypes.new_child(self._cmptypes)
 
         self._variables = _LazyObjectLookup(self, self._variable_cls)
         self._groups = _LazyObjectLookup(self, self._group_cls)
@@ -713,11 +807,9 @@ class Group(Mapping):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
                 self._groups.add(k)
-            # todo: add other user types here
-            elif isinstance(
-                v, self._root._h5py.Datatype
-            ) and self._root._h5py.check_enum_dtype(v.dtype):
-                self._enumtypes.add(k)
+            elif isinstance(v, self._root._h5py.Datatype):
+                # add usertypes (enum, vlen, compound)
+                self._add_usertype(v)
             else:
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
                     # add dimension and retrieve size
@@ -863,6 +955,7 @@ class Group(Mapping):
 
         # check and handle dtypes
         dtype = _check_dtype(self, dtype)
+        print("DT:", dtype)
 
         if "scaleoffset" in kwargs:
             _invalid_netcdf_feature(
@@ -933,6 +1026,12 @@ class Group(Mapping):
         # fill value handling
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
 
+        dtype = dtype._h5ds if isinstance(dtype, UserType) else dtype
+
+        # use numpy dtype for h5pyd
+        if self._root._h5py.__name__ == "h5pyd":
+            dtype = np.dtype(dtype)
+
         # create hdf5 variable
         self._h5group.create_dataset(
             h5name,
@@ -971,7 +1070,7 @@ class Group(Mapping):
 
         # add fillvalue attribute to variable
         if fillvalue is not None:
-            variable._add_fillvalue(fillvalue)
+            variable._add_fillvalue(fillvalue, dtype)
 
         return variable
 
@@ -1108,9 +1207,44 @@ class Group(Mapping):
     def variables(self):
         return Frozen(self._variables)
 
+    def _add_usertype(self, usertype):
+        """Add usertype to related usertype dict on read."""
+        name = usertype.name.split("/")[-1]
+        dtype = usertype.dtype
+        metadata = dtype.metadata if dtype.metadata else {}
+        if "enum" in metadata:
+            self._enumtypes.add(name)
+        elif "vlen" in metadata:
+            self._vltypes.add(name)
+        elif dtype.names is not None or "complex" in dtype.name:
+            self._cmptypes.add(name)
+        else:
+            raise ValueError(f"Undefined user type {name}!r.")
+
+    def _get_usertype(self, usertype):
+        """Get usertype from related usertype dict"""
+        dtype = usertype.dtype
+        metadata = dtype.metadata if dtype.metadata else {}
+        if "enum" in metadata:
+            return self._all_enumtypes.get(usertype.name)
+        if "vlen" in metadata:
+            return self._all_vltypes.get(usertype.name)
+        elif dtype.names is not None or "complex" in dtype.name:
+            return self._all_cmptypes.get(usertype.name)
+        else:
+            raise ValueError(f"Undefined user type {dtype}!r.")
+
     @property
     def enumtypes(self):
         return Frozen(self._enumtypes)
+
+    @property
+    def vltypes(self):
+        return Frozen(self._vltypes)
+
+    @property
+    def cmptypes(self):
+        return Frozen(self._cmptypes)
 
     @property
     def dims(self):
@@ -1130,9 +1264,11 @@ class Group(Mapping):
             + [
                 "    {}: {}".format(
                     k,
-                    f"Unlimited (current: {self._dimensions[k].size})"
-                    if v is None
-                    else v,
+                    (
+                        f"Unlimited (current: {self._dimensions[k].size})"
+                        if v is None
+                        else v
+                    ),
                 )
                 for k, v in self.dimensions.items()
             ]
@@ -1177,6 +1313,37 @@ class Group(Mapping):
         enumtype = self._enumtype_cls(self, datatype_name)
         self._enumtypes[datatype_name] = enumtype
         return enumtype
+
+    def create_vltype(self, datatype, datatype_name):
+        """Create VLType.
+        datatype: np.dtype
+            A numpy dtype object describing the base type.
+        datatype_name: string
+            A Python string containing a description of the VL data type.
+        """
+        # wrap in numpy dtype first
+        datatype = np.dtype(datatype)
+        et = self._root._h5py.vlen_dtype(datatype)
+        self._h5group[datatype_name] = et
+        # create vltype class instance
+        vltype = self._vltype_cls(self, datatype_name)
+        self._vltypes[datatype_name] = vltype
+        return vltype
+
+    def create_cmptype(self, datatype, datatype_name):
+        """Create CompoundType.
+        datatype: np.dtype
+            A numpy dtype object describing the structured type.
+        datatype_name: string
+            A Python string containing a description of the compound data type.
+        """
+        # wrap in numpy dtype first
+        datatype = np.dtype(datatype)
+        self._h5group[datatype_name] = datatype
+        # create compound class instance
+        cmptype = self._cmptype_cls(self, datatype_name)
+        self._cmptypes[datatype_name] = cmptype
+        return cmptype
 
 
 class File(Group):
@@ -1342,12 +1509,8 @@ class File(Group):
 
         if dtype == bool:
             description = "boolean"
-        elif dtype == complex:
-            description = "complex"
         elif self._h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
-        elif self._h5py.check_dtype(vlen=dtype) not in {None, str, bytes}:
-            description = "non-string variable length"
         else:
             description = None
 
