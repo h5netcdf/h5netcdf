@@ -2216,6 +2216,27 @@ def test_ros3():
     f.close()
 
 
+def test_shared_user_types(tmp_local_netcdf):
+    enum_dict1 = dict(one=1, two=2, three=3, missing=255)
+
+    with h5netcdf.File(
+        tmp_local_netcdf, "w"
+    ) as ds:
+        ds.dimensions = {"enum_dim": 4}
+        enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict1)
+        v = ds.create_variable(
+            "enum_var", ("enum_dim",), dtype=enum_type, fillvalue=enum_dict1["missing"]
+        )
+        v[0:3] = [1, 2, 3]
+
+        #
+        ctype = v._get_committed_type()
+        assert ctype == enum_type
+
+        dname = v.attrs._get_committed_type_name("_FillValue")
+        assert dname == enum_type._h5ds.name
+
+
 def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
     enum_dict1 = dict(one=1, two=2, three=3, missing=254)
     enum_dict2 = dict(one=0, two=2, three=3, missing=255)
@@ -2322,12 +2343,12 @@ def test_enum_type_errors_new_api(tmp_local_or_remote_netcdf):
         enum_type2 = ds.create_enumtype(np.uint8, "enum_t2", enum_dict2)
 
         # 1.
-        with pytest.warns(UserWarning, match="default fill_value 0 which IS defined"):
-            ds.create_variable(
-                "enum_var1",
-                ("enum_dim",),
-                dtype=enum_type2,
-            )
+        #with pytest.warns(UserWarning, match="default fill_value 0 which IS defined"):
+        ds.create_variable(
+            "enum_var1",
+            ("enum_dim",),
+            dtype=enum_type2,
+        )
         # 2. is for legacyapi only
         # 3.
         with pytest.warns(

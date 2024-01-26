@@ -309,7 +309,7 @@ class BaseVariable(BaseObject):
         if self._h5ds.shape != new_shape:
             self._h5ds.resize(new_shape)
 
-    def _add_fillvalue(self, fillvalue):
+    def _add_fillvalue(self, fillvalue, dtype=None):
         """Add _FillValue attribute"""
 
         # trying to create correct type of fillvalue
@@ -328,7 +328,12 @@ class BaseVariable(BaseObject):
             else:
                 value = self.dtype.type(fillvalue)
 
-        self.attrs["_FillValue"] = value
+        # need to use create-function in order
+        # to provide correct committed/named type
+        if dtype is not None:
+            self.attrs._h5attrs.create("_FillValue", value, dtype=dtype)
+        else:
+            self.attrs["_FillValue"] = value
 
     @property
     def dimensions(self):
@@ -351,9 +356,37 @@ class BaseVariable(BaseObject):
     def __len__(self):
         return self.shape[0]
 
+    def _get_committed_type(self):
+        """Return committed user type"""
+        tname = self._h5ds._d(self._root._h5py.h5i.get_name(self._h5ds.id.get_type()))
+        if tname is None:
+            return tname
+        print("tname", tname)
+        print(self._h5ds.id.dtype)
+        tname = tname.split("/")[-1]
+
+        metadata = self.dtype.metadata if self.dtype.metadata else {}
+        if "enum" in metadata:
+            usertype = self._parent._all_enumtypes
+        elif "vlen" in metadata:
+            usertype = self._parent._all_vltypes
+        elif self.dtype.names is not None or "complex" in self.dtype.name:
+            usertype = self._parent._all_cmptypes
+        return usertype[tname]
+
+    def _get_h5type(self):
+        """Return HDF5 type"""
+        return self._h5ds.id.get_type()
+
     @property
     def datatype(self):
         """Return numpy dtype or user defined type."""
+        # first check committed type (works only for shared user types)
+        if self._root._h5py.__name__ == "h5py":
+            # retrieve committed type from file
+            if (ctype := self._get_committed_type()) is not None:
+                return ctype
+
         # this is really painful as we have to iterate over all types
         # and check equality
         usertype = None
@@ -368,6 +401,7 @@ class BaseVariable(BaseObject):
         if usertype is not None:
             for tid in usertype.values():
                 if self.dtype == tid.dtype and metadata == tid.dtype.metadata:
+                    print("UT", tid)
                     return tid
 
         # fallback to just dtype
@@ -617,6 +651,8 @@ def _check_dtype(self, dtype):
                 f" would override it."
             )
             raise TypeError(msg)
+        #return dtype, h5type
+
     elif np.dtype(dtype).kind == "c":
         itemsize = np.dtype(dtype).itemsize
         try:
@@ -631,7 +667,8 @@ def _check_dtype(self, dtype):
         # if dname is not available in current group-path
         # create and commit type in current group
         if dname not in self._all_cmptypes:
-            dtype = self.create_cmptype(dtype, dname).dtype
+            dtype = self.create_cmptype(dtype, dname)#.dtype
+        #return self._cmptypes[dname]._h5ds
 
     return dtype
 
@@ -652,6 +689,8 @@ def _check_fillvalue(self, fillvalue, dtype):
         if isinstance(self._parent, Dataset):
             h5fillvalue = _get_default_fillvalue(dtype)
 
+    print("XX", dtype)
+    #print("XX", dtype.dtype)
     # handling for EnumType
     if dtype is not None and isinstance(dtype, EnumType):
         if fillvalue is None:
@@ -916,6 +955,7 @@ class Group(Mapping):
 
         # check and handle dtypes
         dtype = _check_dtype(self, dtype)
+        print("DT:", dtype)
 
         if "scaleoffset" in kwargs:
             _invalid_netcdf_feature(
@@ -986,6 +1026,12 @@ class Group(Mapping):
         # fill value handling
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
 
+        dtype = dtype._h5ds if isinstance(dtype, UserType) else dtype
+
+        # use numpy dtype for h5pyd
+        if self._root._h5py.__name__ == "h5pyd":
+            dtype = np.dtype(dtype)
+
         # create hdf5 variable
         self._h5group.create_dataset(
             h5name,
@@ -1024,7 +1070,7 @@ class Group(Mapping):
 
         # add fillvalue attribute to variable
         if fillvalue is not None:
-            variable._add_fillvalue(fillvalue)
+            variable._add_fillvalue(fillvalue, dtype)
 
         return variable
 

@@ -99,3 +99,9 @@ class Attributes(MutableMapping):
 
     def __repr__(self):
         return "\n".join(["%r" % type(self)] + [f"{k}: {v!r}" for k, v in self.items()])
+
+    def _get_committed_type_name(self, key):
+        """ "Return Path to committed type"""
+        return self._h5attrs._d(
+            self._h5py.h5i.get_name(self._h5attrs.get_id(key).get_type())
+        )
