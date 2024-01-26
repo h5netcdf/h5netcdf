@@ -54,9 +54,11 @@ def _transform_1d_boolean_indexers(key):
     # return key, if not iterable
     try:
         key = [
-            np.asanyarray(k).nonzero()[0]
-            if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
-            else k
+            (
+                np.asanyarray(k).nonzero()[0]
+                if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
+                else k
+            )
             for k in key
         ]
     except TypeError:
@@ -1207,9 +1209,11 @@ class Group(Mapping):
             + [
                 "    {}: {}".format(
                     k,
-                    f"Unlimited (current: {self._dimensions[k].size})"
-                    if v is None
-                    else v,
+                    (
+                        f"Unlimited (current: {self._dimensions[k].size})"
+                        if v is None
+                        else v
+                    ),
                 )
                 for k, v in self.dimensions.items()
             ]
