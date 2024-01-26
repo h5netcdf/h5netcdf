@@ -354,14 +354,23 @@ class BaseVariable(BaseObject):
     @property
     def datatype(self):
         """Return numpy dtype or user defined type."""
-        if (enum_dict := self._root._h5py.check_enum_dtype(self.dtype)) is not None:
-            for tid in self._parent._all_enumtypes.values():
-                if self._root._h5py == h5py:
-                    found = self._h5ds.id.get_type().equal(tid._h5ds.id)
-                else:
-                    found = tid.enum_dict == enum_dict
-                if found:
+        # this is really painful as we have to iterate over all types
+        # and check equality
+        usertype = None
+        metadata = self.dtype.metadata if self.dtype.metadata else {}
+        if "enum" in metadata:
+            usertype = self._parent._all_enumtypes
+        elif "vlen" in metadata:
+            usertype = self._parent._all_vltypes
+        elif self.dtype.names is not None or "complex" in self.dtype.name:
+            usertype = self._parent._all_cmptypes
+
+        if usertype is not None:
+            for tid in usertype.values():
+                if self.dtype == tid.dtype and metadata == tid.dtype.metadata:
                     return tid
+
+        # fallback to just dtype
         return self.dtype
 
     def _get_padding(self, key):
