@@ -2234,6 +2234,7 @@ def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
                 ds.create_enumtype(np.uint8, "enum_t", enum_dict2)
 
             enum_type2 = g.create_enumtype(np.uint8, "enum_t2", enum_dict2)
+            g.create_enumtype(np.uint8, "enum_t", enum_dict2)
             with pytest.raises(TypeError, match="Please provide h5netcdf user type"):
                 ds.create_variable(
                     "enum_var1",
@@ -2255,6 +2256,13 @@ def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
                     dtype=enum_type2,
                     fillvalue=enum_dict2["missing"],
                 )
+            with pytest.raises(TypeError, match="Another dtype with same name"):
+                g.create_variable(
+                    "enum_var4",
+                    ("enum_dim",),
+                    dtype=enum_type,
+                    fillvalue=enum_dict2["missing"],
+                )
 
 
 def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
@@ -2274,7 +2282,7 @@ def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
                 ds.createEnumType(np.uint8, "enum_t", enum_dict1)
 
             enum_type2 = g.createEnumType(np.uint8, "enum_t2", enum_dict2)
-
+            g.create_enumtype(np.uint8, "enum_t", enum_dict2)
             with pytest.raises(TypeError, match="Please provide h5netcdf user type"):
                 ds.createVariable(
                     "enum_var1",
@@ -2293,6 +2301,13 @@ def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
                 ds.createVariable(
                     "enum_var3",
                     enum_type2,
+                    ("enum_dim",),
+                    fill_value=enum_dict2["missing"],
+                )
+            with pytest.raises(TypeError, match="Another dtype with same name"):
+                g.createVariable(
+                    "enum_var4",
+                    enum_type,
                     ("enum_dim",),
                     fill_value=enum_dict2["missing"],
                 )
@@ -2567,6 +2582,7 @@ def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
         pytest.skip("does not work for netCDF4")
     with netcdf_write_module.Dataset(tmp_local_or_remote_netcdf, "w") as ds:
         ds.createDimension("x", 5)
+        ds.createGroup("test")
         compound_t = ds.createCompoundType(compound, "cmp_t")
         var = ds.createVariable("data", compound_t, ("x",))
         var[:] = cmp_array
