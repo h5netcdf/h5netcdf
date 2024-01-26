@@ -7,6 +7,8 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Refactor fillvalue and dtype handling for user types, enhance sanity checks and tests ({pull}`230`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Add VLType and CompoundType, commit complex compound type to file. Align with nc-complex.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Update h5pyd testing.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - CI and lint maintenance ({pull}`235`).
