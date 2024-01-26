@@ -1147,7 +1147,7 @@ class Group(Mapping):
         return Frozen(self._variables)
 
     def _add_usertype(self, usertype):
-        """Add usertype to dicts on read"""
+        """Add usertype to related usertype dict on read."""
         name = usertype.name.split("/")[-1]
         dtype = usertype.dtype
         metadata = dtype.metadata if dtype.metadata else {}
@@ -1161,7 +1161,7 @@ class Group(Mapping):
             raise ValueError(f"Undefined user type {name}!r.")
 
     def _get_usertype(self, usertype):
-        """Add usertype to dicts on read"""
+        """Get usertype from related usertype dict"""
         dtype = usertype.dtype
         metadata = dtype.metadata if dtype.metadata else {}
         if "enum" in metadata:
