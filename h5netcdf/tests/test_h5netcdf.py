@@ -2219,9 +2219,7 @@ def test_ros3():
 def test_shared_user_types(tmp_local_netcdf):
     enum_dict1 = dict(one=1, two=2, three=3, missing=255)
 
-    with h5netcdf.File(
-        tmp_local_netcdf, "w"
-    ) as ds:
+    with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         ds.dimensions = {"enum_dim": 4}
         enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict1)
         v = ds.create_variable(
@@ -2343,7 +2341,7 @@ def test_enum_type_errors_new_api(tmp_local_or_remote_netcdf):
         enum_type2 = ds.create_enumtype(np.uint8, "enum_t2", enum_dict2)
 
         # 1.
-        #with pytest.warns(UserWarning, match="default fill_value 0 which IS defined"):
+        # with pytest.warns(UserWarning, match="default fill_value 0 which IS defined"):
         ds.create_variable(
             "enum_var1",
             ("enum_dim",),

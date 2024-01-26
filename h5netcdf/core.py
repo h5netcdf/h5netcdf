@@ -651,7 +651,7 @@ def _check_dtype(self, dtype):
                 f" would override it."
             )
             raise TypeError(msg)
-        #return dtype, h5type
+        # return dtype, h5type
 
     elif np.dtype(dtype).kind == "c":
         itemsize = np.dtype(dtype).itemsize
@@ -667,8 +667,8 @@ def _check_dtype(self, dtype):
         # if dname is not available in current group-path
         # create and commit type in current group
         if dname not in self._all_cmptypes:
-            dtype = self.create_cmptype(dtype, dname)#.dtype
-        #return self._cmptypes[dname]._h5ds
+            dtype = self.create_cmptype(dtype, dname)  # .dtype
+        # return self._cmptypes[dname]._h5ds
 
     return dtype
 
@@ -690,7 +690,7 @@ def _check_fillvalue(self, fillvalue, dtype):
             h5fillvalue = _get_default_fillvalue(dtype)
 
     print("XX", dtype)
-    #print("XX", dtype.dtype)
+    # print("XX", dtype.dtype)
     # handling for EnumType
     if dtype is not None and isinstance(dtype, EnumType):
         if fillvalue is None:
