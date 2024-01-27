@@ -86,6 +86,12 @@ class Dimension:
         self._dimensionid = self._root._max_dim_id
         if parent._root._writable and create_h5ds and not self._phony:
             self._create_scale()
+        # cache size
+        self._size = len(self)
+        # cache unlimited
+        self._isunlimited = (
+            not phony and self._root._h5file[self._h5path].maxshape[0] is None
+        )
         self._initialized = True
 
     @property
@@ -106,7 +112,7 @@ class Dimension:
     @property
     def size(self):
         """Return dimension size."""
-        size = len(self)
+        size = self._size
         if self.isunlimited():
             # return actual dimensions sizes, this is in line with netcdf4-python
             # get sizes from all connected variables and calculate max
@@ -125,9 +131,7 @@ class Dimension:
 
     def isunlimited(self):
         """Return ``True`` if dimension is unlimited, otherwise ``False``."""
-        if self._phony:
-            return False
-        return self._h5ds.maxshape == (None,)
+        return self._isunlimited
 
     @property
     def _h5ds(self):
@@ -154,6 +158,8 @@ class Dimension:
                 % self.name
             )
         self._h5ds.resize((size,))
+        # apply new size
+        self._size = len(self)
 
         # resize all referenced datasets for new API
         if not isinstance(self._root, Dataset):
