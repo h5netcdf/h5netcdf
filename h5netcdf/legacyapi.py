@@ -104,7 +104,7 @@ class Variable(core.BaseVariable, HasAttributesMixin):
 
     @property
     def dtype(self):
-        """Return netCDF4.Variable datatype."""
+        """Return netCDF4.Variable numpy dtype."""
         dt = self._h5ds.dtype
         if h5py.check_dtype(vlen=dt) is str:
             return str

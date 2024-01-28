@@ -2416,11 +2416,12 @@ def test_enum_type_errors_legacyapi(tmp_local_or_remote_netcdf):
 def test_enum_type(tmp_local_or_remote_netcdf):
     # test EnumType
     enum_dict = dict(one=1, two=2, three=3, missing=255)
-    dict(one=1, two=2, three=3, missing=254)
+    enum_dict2 = dict(one=1, two=2, three=3, missing=254)
 
     # first with new API
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
         ds.dimensions = {"enum_dim": 4}
+        ds.create_enumtype(np.uint8, "enum_t2", enum_dict2)
         enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict)
         v = ds.create_variable(
             "enum_var", ("enum_dim",), dtype=enum_type, fillvalue=enum_dict["missing"]
@@ -2605,7 +2606,8 @@ def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
         assert isinstance(cmptype, h5netcdf.legacyapi.CompoundType)
         assert cmptype.name == "cmp_t"
         assert array_equal(ds["data"][:], cmp_array)
-        assert ds["data"].datatype == cmptype.dtype
+        assert ds["data"].datatype == cmptype
+        assert ds["data"].dtype == cmptype.dtype
 
     if not tmp_local_or_remote_netcdf.startswith(remote_h5):
         with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as ds:

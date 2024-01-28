@@ -139,6 +139,29 @@ class BaseObject:
         return self._h5ds.dtype
 
 
+h5type_mapping = {
+    "H5T_COMPOUND": 6,
+    "H5T_ENUM": 8,
+    "H5T_VLEN": 9,
+}
+
+
+def _get_h5usertype_identifier(h5type):
+    try:
+        tkey = h5type.id.get_class()
+    except AttributeError:
+        tkey = h5type_mapping[h5type.id.type_json["class"]]
+    return tkey
+
+
+def _get_h5dstype_identifier(h5type):
+    try:
+        tkey = h5type.id.get_type().get_class()
+    except AttributeError:
+        tkey = h5type_mapping[h5type.id.type_json["class"]]
+    return tkey
+
+
 class UserType(BaseObject):
     _cls_name = "h5netcdf.UserType"
 
@@ -153,6 +176,28 @@ class UserType(BaseObject):
             return f"<Closed {self._cls_name!r}>"
         header = f"<class {self._cls_name!r}: name = {self.name!r}, numpy dtype = {self.dtype!r}"
         return header
+
+    @property
+    def _h5type_identifier(self):
+        """Returns type identifier.
+
+        See https://api.h5py.org/h5t.html#datatype-class-codes and
+        https://docs.hdfgroup.org (enum H5T_class_t)
+
+        """
+        return _get_h5usertype_identifier(self._h5ds)
+
+    @property
+    def _h5datatype(self):
+        """Returns comparable h5type.
+
+        - DatatypeID for h5py
+        - (dtype, dtype.metadata) for h5pyd
+        """
+        if self._root._h5py.__name__ == "h5py":
+            return self._h5ds.id
+        else:
+            return self.dtype, self.dtype.metadata
 
 
 class EnumType(UserType):
@@ -352,25 +397,41 @@ class BaseVariable(BaseObject):
         return self.shape[0]
 
     @property
+    def _h5type_identifier(self):
+        """Returns type identifier.
+
+        See https://api.h5py.org/h5t.html#datatype-class-codes and
+        https://docs.hdfgroup.org (enum H5T_class_t)
+
+        """
+        return _get_h5dstype_identifier(self._h5ds)
+
+    @property
+    def _h5datatype(self):
+        """Returns comparable h5type.
+
+        - DatatypeID for h5py
+        - (dtype, dtype.metadata) for h5pyd
+        """
+        if self._root._h5py.__name__ == "h5py":
+            return self._h5ds.id.get_type()
+        else:
+            return self.dtype, self.dtype.metadata
+
+    @property
     def datatype(self):
-        """Return numpy dtype or user defined type."""
+        """Return datatype.
+
+        Returns numpy dtype (for primitive types) or VLType/CompoundType/EnumType
+        instance (for compound, vlen or enum data types).
+        """
         # this is really painful as we have to iterate over all types
         # and check equality
-        usertype = None
-        metadata = self.dtype.metadata if self.dtype.metadata else {}
-        if "enum" in metadata:
-            usertype = self._parent._all_enumtypes
-        elif "vlen" in metadata:
-            usertype = self._parent._all_vltypes
-        elif self.dtype.names is not None or "complex" in self.dtype.name:
-            usertype = self._parent._all_cmptypes
-
+        usertype = self._parent._get_usertype_dict(self._h5type_identifier)
         if usertype is not None:
             for tid in usertype.values():
-                if self.dtype == tid.dtype and metadata == tid.dtype.metadata:
+                if self._h5datatype == tid._h5datatype:
                     return tid
-
-        # fallback to just dtype
         return self.dtype
 
     def _get_padding(self, key):
@@ -595,7 +656,7 @@ def _check_dtype(self, dtype):
                 f" file {dtype._root._h5file.filename}"
             )
         # check if committed type can be accessed in current group hierarchy
-        user_type = self._get_usertype(dtype)
+        user_type = self._get_usertype(h5type)
         if user_type is None:
             msg = (
                 f"Given dtype {dtype.name!r} is not accessible in current group"
@@ -1155,43 +1216,41 @@ class Group(Mapping):
     def variables(self):
         return Frozen(self._variables)
 
-    def _add_usertype(self, usertype):
-        """Add usertype to related usertype dict on read."""
-        name = usertype.name.split("/")[-1]
-        dtype = usertype.dtype
-        metadata = dtype.metadata if dtype.metadata else {}
-        if "enum" in metadata:
-            self._enumtypes.add(name)
-        elif "vlen" in metadata:
-            self._vltypes.add(name)
-        elif dtype.names is not None or "complex" in dtype.name:
-            self._cmptypes.add(name)
-        else:
-            raise ValueError(f"Undefined user type {name}!r.")
+    def _add_usertype(self, h5type):
+        """Add usertype to related usertype dict.
 
-    def _get_usertype(self, usertype):
-        """Get usertype from related usertype dict"""
-        dtype = usertype.dtype
-        metadata = dtype.metadata if dtype.metadata else {}
-        if "enum" in metadata:
-            return self._all_enumtypes.get(usertype.name)
-        if "vlen" in metadata:
-            return self._all_vltypes.get(usertype.name)
-        elif dtype.names is not None or "complex" in dtype.name:
-            return self._all_cmptypes.get(usertype.name)
-        else:
-            raise ValueError(f"Undefined user type {dtype}!r.")
+        The type is added by name to the dict attached to current group.
+        """
+        name = h5type.name.split("/")[-1]
+        tkey = _get_h5usertype_identifier(h5type)
+        # add usertype to corresponding dict
+        self._get_usertype_dict(tkey).maps[0].add(name)
+
+    def _get_usertype(self, h5type):
+        """Get usertype from related usertype dict."""
+        tkey = _get_h5usertype_identifier(h5type)
+        return self._get_usertype_dict(tkey).get(h5type.name.split("/")[-1])
+
+    def _get_usertype_dict(self, h5class):
+        return {
+            6: self._all_cmptypes,
+            8: self._all_enumtypes,
+            9: self._all_vltypes,
+        }[h5class]
 
     @property
     def enumtypes(self):
+        """Return defined enum types."""
         return Frozen(self._enumtypes)
 
     @property
     def vltypes(self):
+        """Return defined vlen types."""
         return Frozen(self._vltypes)
 
     @property
     def cmptypes(self):
+        """Return defined compound types."""
         return Frozen(self._cmptypes)
 
     @property
