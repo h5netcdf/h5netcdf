@@ -139,7 +139,7 @@ class BaseObject:
         return self._h5ds.dtype
 
 
-h5type_mapping = {
+_h5type_mapping = {
     "H5T_COMPOUND": 6,
     "H5T_ENUM": 8,
     "H5T_VLEN": 9,
@@ -147,19 +147,25 @@ h5type_mapping = {
 
 
 def _get_h5usertype_identifier(h5type):
+    """Return H5 Type Identifier from given H5 Datatype."""
     try:
-        tkey = h5type.id.get_class()
+        # h5py first
+        h5typeid = h5type.id.get_class()
     except AttributeError:
-        tkey = h5type_mapping[h5type.id.type_json["class"]]
-    return tkey
+        # h5pyd second
+        h5typeid = _h5type_mapping[h5type.id.type_json["class"]]
+    return h5typeid
 
 
 def _get_h5dstype_identifier(h5type):
+    """Return H5 Type Identifier from given H5 Dataset."""
     try:
-        tkey = h5type.id.get_type().get_class()
+        # h5py first
+        h5typeid = h5type.id.get_type().get_class()
     except AttributeError:
-        tkey = h5type_mapping[h5type.id.type_json["class"]]
-    return tkey
+        # h5pyd second
+        h5typeid = _h5type_mapping[h5type.id.type_json["class"]]
+    return h5typeid
 
 
 class UserType(BaseObject):
@@ -355,7 +361,11 @@ class BaseVariable(BaseObject):
             self._h5ds.resize(new_shape)
 
     def _add_fillvalue(self, fillvalue):
-        """Add _FillValue attribute"""
+        """Add _FillValue attribute.
+
+        This method takes care of adding fillvalue with the wanted
+        variable dtype.
+        """
 
         # trying to create correct type of fillvalue
         if self.dtype is str:
@@ -409,6 +419,9 @@ class BaseVariable(BaseObject):
     @property
     def _h5datatype(self):
         """Returns comparable h5type.
+
+        This property can be used to compare two variables/datatypes or
+        a variable and a datatype for equality of the underlying datatype.
 
         - DatatypeID for h5py
         - (dtype, dtype.metadata) for h5pyd
@@ -626,20 +639,23 @@ def _unlabeled_dimension_mix(h5py_dataset):
     return status
 
 
-def _check_dtype(self, dtype):
-    """Check and handle dtypes"""
+def _check_dtype(group, dtype):
+    """Check and handle dtypes when adding variable to given group.
+
+    Raises errors and issues warnings according to given dtype.
+    """
 
     if dtype == np.bool_:
         # never warn since h5netcdf has always errored here
         _invalid_netcdf_feature(
             "boolean dtypes",
-            self._root.invalid_netcdf,
+            group._root.invalid_netcdf,
         )
     else:
-        self._root._check_valid_netcdf_dtype(dtype)
+        group._root._check_valid_netcdf_dtype(dtype)
 
     # we only allow h5netcdf user types, not named h5py.Datatype
-    if isinstance(dtype, self._root._h5py.Datatype):
+    if isinstance(dtype, group._root._h5py.Datatype):
         raise TypeError(
             f"Argument dtype {dtype!r} is not allowed. "
             f"Please provide h5netcdf user type or numpy compatible type."
@@ -649,18 +665,18 @@ def _check_dtype(self, dtype):
     # we just use the h5py user type here
     if isinstance(dtype, (EnumType, VLType, CompoundType)):
         h5type = dtype._h5ds
-        if dtype._root._h5file.filename != self._root._h5file.filename:
+        if dtype._root._h5file.filename != group._root._h5file.filename:
             raise TypeError(
                 f"Given dtype {dtype} is not committed into current file"
-                f" {self._root._h5file.filename}. Instead it's committed into"
+                f" {group._root._h5file.filename}. Instead it's committed into"
                 f" file {dtype._root._h5file.filename}"
             )
         # check if committed type can be accessed in current group hierarchy
-        user_type = self._get_usertype(h5type)
+        user_type = group._get_usertype(h5type)
         if user_type is None:
             msg = (
                 f"Given dtype {dtype.name!r} is not accessible in current group"
-                f" {self._h5group.name!r} or any parent group. Instead it's defined at"
+                f" {group._h5group.name!r} or any parent group. Instead it's defined at"
                 f" {h5type.name!r}. Please create it in the current or any parent group."
             )
             raise TypeError(msg)
@@ -685,26 +701,30 @@ def _check_dtype(self, dtype):
         #  which may be used here
         # if dname is not available in current group-path
         # create and commit type in current group
-        if dname not in self._all_cmptypes:
-            dtype = self.create_cmptype(dtype, dname).dtype
+        if dname not in group._all_cmptypes:
+            dtype = group.create_cmptype(dtype, dname).dtype
 
     return dtype
 
 
-def _check_fillvalue(self, fillvalue, dtype):
-    """Handles fillvalues before dataset creation"""
+def _check_fillvalue(group, fillvalue, dtype):
+    """Handles fillvalues when adding variable to given group.
+
+    Raises errors and issues warnings according to
+    given fillvalue and dtype.
+    """
 
     # handling default fillvalues for legacyapi
     # see https://github.com/h5netcdf/h5netcdf/issues/182
     from .legacyapi import Dataset, _get_default_fillvalue
 
-    stacklevel = 5 if isinstance(self._parent, Dataset) else 4
+    stacklevel = 5 if isinstance(group._root, Dataset) else 4
 
     h5fillvalue = fillvalue
 
     # if no fillvalue is provided take netcdf4 default values for legacyapi
     if fillvalue is None:
-        if isinstance(self._parent, Dataset):
+        if isinstance(group._root, Dataset):
             h5fillvalue = _get_default_fillvalue(dtype)
 
     # handling for EnumType
@@ -1104,7 +1124,7 @@ class Group(Mapping):
         dimensions : tuple
             Tuple containing dimension name strings. Defaults to empty tuple, effectively
             creating a scalar variable.
-        dtype : numpy.dtype, str, optional
+        dtype : numpy.dtype, str, UserType (Enum, VL, Compound), optional
             Datatype of the new variable. Defaults to None.
         fillvalue : scalar, optional
             Specify fillvalue for uninitialized parts of the variable. Defaults to ``None``.
@@ -1222,35 +1242,40 @@ class Group(Mapping):
         The type is added by name to the dict attached to current group.
         """
         name = h5type.name.split("/")[-1]
-        tkey = _get_h5usertype_identifier(h5type)
+        h5typeid = _get_h5usertype_identifier(h5type)
         # add usertype to corresponding dict
-        self._get_usertype_dict(tkey).maps[0].add(name)
+        self._get_usertype_dict(h5typeid).maps[0].add(name)
 
     def _get_usertype(self, h5type):
         """Get usertype from related usertype dict."""
-        tkey = _get_h5usertype_identifier(h5type)
-        return self._get_usertype_dict(tkey).get(h5type.name.split("/")[-1])
+        h5typeid = _get_h5usertype_identifier(h5type)
+        return self._get_usertype_dict(h5typeid).get(h5type.name.split("/")[-1])
 
-    def _get_usertype_dict(self, h5class):
+    def _get_usertype_dict(self, h5typeid):
+        """Return usertype-dict related to given h5 type identifier.
+
+        See https://api.h5py.org/h5t.html#datatype-class-codes and
+        https://docs.hdfgroup.org (enum H5T_class_t)
+        """
         return {
             6: self._all_cmptypes,
             8: self._all_enumtypes,
             9: self._all_vltypes,
-        }[h5class]
+        }[h5typeid]
 
     @property
     def enumtypes(self):
-        """Return defined enum types."""
+        """Return group defined enum types."""
         return Frozen(self._enumtypes)
 
     @property
     def vltypes(self):
-        """Return defined vlen types."""
+        """Return group defined vlen types."""
         return Frozen(self._vltypes)
 
     @property
     def cmptypes(self):
-        """Return defined compound types."""
+        """Return group defined compound types."""
         return Frozen(self._cmptypes)
 
     @property
@@ -1323,6 +1348,7 @@ class Group(Mapping):
 
     def create_vltype(self, datatype, datatype_name):
         """Create VLType.
+
         datatype: np.dtype
             A numpy dtype object describing the base type.
         datatype_name: string
@@ -1339,6 +1365,7 @@ class Group(Mapping):
 
     def create_cmptype(self, datatype, datatype_name):
         """Create CompoundType.
+
         datatype: np.dtype
             A numpy dtype object describing the structured type.
         datatype_name: string

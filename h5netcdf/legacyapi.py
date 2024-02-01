@@ -133,7 +133,6 @@ class Group(core.Group, HasAttributesMixin):
     _enumtype_cls = EnumType
     _vltype_cls = VLType
     _cmptype_cls = CompoundType
-    _usertype_cls = UserType
 
     @property
     def _group_cls(self):
@@ -183,8 +182,8 @@ class Group(core.Group, HasAttributesMixin):
         varname : str
             Name of the new variable. If given as a path, intermediate groups will be created,
             if not existent.
-        datatype : numpy.dtype, str
-            Dataype of the new variable
+        datatype : numpy.dtype, str, UserType (Enum, VL, Compound)
+            Datatype of the new variable.
         dimensions : tuple
             Tuple containing dimension name strings. Defaults to empty tuple, effectively
             creating a scalar variable.
