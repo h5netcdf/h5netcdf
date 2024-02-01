@@ -80,32 +80,32 @@ design is an adaptation of h5py to the netCDF data model. For example:
     import h5netcdf
     import numpy as np
 
-    with h5netcdf.File('mydata.nc', 'w') as f:
+    with h5netcdf.File("mydata.nc", "w") as f:
         # set dimensions with a dictionary
-        f.dimensions = {'x': 5}
+        f.dimensions = {"x": 5}
         # and update them with a dict-like interface
         # f.dimensions['x'] = 5
         # f.dimensions.update({'x': 5})
 
-        v = f.create_variable('hello', ('x',), float)
+        v = f.create_variable("hello", ("x",), float)
         v[:] = np.ones(5)
 
         # you don't need to create groups first
         # you also don't need to create dimensions first if you supply data
         # with the new variable
-        v = f.create_variable('/grouped/data', ('y',), data=np.arange(10))
+        v = f.create_variable("/grouped/data", ("y",), data=np.arange(10))
 
         # access and modify attributes with a dict-like interface
-        v.attrs['foo'] = 'bar'
+        v.attrs["foo"] = "bar"
 
         # you can access variables and groups directly using a hierarchical
         # keys like h5py
-        print(f['/grouped/data'])
+        print(f["/grouped/data"])
 
         # add an unlimited dimension
-        f.dimensions['z'] = None
+        f.dimensions["z"] = None
         # explicitly resize a dimension and all variables using it
-        f.resize_dimension('z', 3)
+        f.resize_dimension("z", 3)
 
 Notes:
 
@@ -126,22 +126,23 @@ The legacy API is designed for compatibility with `netCDF4-python`_. To use it, 
 .. code-block:: python
 
     import h5netcdf.legacyapi as netCDF4
+
     # everything here would also work with this instead:
     # import netCDF4
     import numpy as np
 
-    with netCDF4.Dataset('mydata.nc', 'w') as ds:
-        ds.createDimension('x', 5)
-        v = ds.createVariable('hello', float, ('x',))
+    with netCDF4.Dataset("mydata.nc", "w") as ds:
+        ds.createDimension("x", 5)
+        v = ds.createVariable("hello", float, ("x",))
         v[:] = np.ones(5)
 
-        g = ds.createGroup('grouped')
-        g.createDimension('y', 10)
-        g.createVariable('data', 'i8', ('y',))
-        v = g['data']
+        g = ds.createGroup("grouped")
+        g.createDimension("y", 10)
+        g.createVariable("data", "i8", ("y",))
+        v = g["data"]
         v[:] = np.arange(10)
-        v.foo = 'bar'
-        print(ds.groups['grouped'].variables['data'])
+        v.foo = "bar"
+        print(ds.groups["grouped"].variables["data"])
 
 The legacy API is designed to be easy to try-out for netCDF4-python users, but it is not an
 exact match. Here is an incomplete list of functionality we don't include:
@@ -164,8 +165,6 @@ h5py implements some features that do not (yet) result in valid netCDF files:
 
 - Data types:
     - Booleans
-    - Complex values
-    - Non-string variable length types
     - Reference types
 - Arbitrary filters:
     - Scale-offset filters
@@ -180,11 +179,11 @@ when creating a file:
 .. code-block:: python
 
   # avoid the .nc extension for non-netcdf files
-  f = h5netcdf.File('mydata.h5', invalid_netcdf=True)
+  f = h5netcdf.File("mydata.h5", invalid_netcdf=True)
   ...
 
   # works with the legacy API, too, though compression options are not exposed
-  ds = h5netcdf.legacyapi.Dataset('mydata.h5', invalid_netcdf=True)
+  ds = h5netcdf.legacyapi.Dataset("mydata.h5", invalid_netcdf=True)
   ...
 
 In such cases the `_NCProperties` attribute will not be saved to the file or be removed
@@ -222,7 +221,7 @@ phony dimensions according to `netCDF`_ behaviour.
 .. code-block:: python
 
   # mimic netCDF-behaviour for non-netcdf files
-  f = h5netcdf.File('mydata.h5', mode='r', phony_dims='sort')
+  f = h5netcdf.File("mydata.h5", mode="r", phony_dims="sort")
   ...
 
 Note, that this iterates once over the whole group-hierarchy. This has affects
@@ -233,7 +232,7 @@ to group access time. The created phony dimension naming will differ from
 
 .. code-block:: python
 
-  f = h5netcdf.File('mydata.h5', mode='r', phony_dims='access')
+  f = h5netcdf.File("mydata.h5", mode="r", phony_dims="access")
   ...
 
 .. rubric:: Footnotes
