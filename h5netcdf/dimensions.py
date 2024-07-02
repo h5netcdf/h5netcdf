@@ -50,6 +50,7 @@ class Dimensions(MutableMapping):
         dims = ", ".join(f"{k}={v!r}" for k, v in self._objects.items())
         return f"<h5netcdf.Dimensions: {dims}>"
 
+
 def _join_h5paths(parent_path, child_path):
     return "/".join([parent_path.rstrip("/"), child_path.lstrip("/")])
 
@@ -148,8 +149,7 @@ class Dimension:
 
         if not self.isunlimited():
             raise ValueError(
-                "Dimension '%s' is not unlimited and thus cannot be resized."
-                % self.name
+                f"Dimension '{self.name}' is not unlimited and thus cannot be resized."
             )
         self._h5ds.resize((size,))
 
@@ -231,7 +231,7 @@ class Dimension:
 
     def __repr__(self):
         if not self._phony and self._parent._root._closed:
-            return "<Closed %s>" % self._cls_name
+            return f"<Closed {self._cls_name}>"
         special = ""
         if self._phony:
             special += " (phony_dim)"
