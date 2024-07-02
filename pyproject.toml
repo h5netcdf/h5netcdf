@@ -28,6 +28,7 @@ classifiers=[
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = ["h5py", "packaging"]
@@ -69,12 +70,12 @@ exclude = [
 # E402: module level import not at top of file
 # E501: line too long - let black worry about that
 # E731: do not assign a lambda expression, use a def
-ignore = [
+lint.ignore = [
     "E402",
     "E501",
     "E731",
 ]
-select = [
+lint.select = [
     # Pyflakes
     "F",
     # Pycodestyle
@@ -86,5 +87,5 @@ select = [
     "UP",
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["h5netcdf"]
