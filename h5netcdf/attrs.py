@@ -76,7 +76,7 @@ class Attributes(MutableMapping):
 
     def __setitem__(self, key, value):
         if key in _HIDDEN_ATTRS:
-            raise AttributeError(f"cannot write attribute with reserved name {key:!r}")
+            raise AttributeError(f"cannot write attribute with reserved name {key!r}")
         if hasattr(value, "dtype"):
             dtype = value.dtype
         else:
@@ -98,6 +98,4 @@ class Attributes(MutableMapping):
         return len(self._h5attrs) - hidden_count
 
     def __repr__(self):
-        return "\n".join(
-            [f"{type(self):!r}"] + [f"{k}: {v!r}" for k, v in self.items()]
-        )
+        return "\n".join([f"{type(self)!r}"] + [f"{k}: {v!r}" for k, v in self.items()])

@@ -1338,9 +1338,9 @@ class File(Group):
     def _check_valid_netcdf_dtype(self, dtype):
         dtype = np.dtype(dtype)
 
-        if dtype is bool:
+        if dtype == bool:  # noqa
             description = "boolean"
-        elif dtype is complex:
+        elif dtype == complex:  # noqa
             description = "complex"
         elif self._h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
