@@ -445,7 +445,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     assert list(v.attrs) == []
 
     v = ds["var_len_str"]
-    assert h5py.check_dtype(vlen=v.dtype) == str
+    assert h5py.check_dtype(vlen=v.dtype) is str
     if getattr(ds, "decode_vlen_strings", True):
         assert v[0] == _vlen_string
     else:

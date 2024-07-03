@@ -54,9 +54,11 @@ def _transform_1d_boolean_indexers(key):
     # return key, if not iterable
     try:
         key = [
-            np.asanyarray(k).nonzero()[0]
-            if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
-            else k
+            (
+                np.asanyarray(k).nonzero()[0]
+                if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
+                else k
+            )
             for k in key
         ]
     except TypeError:
@@ -447,14 +449,8 @@ class BaseVariable(BaseObject):
 
     def __repr__(self):
         if self._parent._root._closed:
-            return "<Closed %s>" % self._cls_name
-        header = "<{} {!r}: dimensions {}, shape {}, dtype {}>".format(
-            self._cls_name,
-            self.name,
-            self.dimensions,
-            self.shape,
-            self.dtype,
-        )
+            return f"<Closed {self._cls_name}>"
+        header = f"<{self._cls_name} {self.name!r}: dimensions {self.dimensions}, shape {self.shape}, dtype {self.dtype}>"
         return "\n".join(
             [header]
             + ["Attributes:"]
@@ -799,16 +795,16 @@ class Group(Mapping):
         for k, v in self._all_dimensions.maps[0].items():
             if k in value:
                 if v != value[k]:
-                    raise ValueError("cannot modify existing dimension %r" % k)
+                    raise ValueError(f"cannot modify existing dimension {k:!r}")
             else:
                 raise ValueError(
-                    "new dimensions do not include existing dimension %r" % k
+                    f"new dimensions do not include existing dimension {k:!r}"
                 )
         self._dimensions.update(value)
 
     def _create_child_group(self, name):
         if name in self:
-            raise ValueError("unable to create group %r (name already exists)" % name)
+            raise ValueError(f"unable to create group {name:!r} (name already exists)")
         kwargs = {}
         if self._root._h5py.__name__ == "h5py":
             kwargs.update(track_order=self._track_order)
@@ -853,7 +849,7 @@ class Group(Mapping):
     ):
         if name in self:
             raise ValueError(
-                "unable to create variable %r " "(name already exists)" % name
+                f"unable to create variable {name:!r} (name already exists)"
             )
         if data is not None:
             data = np.asarray(data)
@@ -914,8 +910,8 @@ class Group(Mapping):
                 pass
             else:
                 raise ValueError(
-                    "got unrecognized value %s for chunking_heuristic argument "
-                    '(has to be "h5py" or "h5netcdf")' % chunking_heuristic
+                    f"got unrecognized value {chunking_heuristic} for chunking_heuristic argument "
+                    '(has to be "h5py" or "h5netcdf")'
                 )
 
         # Clear dummy HDF5 datasets with this name that were created for a
@@ -1130,9 +1126,11 @@ class Group(Mapping):
             + [
                 "    {}: {}".format(
                     k,
-                    f"Unlimited (current: {self._dimensions[k].size})"
-                    if v is None
-                    else v,
+                    (
+                        f"Unlimited (current: {self._dimensions[k].size})"
+                        if v is None
+                        else v
+                    ),
                 )
                 for k, v in self.dimensions.items()
             ]
@@ -1340,9 +1338,9 @@ class File(Group):
     def _check_valid_netcdf_dtype(self, dtype):
         dtype = np.dtype(dtype)
 
-        if dtype == bool:
+        if dtype == bool:  # noqa
             description = "boolean"
-        elif dtype == complex:
+        elif dtype == complex:  # noqa
             description = "complex"
         elif self._h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
@@ -1377,12 +1375,7 @@ class File(Group):
         if self._writable:
             # only write `_NCProperties` in newly created files
             if not self._preexisting_file and not self.invalid_netcdf:
-                _NC_PROPERTIES = "version=2,h5netcdf={},hdf5={},{}={}".format(
-                    __version__,
-                    self._h5py.version.hdf5_version,
-                    self._h5py.__name__,
-                    self._h5py.__version__,
-                )
+                _NC_PROPERTIES = f"version=2,h5netcdf={__version__},hdf5={self._h5py.version.hdf5_version},{self._h5py.__name__}={self._h5py.__version__}"
                 self.attrs._h5attrs["_NCProperties"] = np.array(
                     _NC_PROPERTIES,
                     dtype=self._h5py.string_dtype(
@@ -1424,7 +1417,7 @@ class File(Group):
 
     def __repr__(self):
         if self._closed:
-            return "<Closed %s>" % self._cls_name
+            return f"<Closed {self._cls_name}>"
         header = "<{} {!r} (mode {})>".format(
             self._cls_name,
             self.filename.split("/")[-1],

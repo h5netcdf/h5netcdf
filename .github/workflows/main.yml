@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -30,10 +30,10 @@ jobs:
           black --check .
       - name: Lint with ruff
         run: |
-          ruff .
+          ruff check .
 
   build_0:
-    name: h5py3 tests
+    name: h5py3 numpy 1 tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,8 +41,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11"]
-        h5py-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.9", "3.12"]
+        h5py-version: ["3.10", "3.11"]
+        numpy-version: ["1"]
     steps:
     - uses: actions/checkout@v4
     - name: Install micromamba
@@ -50,7 +51,7 @@ jobs:
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
-        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py_version}}-${{env.TODAY}}"
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py_version}}-numpy${{matrix.numpy_version}}-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
           pip
@@ -58,6 +59,42 @@ jobs:
           wheel
           h5py=${{ matrix.h5py-version }}
           netCDF4
+          numpy=${{ matrix.numpy-version }}
+    - name: Install h5netcdf
+      run: |
+        python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+    - name: Test with pytest
+      run: |
+        pytest -v --durations=0 h5netcdf/tests/
+
+  build_0a:
+    name: h5py3 numpy 2 tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+        h5py-version: ["3.11"]
+        numpy-version: ["2"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install micromamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-name: h5netcdf-tests
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py_version}}-numpy${{matrix.numpy_version}}-${{env.TODAY}}"
+        create-args: >-
+          python=${{ matrix.python-version }}
+          pip
+          pytest
+          wheel
+          h5py=${{ matrix.h5py-version }}
+          netCDF4
+          numpy=${{ matrix.numpy-version }}
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -75,7 +112,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.12"]
+        numpy-version: ["1", "2"]
     steps:
     - uses: actions/checkout@v4
     - name: Install micromamba
@@ -83,7 +121,7 @@ jobs:
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
-        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5pyd-${{env.TODAY}}"
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy_version}}-h5pyd-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
           pip
@@ -91,6 +129,7 @@ jobs:
           wheel
           h5py
           netCDF4
+          numpy=${{ matrix.numpy-version }}
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -110,7 +149,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.12"]
+        numpy-version: ["1", "2"]
     steps:
     - uses: actions/checkout@v4
     - name: Install micromamba
@@ -118,7 +158,7 @@ jobs:
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
-        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-netcdf4_nightly-${{env.TODAY}}"
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy_version}}-netcdf4_nightly-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
           pip
@@ -127,6 +167,7 @@ jobs:
           h5py
           libnetcdf
           cftime
+          numpy=${{ matrix.numpy-version }}
     - name: Install netCDF4 from GitHub
       run: python -m pip install git+https://github.com/Unidata/netcdf4-python
     - name: Install h5netcdf
@@ -146,7 +187,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.12"]
+        numpy-version: ["1", "2"]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -157,7 +199,7 @@ jobs:
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
-        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-xarray_nightly-${{env.TODAY}}"
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy_version}}-xarray_nightly-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
           dask
@@ -168,6 +210,7 @@ jobs:
           pip
           pytest
           wheel
+          numpy=${{ matrix.numpy-version }}
     - name: Install xarray
       run: |
         python -m pip install --no-deps .
@@ -195,7 +238,7 @@ jobs:
         cache-environment: true
         cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-docs-${{env.TODAY}}"
         create-args: >-
-          python=3.11
+          python=3.12
           pip
           pytest
           wheel
@@ -225,7 +268,7 @@ jobs:
 
   upload-pypi:
     if: github.event_name == 'release'
-    needs: [lint, build_0, sphinx_doc]
+    needs: [lint, build_0, build_0a, sphinx_doc]
     name: deploy to pypi
     runs-on: ubuntu-latest
     defaults:
@@ -238,7 +281,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

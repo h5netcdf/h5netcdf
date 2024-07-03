@@ -41,8 +41,7 @@ def _check_return_dtype_endianess(endian="native"):
         pass
     else:
         raise ValueError(
-            "'endian' keyword argument must be 'little','big' or 'native', got '%s'"
-            % endian
+            f"'endian' keyword argument must be 'little','big' or 'native', got '{endian}'"
         )
     return endianess
 
