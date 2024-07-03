@@ -33,7 +33,7 @@ jobs:
           ruff check .
 
   build_0:
-    name: h5py3 tests
+    name: h5py3 numpy 1 tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,9 +41,44 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.12"]
+        python-version: ["3.9", "3.12"]
         h5py-version: ["3.10", "3.11"]
-        numpy-version: ["1", "2"]
+        numpy-version: ["1"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install micromamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        environment-name: h5netcdf-tests
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py_version}}-numpy${{matrix.numpy_version}}-${{env.TODAY}}"
+        create-args: >-
+          python=${{ matrix.python-version }}
+          pip
+          pytest
+          wheel
+          h5py=${{ matrix.h5py-version }}
+          netCDF4
+          numpy=${{ matrix.numpy-version }}
+    - name: Install h5netcdf
+      run: |
+        python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+    - name: Test with pytest
+      run: |
+        pytest -v --durations=0 h5netcdf/tests/
+
+  build_0a:
+    name: h5py3 numpy 2 tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+        h5py-version: ["3.10", "3.11"]
+        numpy-version: ["2"]
     steps:
     - uses: actions/checkout@v4
     - name: Install micromamba
@@ -233,7 +268,7 @@ jobs:
 
   upload-pypi:
     if: github.event_name == 'release'
-    needs: [lint, build_0, sphinx_doc]
+    needs: [lint, build_0, build_0a, sphinx_doc]
     name: deploy to pypi
     runs-on: ubuntu-latest
     defaults:
