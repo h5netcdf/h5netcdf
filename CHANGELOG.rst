@@ -3,11 +3,13 @@ Change Log
 
 Development Version:
 
-- Add UserType class, add EnumType.
+- Add UserType class, add EnumType ({pull}`229`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- Refactor fillvalue and dtype handling for user types, enhance sanity checks and tests.
+- Refactor fillvalue and dtype handling for user types, enhance sanity checks and tests ({pull}`230`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Update h5pyd testing.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- CI and lint maintenance ({pull}`235`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.3.0 (November 7th, 2023):
