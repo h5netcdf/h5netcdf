@@ -22,6 +22,13 @@ except ImportError:
 else:
     no_h5pyd = False
 
+try:
+    import pyfive
+except ImportError:
+    no_pyfive = True
+else:
+    no_pyfive = False
+
 
 NOT_A_VARIABLE = b"This is a netCDF dimension but not a netCDF variable."
 
@@ -1178,7 +1185,7 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, **kwargs):
+    def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, backend=None, **kwargs):
         """NetCDF4 file constructor.
 
         Parameters
@@ -1196,6 +1203,10 @@ class File(Group):
 
         phony_dims: 'sort', 'access'
             See :ref:`phony dims` for more details.
+
+        backend: 'pyfive','h5py' or None
+            The default backend is h5py (backend=None, or backend=h5py), but
+            for reading data, the pure python pyfive backend is available.
 
         track_order: bool
             Corresponds to the h5py.File `track_order` parameter. Unless
@@ -1236,44 +1247,69 @@ class File(Group):
         track_order = kwargs.pop("track_order", track_order_default)
 
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
-        try:
-            if isinstance(path, str):
-                if (
-                    path.startswith(("http://", "https://", "hdf5://"))
-                    and "driver" not in kwargs
-                ):
-                    if no_h5pyd:
-                        raise ImportError(
-                            "No module named 'h5pyd'. h5pyd is required for "
-                            f"opening urls: {path}"
+
+        if backend not in [None,'pyfive','h5py']:
+            raise ValueError('Unknown backend {backend} - valid options are: None,"pyfive","h5py"')
+        if backend == 'pyfive' and no_pyfive:
+            raise ImportError('No module named "pyfive", backend not available')
+        if mode != 'r' and backend == 'pyfive':
+            raise ValueError('pyfive backend can only be used with mode="r"')
+
+        self.backend = backend   
+        if backend == 'pyfive':
+            
+            self._h5py = pyfive
+            try:
+                # We can ignore track order for reading.
+                # AFAIK it's not respected by
+                self._h5file = self._h5py.File(
+                    path, mode, **kwargs
+                )
+                self._preexisting_file = True
+            except OSError:
+                # pyfive is readonly, we need to raise this error
+                raise
+
+        else:
+            try:
+                if isinstance(path, str):
+                    if (
+                        path.startswith(("http://", "https://", "hdf5://"))
+                        and "driver" not in kwargs
+                    ):
+                        if no_h5pyd:
+                            raise ImportError(
+                                "No module named 'h5pyd'. h5pyd is required for "
+                                f"opening urls with h5py backend: {path}"
+                            )
+                      
+                        try:
+                            with h5pyd.File(path, "r", **kwargs) as f:  # noqa
+                                pass
+                            self._preexisting_file = True
+                        except OSError:
+                            self._preexisting_file = False
+                        self._h5py = h5pyd
+                        self._h5file = self._h5py.File(
+                            path, mode, track_order=track_order, **kwargs
                         )
-                    try:
-                        with h5pyd.File(path, "r", **kwargs) as f:  # noqa
-                            pass
-                        self._preexisting_file = True
-                    except OSError:
-                        self._preexisting_file = False
-                    self._h5py = h5pyd
-                    self._h5file = self._h5py.File(
-                        path, mode, track_order=track_order, **kwargs
-                    )
-                else:
-                    self._preexisting_file = os.path.exists(path) and mode != "w"
+                    else:
+                        self._preexisting_file = os.path.exists(path) and mode != "w"
+                        self._h5py = h5py
+                        self._h5file = self._h5py.File(
+                            path, mode, track_order=track_order, **kwargs
+                        )
+                else:  # file-like object
+                    self._preexisting_file = mode in {"r", "r+", "a"}
                     self._h5py = h5py
                     self._h5file = self._h5py.File(
-                        path, mode, track_order=track_order, **kwargs
+                            path, mode, track_order=track_order, **kwargs
                     )
-            else:  # file-like object
-                self._preexisting_file = mode in {"r", "r+", "a"}
-                self._h5py = h5py
-                self._h5file = self._h5py.File(
-                    path, mode, track_order=track_order, **kwargs
-                )
-        except Exception:
-            self._closed = True
-            raise
-        else:
-            self._closed = False
+            except Exception:
+                self._closed = True
+                raise
+            else:
+                self._closed = False
 
         self._mode = mode
         self._writable = mode != "r"
@@ -1400,10 +1436,17 @@ class File(Group):
     sync = flush
 
     def close(self):
-        if not self._closed:
-            self.flush()
-            self._h5file.close()
-            self._closed = True
+        try:
+            if not self._closed:
+                self.flush()
+                self._h5file.close()
+                self._closed = True
+        except AttributeError:
+            if self.backend == 'pyfive':
+                print("FIXME: AttributeError. I'm hoping this is an error caused by not initialising a pyfive FILE")
+                
+            else:
+                raise
 
     __del__ = close
 
