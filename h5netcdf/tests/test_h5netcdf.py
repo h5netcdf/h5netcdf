@@ -2230,7 +2230,7 @@ def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
             if tmp_local_or_remote_netcdf.startswith(remote_h5):
                 testcontext = pytest.raises(RuntimeError, match="Conflict")
             else:
-                testcontext = pytest.raises(KeyError, match="name already exists")
+                testcontext = pytest.raises(TypeError, match="name already exists")
             with testcontext:
                 ds.create_enumtype(np.uint8, "enum_t", enum_dict2)
 
@@ -2270,7 +2270,7 @@ def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
             if tmp_local_or_remote_netcdf.startswith(remote_h5):
                 testcontext = pytest.raises(RuntimeError, match="Conflict")
             else:
-                testcontext = pytest.raises(KeyError, match="name already exists")
+                testcontext = pytest.raises(TypeError, match="name already exists")
             with testcontext:
                 ds.createEnumType(np.uint8, "enum_t", enum_dict1)
 
