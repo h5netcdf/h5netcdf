@@ -69,7 +69,11 @@ def read_h5netcdf_pyfive(tmp_netcdf, write_module, decode_vlen_strings):
 
     v = ds["foo"]
     assert v.name == "/foo"
-    assert np.array_equal(v[:], np.ones((4, 5)))
+
+    #assert np.array_equal(v[:], np.ones((4, 5)))
+    assert array_equal(v, np.ones((4,5)))
+
+
     assert v.dtype == float
     assert v.dimensions == ("x", "y")
     assert v.ndim == 2
