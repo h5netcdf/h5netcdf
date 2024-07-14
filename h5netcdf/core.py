@@ -711,7 +711,14 @@ class Group(Mapping):
         if self._root._phony_dims_mode is not None:
             phony_dims = Counter()
 
-        for k, v in self._h5group.items():
+        for k in self._h5group:
+            with warnings.catch_warnings(record=True) as wlist:
+                v = self._h5group[k]
+                if wlist:
+                    for warning in wlist:
+                        print(k, warning.message)
+                    print(f'Skipping {k}')
+                    break
             if isinstance(v, self._root._h5py.Group):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
@@ -1269,6 +1276,8 @@ class File(Group):
             except OSError:
                 # pyfive is readonly, we need to raise this error
                 raise
+            else:
+                self._closed=False
 
         else:
             try:
@@ -1436,17 +1445,10 @@ class File(Group):
     sync = flush
 
     def close(self):
-        try:
-            if not self._closed:
-                self.flush()
-                self._h5file.close()
-                self._closed = True
-        except AttributeError:
-            if self.backend == 'pyfive':
-                print("FIXME: AttributeError. I'm hoping this is an error caused by not initialising a pyfive FILE")
-                
-            else:
-                raise
+        if not self._closed:
+            self.flush()
+            self._h5file.close()
+            self._closed = True
 
     __del__ = close
 
