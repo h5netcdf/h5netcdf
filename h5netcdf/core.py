@@ -1236,6 +1236,7 @@ class File(Group):
         track_order = kwargs.pop("track_order", track_order_default)
 
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
+        self._close_h5file = True
         try:
             if isinstance(path, str):
                 if (
@@ -1263,6 +1264,12 @@ class File(Group):
                     self._h5file = self._h5py.File(
                         path, mode, track_order=track_order, **kwargs
                     )
+            elif isinstance(path, h5py.File):
+                self._preexisting_file = mode in {"r", "r+", "a"}
+                self._h5py = h5py
+                self._h5file = path
+                # h5py File passed in: let the caller decide when to close it
+                self._close_h5file = False
             else:  # file-like object
                 self._preexisting_file = mode in {"r", "r+", "a"}
                 self._h5py = h5py
@@ -1402,7 +1409,9 @@ class File(Group):
     def close(self):
         if not self._closed:
             self.flush()
-            self._h5file.close()
+            if self._close_h5file:
+                self._h5file.close()
+            self._h5file = None
             self._closed = True
 
     __del__ = close

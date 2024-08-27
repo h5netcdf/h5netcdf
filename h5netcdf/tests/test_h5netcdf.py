@@ -103,18 +103,21 @@ _vlen_string = "foo"
 
 
 def is_h5py_char_working(tmp_netcdf, name):
-    h5 = get_hdf5_module(tmp_netcdf)
-    # https://github.com/Unidata/netcdf-c/issues/298
-    with h5.File(tmp_netcdf, "r") as ds:
-        v = ds[name]
-        try:
-            assert array_equal(v, _char_array)
-            return True
-        except Exception as e:
-            if re.match("^Can't read data", e.args[0]):
-                return False
-            else:
-                raise
+    if not isinstance(tmp_netcdf, h5py.File):
+        h5 = get_hdf5_module(tmp_netcdf)
+        # https://github.com/Unidata/netcdf-c/issues/298
+        with h5.File(tmp_netcdf, "r") as ds:
+            return is_h5py_char_working(ds, name)
+
+    v = tmp_netcdf[name]
+    try:
+        assert array_equal(v, _char_array)
+        return True
+    except Exception as e:
+        if re.match("^Can't read data", e.args[0]):
+            return False
+        else:
+            raise
 
 
 def write_legacy_netcdf(tmp_netcdf, write_module):
@@ -525,6 +528,16 @@ def test_fileobj(decode_vlen_strings):
     fileobj = io.BytesIO()
     write_h5netcdf(fileobj)
     read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings)
+
+
+def test_h5py_file_obj(tmp_local_netcdf, decode_vlen_strings):
+    with h5py.File(tmp_local_netcdf, "w") as h5py_f:
+        write_h5netcdf(h5py_f)
+        read_h5netcdf(h5py_f, h5netcdf, decode_vlen_strings)
+
+        # The h5py File object should still be open & usable, although the
+        # h5netcdf file object has been closed.
+        assert isinstance(h5py_f["foo"], h5py.Dataset)
 
 
 def test_repr(tmp_local_or_remote_netcdf):
