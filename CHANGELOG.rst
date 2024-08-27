@@ -11,6 +11,9 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - CI and lint maintenance ({pull}`235`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Support wrapping an h5py ``File`` object. Closing the h5netcdf file object
+  does not close the h5py file ({pull}`238`).
+  By `Thomas Kluyver <https://github.com/takluyver>`_
 
 Version 1.3.0 (November 7th, 2023):
 
