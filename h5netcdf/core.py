@@ -1184,7 +1184,8 @@ class File(Group):
         Parameters
         ----------
         path: path-like
-            Location of the netCDF4 file to be accessed.
+            Location of the netCDF4 file to be accessed, or an h5py File object,
+            or a Python file-like object (which should read/write bytes).
 
         mode: "r", "r+", "a", "w"
             A valid file access mode. Defaults to "r".
@@ -1219,6 +1220,10 @@ class File(Group):
 
         Datasets created with h5netcdf version 0.12.0 that are opened with
         newer versions of h5netcdf will continue to disable order tracker.
+
+        If an h5py File object is passed in, closing the h5netcdf wrapper will
+        not close the h5py File. In other cases, closing the h5netcdf File object
+        does close the underlying file.
         """
         # 2022/01/09
         # netCDF4 wants the track_order parameter to be true
