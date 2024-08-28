@@ -226,7 +226,15 @@ class CompoundType(UserType):
 
     @property
     def dtype_view(self):
-        return self.dtype_view
+        return np.dtype(
+            {
+                name: (
+                    np.dtype(f"S{fmt.shape[0]}") if fmt.base == "S1" else fmt,
+                    offset,
+                )
+                for name, (fmt, offset) in self.dtype.fields.items()
+            }
+        )
 
 
 class BaseVariable(BaseObject):
@@ -497,9 +505,14 @@ class BaseVariable(BaseObject):
 
         if getattr(self._root, "decode_vlen_strings", False):
             string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
+            print(self._h5ds.dtype, string_info)
             if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
 
+        if isinstance(self.datatype, CompoundType):
+            view = self.datatype.dtype_view
+        else:
+            view = self.dtype
         # get padding
         padding = self._get_padding(key)
         # apply padding with fillvalue (both api)
@@ -510,9 +523,9 @@ class BaseVariable(BaseObject):
                 pad_width=padding,
                 mode="constant",
                 constant_values=fv,
-            )[key]
+            )[key].view(view)
 
-        return self._h5ds[key]
+        return self._h5ds[key].view(view)
 
     def __setitem__(self, key, value):
         from .legacyapi import Dataset
@@ -533,7 +546,21 @@ class BaseVariable(BaseObject):
             key = _transform_1d_boolean_indexers(key)
             # resize on write only for legacy API
             self._maybe_resize_dimensions(key, value)
-        self._h5ds[key] = value
+
+        if isinstance(self.datatype, CompoundType):
+            view = np.dtype(
+                {
+                    name: (
+                        np.dtype(("S1", fmt.itemsize)) if fmt.kind == "S" else fmt,
+                        offset,
+                    )
+                    for name, (fmt, offset) in self.datatype.dtype.fields.items()
+                }
+            )
+        else:
+            view = self.dtype
+
+        self._h5ds[key] = value.view(view)
 
     @property
     def attrs(self):
@@ -1060,6 +1087,7 @@ class Group(Mapping):
 
         # fill value handling
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
+        print(dtype, fillvalue, h5fillvalue)
 
         # create hdf5 variable
         self._h5group.create_dataset(
@@ -1373,6 +1401,16 @@ class Group(Mapping):
         """
         # wrap in numpy dtype first
         datatype = np.dtype(datatype)
+        # "SN" -> ("S1", (N,))
+        datatype = np.dtype(
+            {
+                name: (
+                    np.dtype(("S1", fmt.itemsize)) if fmt.kind == "S" else fmt,
+                    offset,
+                )
+                for name, (fmt, offset) in datatype.fields.items()
+            }
+        )
         self._h5group[datatype_name] = datatype
         # create compound class instance
         cmptype = self._cmptype_cls(self, datatype_name)

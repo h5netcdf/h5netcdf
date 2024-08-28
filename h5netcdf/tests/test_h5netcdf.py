@@ -2583,10 +2583,21 @@ def test_vltype_creation(tmp_local_or_remote_netcdf, netcdf_write_module, dtype)
 
 def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
     compound = np.dtype(
-        [("time", np.int32), ("temperature", np.float32), ("pressure", np.float32)]
+        [
+            ("time", np.int32),
+            ("station_name", "S1", 10),
+            ("temperature", np.float32),
+            ("pressure", np.float32),
+        ]
     )
     cmp_array = np.array(
-        [(0, 0.0, 0.0), (1, 2.0, 3.0), (2, 4.0, 6.0), (3, 5.0, 7.0), (4, 6.0, 8.0)],
+        [
+            (0, ["B", "o", "u", "l", "d", "e", "r", "", "", ""], 0.0, 0.0),
+            (1, ["N", "e", "w", " ", "Y", "o", "r", "k", "", ""], 2.0, 3.0),
+            (2, ["D", "e", "n", "v", "e", "r", "", "", "", ""], 4.0, 6.0),
+            (3, ["W", "a", "s", "h", "i", "n", "g", "t", "o", "n"], 5.0, 7.0),
+            (4, ["W", "a", "c", "h", "t", "b", "e", "r", "g", ""], 6.0, 8.0),
+        ],
         dtype=compound,
     )
     if (
@@ -2601,14 +2612,6 @@ def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
         var = ds.createVariable("data", compound_t, ("x",))
         var[:] = cmp_array
 
-    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
-        cmptype = ds.cmptypes["cmp_t"]
-        assert isinstance(cmptype, h5netcdf.legacyapi.CompoundType)
-        assert cmptype.name == "cmp_t"
-        assert array_equal(ds["data"][:], cmp_array)
-        assert ds["data"].datatype == cmptype
-        assert ds["data"].dtype == cmptype.dtype
-
     if not tmp_local_or_remote_netcdf.startswith(remote_h5):
         with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
             cmptype = ds.cmptypes["cmp_t"]
@@ -2616,6 +2619,14 @@ def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
             assert cmptype.name == "cmp_t"
             assert array_equal(ds["data"][:], cmp_array)
             assert ds["data"].datatype == cmptype.dtype
+
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+        cmptype = ds.cmptypes["cmp_t"]
+        assert isinstance(cmptype, h5netcdf.legacyapi.CompoundType)
+        assert cmptype.name == "cmp_t"
+        assert array_equal(ds["data"][:], cmp_array)
+        assert ds["data"].datatype == cmptype
+        assert ds["data"].dtype == cmptype.dtype
 
 
 @pytest.mark.skipif(
