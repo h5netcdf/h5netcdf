@@ -509,23 +509,26 @@ class BaseVariable(BaseObject):
             if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
 
-        if isinstance(self.datatype, CompoundType):
-            view = self.datatype.dtype_view
-        else:
-            view = self.dtype
         # get padding
         padding = self._get_padding(key)
+
         # apply padding with fillvalue (both api)
         if padding:
             fv = self.dtype.type(self._h5ds.fillvalue)
-            return np.pad(
+            h5ds = np.pad(
                 self._h5ds,
                 pad_width=padding,
                 mode="constant",
                 constant_values=fv,
-            )[key].view(view)
+            )
+        else:
+            h5ds = self._h5ds
 
-        return self._h5ds[key].view(view)
+        if isinstance(self.datatype, CompoundType):
+            view = self.datatype.dtype_view
+            return h5ds[key].view(view)
+        else:
+            return h5ds[key]
 
     def __setitem__(self, key, value):
         from .legacyapi import Dataset
@@ -1400,6 +1403,7 @@ class Group(Mapping):
         """
         # wrap in numpy dtype first
         datatype = np.dtype(datatype)
+        print(datatype)
         # "SN" -> ("S1", (N,))
         datatype = np.dtype(
             {
