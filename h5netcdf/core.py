@@ -557,10 +557,9 @@ class BaseVariable(BaseObject):
                     for name, (fmt, offset) in self.datatype.dtype.fields.items()
                 }
             )
+            self._h5ds[key] = value.view(view)
         else:
-            view = self.dtype
-
-        self._h5ds[key] = value.view(view)
+            self._h5ds[key] = value
 
     @property
     def attrs(self):
@@ -1289,7 +1288,7 @@ class Group(Mapping):
             6: self._all_cmptypes,
             8: self._all_enumtypes,
             9: self._all_vltypes,
-        }[h5typeid]
+        }.get(h5typeid)
 
     @property
     def enumtypes(self):
