@@ -221,20 +221,42 @@ class VLType(UserType):
     _cls_name = "h5netcdf.VLType"
 
 
+def _string_to_char_array_dtype(dtype):
+    """Converts fixed string to char array dtype."""
+    if np.isdtype(dtype, "complex floating"):
+        return None
+    return np.dtype(
+        {
+            name: (
+                np.dtype(("S1", fmt.itemsize)) if fmt.kind == "S" else fmt,
+                offset,
+            )
+            for name, (fmt, offset) in dtype.fields.items()
+        }
+    )
+
+
+def _char_array_to_string_dtype(dtype):
+    """Converts char array to fixed string dtype."""
+    if np.isdtype(dtype, "complex floating"):
+        return None
+    return np.dtype(
+        {
+            name: (
+                np.dtype(f"S{fmt.shape[0]}") if fmt.base == "S1" else fmt,
+                offset,
+            )
+            for name, (fmt, offset) in dtype.fields.items()
+        }
+    )
+
+
 class CompoundType(UserType):
     _cls_name = "h5netcdf.CompoundType"
 
     @property
     def dtype_view(self):
-        return np.dtype(
-            {
-                name: (
-                    np.dtype(f"S{fmt.shape[0]}") if fmt.base == "S1" else fmt,
-                    offset,
-                )
-                for name, (fmt, offset) in self.dtype.fields.items()
-            }
-        )
+        return _char_array_to_string_dtype(self.dtype)
 
 
 class BaseVariable(BaseObject):
@@ -505,7 +527,6 @@ class BaseVariable(BaseObject):
 
         if getattr(self._root, "decode_vlen_strings", False):
             string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
-            print(self._h5ds.dtype, string_info)
             if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
 
@@ -524,8 +545,10 @@ class BaseVariable(BaseObject):
         else:
             h5ds = self._h5ds
 
-        if isinstance(self.datatype, CompoundType):
-            view = self.datatype.dtype_view
+        if (
+            isinstance(self.datatype, CompoundType)
+            and (view := self.datatype.dtype_view) is not None
+        ):
             return h5ds[key].view(view)
         else:
             return h5ds[key]
@@ -550,16 +573,10 @@ class BaseVariable(BaseObject):
             # resize on write only for legacy API
             self._maybe_resize_dimensions(key, value)
 
-        if isinstance(self.datatype, CompoundType):
-            view = np.dtype(
-                {
-                    name: (
-                        np.dtype(("S1", fmt.itemsize)) if fmt.kind == "S" else fmt,
-                        offset,
-                    )
-                    for name, (fmt, offset) in self.datatype.dtype.fields.items()
-                }
-            )
+        if (
+            isinstance(self.datatype, CompoundType)
+            and (view := _string_to_char_array_dtype(self.datatype.dtype)) is not None
+        ):
             self._h5ds[key] = value.view(view)
         else:
             self._h5ds[key] = value
@@ -1089,7 +1106,6 @@ class Group(Mapping):
 
         # fill value handling
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
-        print(dtype, fillvalue, h5fillvalue)
 
         # create hdf5 variable
         self._h5group.create_dataset(
@@ -1403,17 +1419,9 @@ class Group(Mapping):
         """
         # wrap in numpy dtype first
         datatype = np.dtype(datatype)
-        print(datatype)
-        # "SN" -> ("S1", (N,))
-        datatype = np.dtype(
-            {
-                name: (
-                    np.dtype(("S1", fmt.itemsize)) if fmt.kind == "S" else fmt,
-                    offset,
-                )
-                for name, (fmt, offset) in datatype.fields.items()
-            }
-        )
+        if (new_dtype := _string_to_char_array_dtype(datatype)) is not None:
+            # "SN" -> ("S1", (N,))
+            datatype = new_dtype
         self._h5group[datatype_name] = datatype
         # create compound class instance
         cmptype = self._cmptype_cls(self, datatype_name)

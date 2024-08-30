@@ -2582,6 +2582,7 @@ def test_vltype_creation(tmp_local_or_remote_netcdf, netcdf_write_module, dtype)
 
 
 def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
+    # compound type is created with array of chars
     compound = np.dtype(
         [
             ("time", np.int32),
@@ -2590,15 +2591,25 @@ def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
             ("pressure", np.float32),
         ]
     )
+
+    # data is filled with fixed strings
+    compound2 = np.dtype(
+        [
+            ("time", np.int32),
+            ("station_name", "S10"),
+            ("temperature", np.float32),
+            ("pressure", np.float32),
+        ]
+    )
     cmp_array = np.array(
         [
-            (0, ["B", "o", "u", "l", "d", "e", "r", "", "", ""], 0.0, 0.0),
-            (1, ["N", "e", "w", " ", "Y", "o", "r", "k", "", ""], 2.0, 3.0),
-            (2, ["D", "e", "n", "v", "e", "r", "", "", "", ""], 4.0, 6.0),
-            (3, ["W", "a", "s", "h", "i", "n", "g", "t", "o", "n"], 5.0, 7.0),
-            (4, ["W", "a", "c", "h", "t", "b", "e", "r", "g", ""], 6.0, 8.0),
+            (0, *["Boulder"], 0.0, 0.0),
+            (1, *["New York"], 2.0, 3.0),
+            (2, *["Denver"], 4.0, 6.0),
+            (3, *["Washington"], 5.0, 7.0),
+            (4, *["Wachtberg"], 6.0, 8.0),
         ],
-        dtype=compound,
+        dtype=compound2,
     )
     if (
         netcdf_write_module.__name__ == "netCDF4"
