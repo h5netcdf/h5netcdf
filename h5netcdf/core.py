@@ -223,7 +223,7 @@ class VLType(UserType):
 
 def _string_to_char_array_dtype(dtype):
     """Converts fixed string to char array dtype."""
-    if np.isdtype(dtype, "complex floating"):
+    if dtype.kind == "c":
         return None
     return np.dtype(
         {
@@ -238,7 +238,7 @@ def _string_to_char_array_dtype(dtype):
 
 def _char_array_to_string_dtype(dtype):
     """Converts char array to fixed string dtype."""
-    if np.isdtype(dtype, "complex floating"):
+    if dtype.kind == "c":
         return None
     return np.dtype(
         {
