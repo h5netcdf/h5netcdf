@@ -18,3 +18,6 @@ This page provides an auto-generated summary of h5netcdf's new API.
    Group
    Dimension
    Variable
+   CompoundType
+   EnumType
+   VLType
