@@ -1387,7 +1387,11 @@ class File(Group):
         if self._writable:
             # only write `_NCProperties` in newly created files
             if not self._preexisting_file and not self.invalid_netcdf:
-                _NC_PROPERTIES = f"version=2,h5netcdf={__version__},hdf5={self._h5py.version.hdf5_version},{self._h5py.__name__}={self._h5py.__version__}"
+                _NC_PROPERTIES = (
+                    f"version=2,h5netcdf={__version__},"
+                    f"hdf5={self._h5py.version.hdf5_version},"
+                    f"{self._h5py.__name__}={self._h5py.__version__}"
+                )
                 self.attrs._h5attrs["_NCProperties"] = np.array(
                     _NC_PROPERTIES,
                     dtype=self._h5py.string_dtype(
@@ -1432,10 +1436,8 @@ class File(Group):
     def __repr__(self):
         if self._closed:
             return f"<Closed {self._cls_name}>"
-        header = "<{} {!r} (mode {})>".format(
-            self._cls_name,
-            self.filename.split("/")[-1],
-            self.mode,
+        header = (
+            f"<{self._cls_name} {os.path.basename(self.filename)!r} (mode {self.mode})>"
         )
         return "\n".join([header] + self._repr_body())
 
