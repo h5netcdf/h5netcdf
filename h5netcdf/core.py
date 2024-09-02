@@ -173,7 +173,7 @@ class UserType(BaseObject):
 
     @property
     def name(self):
-        """Return enum name."""
+        """Return user type name."""
         # strip hdf5 path
         return super().name.split("/")[-1]
 
@@ -211,6 +211,7 @@ class EnumType(UserType):
 
     @property
     def enum_dict(self):
+        """Dictionary containing the Enum field/value pairs."""
         return self.dtype.metadata["enum"]
 
     def __repr__(self):
