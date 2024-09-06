@@ -15,7 +15,11 @@ from pytest import raises
 
 import h5netcdf
 from h5netcdf import legacyapi
-from h5netcdf.core import NOT_A_VARIABLE, CompatibilityError
+from h5netcdf.core import (
+    NOT_A_VARIABLE,
+    CompatibilityError,
+    VLType,
+)
 
 try:
     import h5pyd
@@ -925,11 +929,6 @@ def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
         f.create_variable(
             "lzf_compressed", data=[1], dimensions=("x"), compression="lzf"
         )
-        # invalid
-        with pytest.raises(h5netcdf.CompatibilityError):
-            f.create_variable("complex", data=1j)
-        with pytest.raises(h5netcdf.CompatibilityError):
-            f.attrs["complex_attr"] = 1j
         with pytest.raises(h5netcdf.CompatibilityError):
             f.create_variable("scaleoffset", data=[1], dimensions=("x",), scaleoffset=0)
 
@@ -2248,6 +2247,7 @@ def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
                 ds.create_enumtype(np.uint8, "enum_t", enum_dict2)
 
             enum_type2 = g.create_enumtype(np.uint8, "enum_t2", enum_dict2)
+            g.create_enumtype(np.uint8, "enum_t", enum_dict2)
             with pytest.raises(TypeError, match="Please provide h5netcdf user type"):
                 ds.create_variable(
                     "enum_var1",
@@ -2269,6 +2269,13 @@ def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
                     dtype=enum_type2,
                     fillvalue=enum_dict2["missing"],
                 )
+            with pytest.raises(TypeError, match="Another dtype with same name"):
+                g.create_variable(
+                    "enum_var4",
+                    ("enum_dim",),
+                    dtype=enum_type,
+                    fillvalue=enum_dict2["missing"],
+                )
 
 
 def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
@@ -2288,7 +2295,7 @@ def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
                 ds.createEnumType(np.uint8, "enum_t", enum_dict1)
 
             enum_type2 = g.createEnumType(np.uint8, "enum_t2", enum_dict2)
-
+            g.create_enumtype(np.uint8, "enum_t", enum_dict2)
             with pytest.raises(TypeError, match="Please provide h5netcdf user type"):
                 ds.createVariable(
                     "enum_var1",
@@ -2307,6 +2314,13 @@ def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
                 ds.createVariable(
                     "enum_var3",
                     enum_type2,
+                    ("enum_dim",),
+                    fill_value=enum_dict2["missing"],
+                )
+            with pytest.raises(TypeError, match="Another dtype with same name"):
+                g.createVariable(
+                    "enum_var4",
+                    enum_type,
                     ("enum_dim",),
                     fill_value=enum_dict2["missing"],
                 )
@@ -2402,11 +2416,12 @@ def test_enum_type_errors_legacyapi(tmp_local_or_remote_netcdf):
 def test_enum_type(tmp_local_or_remote_netcdf):
     # test EnumType
     enum_dict = dict(one=1, two=2, three=3, missing=255)
-    dict(one=1, two=2, three=3, missing=254)
+    enum_dict2 = dict(one=1, two=2, three=3, missing=254)
 
     # first with new API
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
         ds.dimensions = {"enum_dim": 4}
+        ds.create_enumtype(np.uint8, "enum_t2", enum_dict2)
         enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict)
         v = ds.create_variable(
             "enum_var", ("enum_dim",), dtype=enum_type, fillvalue=enum_dict["missing"]
@@ -2533,6 +2548,169 @@ def test_enum_type(tmp_local_or_remote_netcdf):
             assert enum_var._FillValue == 255
             assert repr(enum_var.datatype) == repr(enum_type)
             assert enum_var.datatype.name == "enum_t"
+
+
+@pytest.mark.parametrize("dtype", ["int", "int8", "uint16", "float32", "int64"])
+def test_vltype_creation(tmp_local_or_remote_netcdf, netcdf_write_module, dtype):
+    # skip for netCDF4 writer for remote hsds files
+    if netcdf_write_module == netCDF4 and tmp_local_or_remote_netcdf.startswith(
+        remote_h5
+    ):
+        pytest.skip()
+
+    with netcdf_write_module.Dataset(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.createVLType(dtype, "vlen_t")
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+        vlen_type = ds.vltypes["vlen_t"]
+        assert isinstance(vlen_type, VLType)
+        assert h5py.check_vlen_dtype(vlen_type.dtype) == np.dtype(dtype)
+        assert vlen_type.name == "vlen_t"
+
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+        vlen_type = ds.vltypes["vlen_t"]
+        assert isinstance(vlen_type, legacyapi.VLType)
+        assert h5py.check_vlen_dtype(vlen_type.dtype) == np.dtype(dtype)
+        assert vlen_type.name == "vlen_t"
+
+    if not tmp_local_or_remote_netcdf.startswith(remote_h5):
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+            vlen_type = ds.vltypes["vlen_t"]
+            assert isinstance(vlen_type, netCDF4.VLType)
+            assert vlen_type.dtype == np.dtype(dtype)
+            assert vlen_type.name == "vlen_t"
+
+
+def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
+    # compound type is created with array of chars
+    compound = np.dtype(
+        [
+            ("time", np.int32),
+            ("station_name", "S1", 10),
+            ("temperature", np.float32),
+            ("pressure", np.float32),
+        ]
+    )
+
+    # data is filled with fixed strings
+    compound2 = np.dtype(
+        [
+            ("time", np.int32),
+            ("station_name", "S10"),
+            ("temperature", np.float32),
+            ("pressure", np.float32),
+        ]
+    )
+    cmp_array = np.array(
+        [
+            (0, *["Boulder"], 0.0, 0.0),
+            (1, *["New York"], 2.0, 3.0),
+            (2, *["Denver"], 4.0, 6.0),
+            (3, *["Washington"], 5.0, 7.0),
+            (4, *["Wachtberg"], 6.0, 8.0),
+        ],
+        dtype=compound2,
+    )
+    if (
+        netcdf_write_module.__name__ == "netCDF4"
+        and tmp_local_or_remote_netcdf.startswith(remote_h5)
+    ):
+        pytest.skip("does not work for netCDF4")
+    with netcdf_write_module.Dataset(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.createDimension("x", 5)
+        ds.createGroup("test")
+        compound_t = ds.createCompoundType(compound, "cmp_t")
+        var = ds.createVariable("data", compound_t, ("x",))
+        var[:] = cmp_array
+
+    if not tmp_local_or_remote_netcdf.startswith(remote_h5):
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+            cmptype = ds.cmptypes["cmp_t"]
+            assert isinstance(cmptype, netCDF4.CompoundType)
+            assert cmptype.name == "cmp_t"
+            assert array_equal(ds["data"][:], cmp_array)
+            assert ds["data"].datatype == cmptype.dtype
+
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+        cmptype = ds.cmptypes["cmp_t"]
+        assert isinstance(cmptype, h5netcdf.legacyapi.CompoundType)
+        assert cmptype.name == "cmp_t"
+        assert array_equal(ds["data"][:], cmp_array)
+        assert ds["data"].datatype == cmptype
+        assert ds["data"].dtype == cmptype.dtype
+
+
+@pytest.mark.skipif(
+    version.parse(netCDF4.__version__) < version.parse("1.7.0"),
+    reason="does not work before netCDF4 v1.7.0",
+)
+def test_nc_complex_compatibility(tmp_local_or_remote_netcdf, netcdf_write_module):
+    # native complex
+    complex_array = np.array([0 + 0j, 1 + 0j, 0 + 1j, 1 + 1j, 0.25 + 0.75j])
+    # compound complex
+    complex128 = np.dtype(
+        {
+            "names": ["r", "i"],
+            "formats": ["f8", "f8"],
+            "offsets": [0, 8],
+            "itemsize": 16,
+            "aligned": True,
+        }
+    )
+    cdata = np.array(
+        [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.25, 0.75)], dtype=complex128
+    )
+    kwargs = {}
+    if (
+        netcdf_write_module.__name__ == "netCDF4"
+        and tmp_local_or_remote_netcdf.startswith(remote_h5)
+    ):
+        pytest.skip("does not work for netCDF4")
+
+    if netcdf_write_module.__name__ == "netCDF4":
+        kwargs.update(auto_complex=True)
+    with netcdf_write_module.Dataset(tmp_local_or_remote_netcdf, "w", **kwargs) as ds:
+        ds.createDimension("x", size=len(complex_array))
+        var = ds.createVariable("data", "c16", ("x",))
+        var[:] = complex_array
+
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+        dtype = ds.cmptypes["_PFNC_DOUBLE_COMPLEX_TYPE"]
+        assert isinstance(dtype, h5netcdf.legacyapi.CompoundType)
+        assert dtype.name == "_PFNC_DOUBLE_COMPLEX_TYPE"
+        assert array_equal(ds["data"][:], complex_array)
+
+    if not tmp_local_or_remote_netcdf.startswith(remote_h5):
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r", auto_complex=True) as ds:
+            dtype = ds.cmptypes["_PFNC_DOUBLE_COMPLEX_TYPE"]
+            assert isinstance(dtype, netCDF4._netCDF4.CompoundType)
+            assert array_equal(ds["data"][:], complex_array)
+
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r", auto_complex=False) as ds:
+            dtype = ds.cmptypes["_PFNC_DOUBLE_COMPLEX_TYPE"]
+            assert isinstance(dtype, netCDF4._netCDF4.CompoundType)
+            assert array_equal(ds["data"][:], cdata)
+
+
+@pytest.mark.skipif(
+    version.parse(netCDF4.__version__) < version.parse("1.7.0"),
+    reason="does not work before netCDF4 v1.7.0",
+)
+def test_complex_type_creation_errors(tmp_local_netcdf):
+    complex_array = np.array([0 + 0j, 1 + 0j, 0 + 1j, 1 + 1j, 0.25 + 0.75j])
+
+    with legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("x", size=len(complex_array))
+        with pytest.raises(TypeError, match="data type 'c4' not understood"):
+            ds.createVariable("data", "c4", ("x",))
+
+    with legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("x", size=len(complex_array))
+        with pytest.raises(
+            TypeError,
+            match="Currently only 'complex64' and 'complex128' dtypes are allowed.",
+        ):
+            ds.createVariable("data", "c32", ("x",))
 
 
 def test_hsds(hsds_up):

@@ -165,8 +165,6 @@ h5py implements some features that do not (yet) result in valid netCDF files:
 
 - Data types:
     - Booleans
-    - Complex values
-    - Non-string variable length types
     - Reference types
 - Arbitrary filters:
     - Scale-offset filters
