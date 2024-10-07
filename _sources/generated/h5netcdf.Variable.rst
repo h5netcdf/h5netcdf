@@ -27,6 +27,7 @@
       ~Variable.chunks
       ~Variable.compression
       ~Variable.compression_opts
+      ~Variable.datatype
       ~Variable.dimensions
       ~Variable.dtype
       ~Variable.fletcher32

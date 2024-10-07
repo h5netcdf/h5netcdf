@@ -1,46 +1,45 @@
 
-
 <!DOCTYPE html>
 
 
-<html lang="en" >
+<html lang="en" data-content_root="./" >
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 1.3.0</title>
+    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 1.4.0</title>
   
   
   
   <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
-    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
-<link href="_static/styles/bootstrap.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
 
   
-  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" href="_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=a3416100" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6" />
-  <script src="_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=365ca57ee442770a23c6"></script>
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
-    <script src="_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
+    <script src="_static/documentation_options.js?v=bc4b15cc"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
     <link rel="canonical" href="https://h5netcdf.org/index.html" />
     <link rel="index" title="Index" href="genindex.html" />
@@ -55,28 +54,23 @@
 
   
   
-  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
   
   <div id="pst-scroll-pixel-helper"></div>
-
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
-    <i class="fa-solid fa-arrow-up"></i>
-    Back to top
-  </button>
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
   
   <input type="checkbox"
           class="sidebar-toggle"
-          name="__primary"
-          id="__primary"/>
-  <label class="overlay overlay-primary" for="__primary"></label>
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
   
   <input type="checkbox"
           class="sidebar-toggle"
-          name="__secondary"
-          id="__secondary"/>
-  <label class="overlay overlay-secondary" for="__secondary"></label>
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
   
   <div class="search-button__wrapper">
     <div class="search-button__overlay"></div>
@@ -98,12 +92,22 @@
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form></div>
   </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
   
-    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
-    </nav>
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
   
+
   <div class="bd-container">
     <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
       
       <div class="bd-sidebar-primary bd-sidebar">
         
@@ -118,6 +122,9 @@
   
     <div class="sidebar-primary-items__start sidebar-primary__section">
         <div class="sidebar-primary-item">
+
+  
+    
   
 
 <a class="navbar-brand logo" href="#">
@@ -127,16 +134,27 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.3.0</p>
+    <p class="title logo__title">h5netcdf - 1.4.0</p>
   
 </a></div>
-        <div class="sidebar-primary-item"><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">For users</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="feature.html">Feature comparison</a></li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="api.html">New API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api.html">New API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.File.html">h5netcdf.File</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.File.create_group.html">h5netcdf.File.create_group</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.File.create_variable.html">h5netcdf.File.create_variable</a></li>
@@ -145,8 +163,8 @@
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.Dimension.html">h5netcdf.Dimension</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.Variable.html">h5netcdf.Variable</a></li>
 </ul>
-</li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="legacyapi.html">Legacy API Reference</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-2"><i class="fa-solid fa-chevron-down"></i></label><ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="legacyapi.html">Legacy API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.legacyapi.Dataset.html">h5netcdf.legacyapi.Dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.legacyapi.Dataset.createGroup.html">h5netcdf.legacyapi.Dataset.createGroup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.legacyapi.Dataset.createDimension.html">h5netcdf.legacyapi.Dataset.createDimension</a></li>
@@ -154,8 +172,11 @@
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.legacyapi.Group.html">h5netcdf.legacyapi.Group</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.legacyapi.Dimension.html">h5netcdf.legacyapi.Dimension</a></li>
 <li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.legacyapi.Variable.html">h5netcdf.legacyapi.Variable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.legacyapi.CompoundType.html">h5netcdf.legacyapi.CompoundType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.legacyapi.EnumType.html">h5netcdf.legacyapi.EnumType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/h5netcdf.legacyapi.VLType.html">h5netcdf.legacyapi.VLType</a></li>
 </ul>
-</li>
+</details></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">For developers</span></p>
 <ul class="nav bd-sidenav">
@@ -180,7 +201,7 @@
 
       </div>
       
-      <main id="main-content" class="bd-main">
+      <main id="main-content" class="bd-main" role="main">
         
         
 
@@ -189,14 +210,14 @@
           <div class="bd-content">
             <div class="bd-article-container">
               
-              <div class="bd-header-article">
+              <div class="bd-header-article d-print-none">
 <div class="header-article-items header-article__inner">
   
     <div class="header-article-items__start">
       
-        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
   <span class="fa-solid fa-bars"></span>
-</label></div>
+</button></div>
       
     </div>
   
@@ -335,26 +356,28 @@
 </button>
 
 
+
 <script>
 document.write(`
-  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
-    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
   </button>
 `);
 </script>
 
+
 <script>
 document.write(`
-  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <i class="fa-solid fa-magnifying-glass fa-lg"></i>
   </button>
 `);
 </script>
-<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
     <span class="fa-solid fa-list"></span>
-</label>
+</button>
 </div></div>
       
     </div>
@@ -398,16 +421,16 @@ document.write(`
               
                 
 <div id="searchbox"></div>
-                <article class="bd-article" role="main">
+                <article class="bd-article">
                   
   <section id="h5netcdf-a-python-interface-for-the-netcdf4-file-format-based-on-h5py">
-<h1>h5netcdf: A Python interface for the netCDF4 file-format based on h5py<a class="headerlink" href="#h5netcdf-a-python-interface-for-the-netcdf4-file-format-based-on-h5py" title="Permalink to this heading">#</a></h1>
+<h1>h5netcdf: A Python interface for the netCDF4 file-format based on h5py<a class="headerlink" href="#h5netcdf-a-python-interface-for-the-netcdf4-file-format-based-on-h5py" title="Link to this heading">#</a></h1>
 <dl class="field-list simple">
 <dt class="field-odd">Release<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/v1.3.0">1.3.0</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/v1.4.0">1.4.0</a></p>
 </dd>
 <dt class="field-even">Date<span class="colon">:</span></dt>
-<dd class="field-even"><p>Nov 07, 2023</p>
+<dd class="field-even"><p>Oct 07, 2024</p>
 </dd>
 </dl>
 <p><strong>h5netcdf</strong> is an open source project and Python package that provides an interface
@@ -420,7 +443,7 @@ via <a class="reference external" href="https://www.h5py.org/">h5py</a> or <a cl
 <div class="toctree-wrapper compound">
 </div>
 <section id="why-h5netcdf">
-<h2>Why h5netcdf?<a class="headerlink" href="#why-h5netcdf" title="Permalink to this heading">#</a></h2>
+<h2>Why h5netcdf?<a class="headerlink" href="#why-h5netcdf" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p>It has one less binary dependency (netCDF C). If you already have h5py
 installed, reading netCDF4 with h5netcdf may be much easier than installing
@@ -437,7 +460,7 @@ bugs in the netCDF libraries/specification.</p></li>
 </ul>
 </section>
 <section id="install">
-<h2>Install<a class="headerlink" href="#install" title="Permalink to this heading">#</a></h2>
+<h2>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h2>
 <p>Ensure you have a recent version of h5py installed (I recommend using <a class="reference external" href="https://conda.io/">conda</a> or
 the community effort <a class="reference external" href="https://conda-forge.org/">conda-forge</a>).
 At least version 3.0 is required. Then:</p>
@@ -453,45 +476,45 @@ At least version 3.0 is required. Then:</p>
 to it’s upstream dependencies.</p>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">#</a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
 <p>h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
 reproduce most of the features of the netCDF interface, with the notable
 exception of support for operations that rename or delete existing objects.
 We simply haven’t gotten around to implementing this yet. Patches
 would be very welcome.</p>
 <section id="new-api">
-<h3>New API<a class="headerlink" href="#new-api" title="Permalink to this heading">#</a></h3>
+<h3>New API<a class="headerlink" href="#new-api" title="Link to this heading">#</a></h3>
 <p>The new API supports direct hierarchical access of variables and groups. Its
 design is an adaptation of h5py to the netCDF data model. For example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">h5netcdf</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="k">with</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;mydata.nc&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="k">with</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;mydata.nc&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="c1"># set dimensions with a dictionary</span>
-    <span class="n">f</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">}</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">}</span>
     <span class="c1"># and update them with a dict-like interface</span>
     <span class="c1"># f.dimensions[&#39;x&#39;] = 5</span>
     <span class="c1"># f.dimensions.update({&#39;x&#39;: 5})</span>
 
-    <span class="n">v</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_variable</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_variable</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,),</span> <span class="nb">float</span><span class="p">)</span>
     <span class="n">v</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
 
     <span class="c1"># you don&#39;t need to create groups first</span>
     <span class="c1"># you also don&#39;t need to create dimensions first if you supply data</span>
     <span class="c1"># with the new variable</span>
-    <span class="n">v</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_variable</span><span class="p">(</span><span class="s1">&#39;/grouped/data&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,),</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">create_variable</span><span class="p">(</span><span class="s2">&quot;/grouped/data&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,),</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 
     <span class="c1"># access and modify attributes with a dict-like interface</span>
-    <span class="n">v</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;foo&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;bar&#39;</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;foo&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;bar&quot;</span>
 
     <span class="c1"># you can access variables and groups directly using a hierarchical</span>
     <span class="c1"># keys like h5py</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s1">&#39;/grouped/data&#39;</span><span class="p">])</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">&quot;/grouped/data&quot;</span><span class="p">])</span>
 
     <span class="c1"># add an unlimited dimension</span>
-    <span class="n">f</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="s2">&quot;z&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="c1"># explicitly resize a dimension and all variables using it</span>
-    <span class="n">f</span><span class="o">.</span><span class="n">resize_dimension</span><span class="p">(</span><span class="s1">&#39;z&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">resize_dimension</span><span class="p">(</span><span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Notes:</p>
@@ -504,26 +527,27 @@ current size of variable’s dimensions. The behaviour is equivalent to netCDF4-
 </ul>
 </section>
 <section id="legacy-api">
-<h3>Legacy API<a class="headerlink" href="#legacy-api" title="Permalink to this heading">#</a></h3>
+<h3>Legacy API<a class="headerlink" href="#legacy-api" title="Link to this heading">#</a></h3>
 <p>The legacy API is designed for compatibility with <a class="reference external" href="https://github.com/Unidata/netcdf4-python">netCDF4-python</a>. To use it, import
 <code class="docutils literal notranslate"><span class="pre">h5netcdf.legacyapi</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">h5netcdf.legacyapi</span> <span class="k">as</span> <span class="nn">netCDF4</span>
+
 <span class="c1"># everything here would also work with this instead:</span>
 <span class="c1"># import netCDF4</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="k">with</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="s1">&#39;mydata.nc&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ds</span><span class="p">:</span>
-    <span class="n">ds</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
-    <span class="n">v</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s1">&#39;hello&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,))</span>
+<span class="k">with</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="s2">&quot;mydata.nc&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">ds</span><span class="p">:</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,))</span>
     <span class="n">v</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
 
-    <span class="n">g</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">createGroup</span><span class="p">(</span><span class="s1">&#39;grouped&#39;</span><span class="p">)</span>
-    <span class="n">g</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-    <span class="n">g</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;i8&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,))</span>
-    <span class="n">v</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">createGroup</span><span class="p">(</span><span class="s2">&quot;grouped&quot;</span><span class="p">)</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">createDimension</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">createVariable</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;i8&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,))</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
     <span class="n">v</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-    <span class="n">v</span><span class="o">.</span><span class="n">foo</span> <span class="o">=</span> <span class="s1">&#39;bar&#39;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s1">&#39;grouped&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
+    <span class="n">v</span><span class="o">.</span><span class="n">foo</span> <span class="o">=</span> <span class="s2">&quot;bar&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;grouped&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>The legacy API is designed to be easy to try-out for netCDF4-python users, but it is not an
@@ -540,15 +564,12 @@ current size of variable’s dimensions. The behaviour is equivalent to netCDF4-
 </ul>
 </section>
 <section id="invalid-netcdf-files">
-<span id="invalid-netcdf"></span><h3>Invalid netCDF files<a class="headerlink" href="#invalid-netcdf-files" title="Permalink to this heading">#</a></h3>
+<span id="invalid-netcdf"></span><h3>Invalid netCDF files<a class="headerlink" href="#invalid-netcdf-files" title="Link to this heading">#</a></h3>
 <p>h5py implements some features that do not (yet) result in valid netCDF files:</p>
 <ul class="simple">
 <li><dl class="simple">
 <dt>Data types:</dt><dd><ul>
 <li><p>Booleans</p></li>
-<li><p>Complex values</p></li>
-<li><p>Non-string variable length types</p></li>
-<li><p>Enum types</p></li>
 <li><p>Reference types</p></li>
 </ul>
 </dd>
@@ -568,11 +589,11 @@ as files with such features are not readable by other netCDF tools.</p>
 compatibility, you can use these features by setting <code class="docutils literal notranslate"><span class="pre">invalid_netcdf=True</span></code>
 when creating a file:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># avoid the .nc extension for non-netcdf files</span>
-<span class="n">f</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;mydata.h5&#39;</span><span class="p">,</span> <span class="n">invalid_netcdf</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;mydata.h5&quot;</span><span class="p">,</span> <span class="n">invalid_netcdf</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="o">...</span>
 
 <span class="c1"># works with the legacy API, too, though compression options are not exposed</span>
-<span class="n">ds</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">legacyapi</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="s1">&#39;mydata.h5&#39;</span><span class="p">,</span> <span class="n">invalid_netcdf</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">legacyapi</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="s2">&quot;mydata.h5&quot;</span><span class="p">,</span> <span class="n">invalid_netcdf</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="o">...</span>
 </pre></div>
 </div>
@@ -580,14 +601,14 @@ when creating a file:</p>
 from an existing file. A warning will be issued if the file has <cite>.nc</cite>-extension.</p>
 <p class="rubric">Footnotes</p>
 <aside class="footnote-list brackets">
-<aside class="footnote brackets" id="id2" role="note">
+<aside class="footnote brackets" id="id2" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
 <p>h5netcdf we will raise <code class="docutils literal notranslate"><span class="pre">h5netcdf.CompatibilityError</span></code>.</p>
 </aside>
 </aside>
 </section>
 <section id="decoding-variable-length-strings">
-<h3>Decoding variable length strings<a class="headerlink" href="#decoding-variable-length-strings" title="Permalink to this heading">#</a></h3>
+<h3>Decoding variable length strings<a class="headerlink" href="#decoding-variable-length-strings" title="Link to this heading">#</a></h3>
 <p>h5py 3.0 introduced <a class="reference external" href="https://docs.h5py.org/en/stable/strings.html">new behavior</a> for handling variable length string.
 Instead of being automatically decoded with UTF-8 into NumPy arrays of <code class="docutils literal notranslate"><span class="pre">str</span></code>,
 they are required as arrays of <code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</p>
@@ -597,13 +618,13 @@ and automatically decodes strings.</p>
 in the <code class="docutils literal notranslate"><span class="pre">h5netcdf.File</span></code> constructor to opt-in to automatic decoding.</p>
 </section>
 <section id="datasets-with-missing-dimension-scales">
-<span id="phony-dims"></span><h3>Datasets with missing dimension scales<a class="headerlink" href="#datasets-with-missing-dimension-scales" title="Permalink to this heading">#</a></h3>
+<span id="phony-dims"></span><h3>Datasets with missing dimension scales<a class="headerlink" href="#datasets-with-missing-dimension-scales" title="Link to this heading">#</a></h3>
 <p>By default <a class="footnote-reference brackets" href="#id4" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> h5netcdf raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if variables with no dimension
 scale associated with one of their axes are accessed.
 You can set <code class="docutils literal notranslate"><span class="pre">phony_dims='sort'</span></code> when opening a file to let h5netcdf invent
 phony dimensions according to <a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/interoperability_hdf5.html">netCDF</a> behaviour.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># mimic netCDF-behaviour for non-netcdf files</span>
-<span class="n">f</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;mydata.h5&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">phony_dims</span><span class="o">=</span><span class="s1">&#39;sort&#39;</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;mydata.h5&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">phony_dims</span><span class="o">=</span><span class="s2">&quot;sort&quot;</span><span class="p">)</span>
 <span class="o">...</span>
 </pre></div>
 </div>
@@ -612,20 +633,20 @@ on performance in case you rely on laziness of group access.
 You can set <code class="docutils literal notranslate"><span class="pre">phony_dims='access'</span></code> instead to defer phony dimension creation
 to group access time. The created phony dimension naming will differ from
 <a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/interoperability_hdf5.html">netCDF</a> behaviour.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s1">&#39;mydata.h5&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">phony_dims</span><span class="o">=</span><span class="s1">&#39;access&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="o">=</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">&quot;mydata.h5&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">phony_dims</span><span class="o">=</span><span class="s2">&quot;access&quot;</span><span class="p">)</span>
 <span class="o">...</span>
 </pre></div>
 </div>
 <p class="rubric">Footnotes</p>
 <aside class="footnote-list brackets">
-<aside class="footnote brackets" id="id4" role="note">
+<aside class="footnote brackets" id="id4" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">2</a><span class="fn-bracket">]</span></span>
 <p>Keyword default setting <code class="docutils literal notranslate"><span class="pre">phony_dims=None</span></code> for backwards compatibility.</p>
 </aside>
 </aside>
 </section>
 <section id="track-order">
-<h3>Track Order<a class="headerlink" href="#track-order" title="Permalink to this heading">#</a></h3>
+<h3>Track Order<a class="headerlink" href="#track-order" title="Link to this heading">#</a></h3>
 <p>As of h5netcdf 1.1.0, if h5py 3.7.0 or greater is detected, the <code class="docutils literal notranslate"><span class="pre">track_order</span></code>
 parameter is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> enabling <a class="reference external" href="https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#creation_order">order tracking</a> for newly created
 netCDF4 files. This helps ensure that files created with the h5netcdf library
@@ -651,23 +672,23 @@ parameter is set to <code class="docutils literal notranslate"><span class="pre"
 </section>
 </section>
 <section id="history">
-<h2>History<a class="headerlink" href="#history" title="Permalink to this heading">#</a></h2>
+<h2>History<a class="headerlink" href="#history" title="Link to this heading">#</a></h2>
 <p>The project was started in early 2015. The first commit was made on 7th of April in 2015
 by Stephan Hoyer. The first <cite>official</cite> <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> announcement was made by Stephan on the
 <a class="reference external" href="https://github.com/pydata/xarray/issues/23#issuecomment-90780331">xarray issue tracker</a> only one day later.</p>
 <p>The library evolved constantly over the years (fixing bugs and adding enhancements)
-and gained contributions from 15 other <a class="reference internal" href="devguide.html#contributors"><span class="std std-ref">Contributors</span></a> so far. The library is widely used,
+and gained contributions from 17 other <a class="reference internal" href="devguide.html#contributors"><span class="std std-ref">Contributors</span></a> so far. The library is widely used,
 especially as backend within <a class="reference external" href="https://github.com/pydata/xarray/">xarray</a>.</p>
 <p>Early 2020 Kai Mühlbauer started to add contributions and after some time he volunteered
 to help in maintaining <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code>. Two years later in January 2022 Stephan handed the
 project-lead over to Kai. <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> version 1.0 was released on 31st of March 2022.</p>
 </section>
 <section id="license">
-<h2>License<a class="headerlink" href="#license" title="Permalink to this heading">#</a></h2>
+<h2>License<a class="headerlink" href="#license" title="Link to this heading">#</a></h2>
 <p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/blob/main/LICENSE">3-clause BSD</a></p>
 </section>
 <section id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">#</a></h2>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
@@ -684,8 +705,8 @@ project-lead over to Kai. <code class="docutils literal notranslate"><span class
               
               
               
-                <footer class="prev-next-footer">
-                  <!-- Previous / next buttons -->
+                <footer class="prev-next-footer d-print-none">
+                  
 <div class="prev-next-area">
     <a class="right-next"
        href="feature.html"
@@ -704,6 +725,7 @@ project-lead over to Kai. <code class="docutils literal notranslate"><span class
             
               
                 <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
 
   <div class="sidebar-secondary-item">
   <div class="page-toc tocsection onthispage">
@@ -738,13 +760,18 @@ project-lead over to Kai. <code class="docutils literal notranslate"><span class
   
   <div class="footer-item">
     
+<p class="component-author">
+By Author name not set
+</p>
+
   </div>
   
   <div class="footer-item">
     
+
   <p class="copyright">
     
-      © Copyright 2015-2023, h5netcdf developers.
+      © Copyright 2015-2024, h5netcdf developers.
       <br/>
     
   </p>
@@ -768,8 +795,8 @@ project-lead over to Kai. <code class="docutils literal notranslate"><span class
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6"></script>
-<script src="_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6"></script>
+  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
 
   <footer class="bd-footer">
   </footer>

@@ -15,11 +15,17 @@
    
       ~Dataset.__init__
       ~Dataset.close
+      ~Dataset.createCompoundType
       ~Dataset.createDimension
+      ~Dataset.createEnumType
       ~Dataset.createGroup
+      ~Dataset.createVLType
       ~Dataset.createVariable
+      ~Dataset.create_cmptype
+      ~Dataset.create_enumtype
       ~Dataset.create_group
       ~Dataset.create_variable
+      ~Dataset.create_vltype
       ~Dataset.flush
       ~Dataset.get
       ~Dataset.getncattr
@@ -40,13 +46,16 @@
    .. autosummary::
    
       ~Dataset.attrs
+      ~Dataset.cmptypes
       ~Dataset.dimensions
       ~Dataset.dims
+      ~Dataset.enumtypes
       ~Dataset.filename
       ~Dataset.groups
       ~Dataset.mode
       ~Dataset.name
       ~Dataset.parent
       ~Dataset.variables
+      ~Dataset.vltypes
    
    

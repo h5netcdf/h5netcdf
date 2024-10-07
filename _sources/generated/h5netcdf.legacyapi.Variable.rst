@@ -29,6 +29,7 @@
    .. autosummary::
    
       ~Variable.attrs
+      ~Variable.datatype
       ~Variable.dimensions
       ~Variable.dtype
       ~Variable.name

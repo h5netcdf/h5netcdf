@@ -14,8 +14,11 @@
    .. autosummary::
    
       ~Group.__init__
+      ~Group.create_cmptype
+      ~Group.create_enumtype
       ~Group.create_group
       ~Group.create_variable
+      ~Group.create_vltype
       ~Group.flush
       ~Group.get
       ~Group.items
@@ -33,11 +36,14 @@
    .. autosummary::
    
       ~Group.attrs
+      ~Group.cmptypes
       ~Group.dimensions
       ~Group.dims
+      ~Group.enumtypes
       ~Group.groups
       ~Group.name
       ~Group.parent
       ~Group.variables
+      ~Group.vltypes
    
    

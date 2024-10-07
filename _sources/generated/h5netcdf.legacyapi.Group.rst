@@ -14,11 +14,17 @@
    .. autosummary::
    
       ~Group.__init__
+      ~Group.createCompoundType
       ~Group.createDimension
+      ~Group.createEnumType
       ~Group.createGroup
+      ~Group.createVLType
       ~Group.createVariable
+      ~Group.create_cmptype
+      ~Group.create_enumtype
       ~Group.create_group
       ~Group.create_variable
+      ~Group.create_vltype
       ~Group.flush
       ~Group.get
       ~Group.getncattr
@@ -39,11 +45,14 @@
    .. autosummary::
    
       ~Group.attrs
+      ~Group.cmptypes
       ~Group.dimensions
       ~Group.dims
+      ~Group.enumtypes
       ~Group.groups
       ~Group.name
       ~Group.parent
       ~Group.variables
+      ~Group.vltypes
    
    
