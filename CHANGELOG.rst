@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development Version:
+Version 1.4.0 (October 7th, 2024):
 
 - Add UserType class, add EnumType ({pull}`229`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
