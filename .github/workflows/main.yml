@@ -47,7 +47,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -82,7 +82,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -117,7 +117,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -154,7 +154,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -195,7 +195,7 @@ jobs:
         repository: "pydata/xarray"
         fetch-depth: 0
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -232,7 +232,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v1
+      uses: mamba-org/setup-micromamba@v2
       with:
         environment-name: h5netcdf-docs
         cache-environment: true
