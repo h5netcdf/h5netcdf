@@ -2704,6 +2704,8 @@ def test_complex_type_creation_errors(tmp_local_netcdf):
         with pytest.raises(TypeError, match="data type 'c4' not understood"):
             ds.createVariable("data", "c4", ("x",))
 
+    if "complex256" not in np.sctypeDict:
+        pytest.skip("numpy 'complex256' dtype not available")
     with legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
         ds.createDimension("x", size=len(complex_array))
         with pytest.raises(
