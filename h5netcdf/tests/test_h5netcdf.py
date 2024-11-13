@@ -2242,7 +2242,9 @@ def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
             if tmp_local_or_remote_netcdf.startswith(remote_h5):
                 testcontext = pytest.raises(RuntimeError, match="Conflict")
             else:
-                testcontext = pytest.raises(KeyError, match="name already exists")
+                testcontext = pytest.raises(
+                    (KeyError, TypeError), match="name already exists"
+                )
             with testcontext:
                 ds.create_enumtype(np.uint8, "enum_t", enum_dict2)
 
@@ -2290,7 +2292,9 @@ def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
             if tmp_local_or_remote_netcdf.startswith(remote_h5):
                 testcontext = pytest.raises(RuntimeError, match="Conflict")
             else:
-                testcontext = pytest.raises(KeyError, match="name already exists")
+                testcontext = pytest.raises(
+                    (KeyError, TypeError), match="name already exists"
+                )
             with testcontext:
                 ds.createEnumType(np.uint8, "enum_t", enum_dict1)
 
@@ -2704,6 +2708,8 @@ def test_complex_type_creation_errors(tmp_local_netcdf):
         with pytest.raises(TypeError, match="data type 'c4' not understood"):
             ds.createVariable("data", "c4", ("x",))
 
+    if "complex256" not in np.sctypeDict:
+        pytest.skip("numpy 'complex256' dtype not available")
     with legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
         ds.createDimension("x", size=len(complex_array))
         with pytest.raises(

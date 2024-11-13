@@ -1,6 +1,12 @@
 Change Log
 ----------
 
+Development Version:
+
+- Add CI run for hdf5 1.10.6, fix complex tests, fix enum/user type tests ({pull}`244`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
+
 Version 1.4.0 (October 7th, 2024):
 
 - Add UserType class, add EnumType ({pull}`229`).
