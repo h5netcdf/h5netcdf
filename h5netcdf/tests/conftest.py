@@ -1,6 +1,7 @@
 import os
 import sys
 import tempfile
+import time
 from pathlib import Path
 from shutil import rmtree
 
@@ -162,6 +163,7 @@ domain_req_max_objects_limit: 500
                 dn_count=2,
             )
             hsds.run()
+            time.sleep(5)
             is_up = hsds.ready
 
             if is_up:
