@@ -77,7 +77,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
-        h5py-version: ["3.11"]
+        h5py-version: ["3.11", "3.12"]
         numpy-version: ["2"]
     steps:
     - uses: actions/checkout@v4
@@ -86,7 +86,7 @@ jobs:
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
-        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py_version}}-numpy${{matrix.numpy_version}}-${{env.TODAY}}"
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py-version}}-numpy${{matrix.numpy-version}}-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
           pip
@@ -95,6 +95,45 @@ jobs:
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy=${{ matrix.numpy-version }}
+    - name: Install h5netcdf
+      run: |
+        python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+    - name: Test with pytest
+      run: |
+        pytest -v --durations=0 h5netcdf/tests/
+
+  build_0b:
+    name: h5py3 hdf5 1.10 tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]
+        h5py-version: ["3.11"]
+        hdf5-version: ["1.10.*"]
+        numpy-version: ["1"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install micromamba
+      uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-name: h5netcdf-tests
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py-version}}-hdf5${{matrix.hdf5-version}}-numpy${{matrix.numpy-version}}-${{env.TODAY}}"
+        create-args: >-
+          python=${{ matrix.python-version }}
+          pip
+          pytest
+          wheel
+          hdf5=${{ matrix.hdf5-version }}
+          libnetcdf
+          numpy=${{ matrix.numpy-version }}
+    - name: Install h5py/netCDF4
+      run: |
+        python -m pip install h5py==${{ matrix.h5py-version }} netCDF4==1.5.*
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -121,7 +160,7 @@ jobs:
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
-        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy_version}}-h5pyd-${{env.TODAY}}"
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy-version}}-h5pyd-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
           pip
@@ -196,7 +235,7 @@ jobs:
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
-        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy_version}}-netcdf4_nightly-${{env.TODAY}}"
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy-version}}-netcdf4_nightly-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
           pip
@@ -237,7 +276,7 @@ jobs:
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
-        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy_version}}-xarray_nightly-${{env.TODAY}}"
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy-version}}-xarray_nightly-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
           dask
