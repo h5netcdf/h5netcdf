@@ -135,7 +135,45 @@ jobs:
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -v
         python -m pip install git+https://github.com/HDFGroup/hsds.git
         python -m pip install git+https://github.com/HDFGroup/h5pyd.git
+    - name: Start HSDS
+      shell: bash
+      if: ${{matrix.build-method == 'manual'}}
+      env:
+        ADMIN_PASSWORD: admin
+        ADMIN_USERNAME: admin
+        USER_NAME: test_user1
+        USER_PASSWORD: test
+        USER2_NAME: test_user2
+        USER2_PASSWORD: test
+        HSDS_ENDPOINT: http://127.0.0.1:5101
+        BUCKET_NAME: hsdstest
+        LOG_LEVEL: DEBUG
+      run: |
+        cp admin/config/groups.default admin/config/groups.txt
+        cp admin/config/passwd.default admin/config/passwd.txt
+        hsds --root_dir data --host localhost --port 5101 --password_file admin/config/passwd.txt --logfile hs.log   --loglevel DEBUG  --config_dir=admin/config --count=4 &
+    - name: Wait for HSDS node startup
+      shell: bash
+      run: |
+        sleep 45
+    - name: Create h5pyd test folder
+      env:
+        HS_USERNAME: test_user1
+        HS_PASSWORD: test
+        TEST2_USERNAME: test_user1
+        TEST2_PASSWORD: test
+        H5PYD_TEST_FOLDER: /home/test_user1/h5pyd_tests/
+        HS_ENDPOINT: http://127.0.0.1:5101
+      run: |
+        hstouch -e $HS_ENDPOINT /home/test_user1/h5pyd_tests/
     - name: Test with pytest
+      env:
+        HS_USERNAME: test_user1
+        HS_PASSWORD: test
+        TEST2_USERNAME: test_user1
+        TEST2_PASSWORD: test
+        H5PYD_TEST_FOLDER: /home/test_user1/h5pyd_tests/
+        HS_ENDPOINT: http://127.0.0.1:5101
       run: |
         pytest -v --durations=0 h5netcdf/tests/
 
