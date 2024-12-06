@@ -172,11 +172,18 @@ jobs:
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -v
-        python -m pip install git+https://github.com/HDFGroup/hsds.git
         python -m pip install git+https://github.com/HDFGroup/h5pyd.git
+    - name: Checkout HSDS
+      uses: actions/checkout@v4
+      with:
+        repository: HDFGroup/hsds
+        path: ${{github.workspace}}/hsds
+    - name: Install HSDS
+      working-directory: ${{github.workspace}}/hsds
+      run: |
+        python -m pip install -e .
     - name: Start HSDS
-      shell: bash
-      if: ${{matrix.build-method == 'manual'}}
+      working-directory: ${{github.workspace}}/hsds
       env:
         ADMIN_PASSWORD: admin
         ADMIN_USERNAME: admin
@@ -192,7 +199,6 @@ jobs:
         cp admin/config/passwd.default admin/config/passwd.txt
         hsds --root_dir data --host localhost --port 5101 --password_file admin/config/passwd.txt --logfile hs.log   --loglevel DEBUG  --config_dir=admin/config --count=4 &
     - name: Wait for HSDS node startup
-      shell: bash
       run: |
         sleep 45
     - name: Create h5pyd test folder

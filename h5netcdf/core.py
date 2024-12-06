@@ -153,7 +153,7 @@ def _get_h5usertype_identifier(h5type):
         h5typeid = h5type.id.get_class()
     except AttributeError:
         # h5pyd second
-        h5typeid = _h5type_mapping[h5type.id.type_json["class"]]
+        h5typeid = _h5type_mapping.get(h5type.id.type_json["class"])
     return h5typeid
 
 
@@ -164,7 +164,7 @@ def _get_h5dstype_identifier(h5type):
         h5typeid = h5type.id.get_type().get_class()
     except AttributeError:
         # h5pyd second
-        h5typeid = _h5type_mapping[h5type.id.type_json["class"]]
+        h5typeid = _h5type_mapping.get(h5type.id.type_json["class"])
     return h5typeid
 
 
