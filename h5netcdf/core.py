@@ -140,6 +140,9 @@ class BaseObject:
 
 
 _h5type_mapping = {
+    "H5T_INTEGER": 0,
+    "H5T_FLOAT": 1,
+    "H5T_STRING": 3,
     "H5T_COMPOUND": 6,
     "H5T_ENUM": 8,
     "H5T_VLEN": 9,
