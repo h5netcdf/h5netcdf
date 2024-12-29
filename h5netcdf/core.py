@@ -9,6 +9,7 @@ from collections.abc import Mapping
 import h5py
 import numpy as np
 from packaging import version
+import logging
 
 from . import __version__
 from .attrs import Attributes
@@ -712,13 +713,13 @@ class Group(Mapping):
             phony_dims = Counter()
 
         for k in self._h5group:
-            with warnings.catch_warnings(record=True) as wlist:
+            #with warnings.catch_warnings(record=True) as wlist:
+            try:
                 v = self._h5group[k]
-                if wlist:
-                    for warning in wlist:
-                        print(k, warning.message)
-                    print(f'Skipping {k}')
-                    break
+            except Exception as e:
+                warnings.warn(f'Skipping {k} - {e}')
+                continue
+
             if isinstance(v, self._root._h5py.Group):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
@@ -729,19 +730,22 @@ class Group(Mapping):
             ) and self._root._h5py.check_enum_dtype(v.dtype):
                 self._enumtypes.add(k)
             else:
-                if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
-                    # add dimension and retrieve size
-                    self._dimensions.add(k)
-                else:
-                    if self._root._phony_dims_mode is not None:
-                        # check if malformed variable and raise
-                        if _unlabeled_dimension_mix(v) == "unlabeled":
-                            # if unscaled variable, get phony dimensions
-                            phony_dims |= Counter(v.shape)
+                try:
+                    if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
+                        # add dimension and retrieve size
+                        self._dimensions.add(k)
+                    else:
+                        if self._root._phony_dims_mode is not None:
+                            # check if malformed variable and raise
+                            if _unlabeled_dimension_mix(v) == "unlabeled":
+                                # if unscaled variable, get phony dimensions
+                                phony_dims |= Counter(v.shape)
 
-                if not _netcdf_dimension_but_not_variable(v):
-                    if isinstance(v, self._root._h5py.Dataset):
-                        self._variables.add(k)
+                    if not _netcdf_dimension_but_not_variable(v):
+                        if isinstance(v, self._root._h5py.Dataset):
+                            self._variables.add(k)
+                except:
+                    warnings.warn(f'Cannot read {k}')
 
         # iterate over found phony dimensions and create them
         if self._root._phony_dims_mode is not None:
@@ -1266,15 +1270,20 @@ class File(Group):
         if backend == 'pyfive':
             
             self._h5py = pyfive
+            logging.info(f'h5netcdf running with {pyfive.__version__}')
             try:
                 # We can ignore track order for reading.
                 # AFAIK it's not respected by
-                self._h5file = self._h5py.File(
-                    path, mode, **kwargs
-                )
+                if kwargs:
+                    warnings.warn('Kwargs to pyfive are ignored')
+                self._h5file = self._h5py.File(path)
                 self._preexisting_file = True
             except OSError:
                 # pyfive is readonly, we need to raise this error
+                self._closed=True
+                raise
+            except Exception:
+                self._closed=True
                 raise
             else:
                 self._closed=False
