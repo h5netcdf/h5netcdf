@@ -1,12 +1,11 @@
 # For details on how netCDF4 builds on HDF5:
 # https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec
-import os.path
+import os
 import warnings
 import weakref
 from collections import ChainMap, Counter, OrderedDict, defaultdict
 from collections.abc import Mapping
 
-import h5py
 import numpy as np
 from packaging import version
 import logging
@@ -15,6 +14,13 @@ from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
 from .utils import Frozen
+
+try:
+    import h5py
+except ImportError:
+    no_h5py = True
+else:
+    no_h5py = False
 
 try:
     import h5pyd
@@ -1266,14 +1272,19 @@ class File(Group):
 
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
 
-        if backend not in [None,'pyfive','h5py']:
+        if backend is None:
+            backend = os.environ.get("H5NETCDF_BACKEND", "h5py")
+        self.backend = backend
+
+        if backend not in ['pyfive', 'h5py']:
             raise ValueError('Unknown backend {backend} - valid options are: None,"pyfive","h5py"')
         if backend == 'pyfive' and no_pyfive:
             raise ImportError('No module named "pyfive", backend not available')
+        if backend == 'h5py' and no_h5py:
+            raise ImportError('No module named "h5py", backend not available')
         if mode != 'r' and backend == 'pyfive':
             raise ValueError('pyfive backend can only be used with mode="r"')
 
-        self.backend = backend   
         if backend == 'pyfive':
             
             self._h5py = pyfive
