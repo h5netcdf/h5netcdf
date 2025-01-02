@@ -429,7 +429,6 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
         assert not v.shuffle
     ds.close()
 
-    print('What is it?', tmp_netcdf)
     if is_h5py_char_working(tmp_netcdf, "z"):
         ds = h5netcdf.File(tmp_netcdf, "r", backend=backend)
         v = ds["z"]
@@ -545,12 +544,12 @@ def test_fileobj(decode_vlen_strings):
     read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings)
 
 def test_fileobj_pyfive(decode_vlen_strings):
-    fileobj = tempfile.TemporaryFile()
-    write_h5netcdf(fileobj, pyfive=True)
-    read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend='pyfive')
-    #fileobj = io.BytesIO()
+    #fileobj = tempfile.TemporaryFile()
     #write_h5netcdf(fileobj, pyfive=True)
     #read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend='pyfive')
+    fileobj = io.BytesIO()
+    write_h5netcdf(fileobj, pyfive=True)
+    read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend='pyfive')
 
 def test_repr(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)

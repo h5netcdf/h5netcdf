@@ -712,13 +712,17 @@ class Group(Mapping):
         if self._root._phony_dims_mode is not None:
             phony_dims = Counter()
 
+        pyfive_backend = isinstance(self._h5group, pyfive.Group)
         for k in self._h5group:
             #with warnings.catch_warnings(record=True) as wlist:
             try:
                 v = self._h5group[k]
             except Exception as e:
-                warnings.warn(f'Skipping {k} - {e}')
-                continue
+                if pyfive_backend:
+                    warnings.warn(f'Skipping {k} - {e}')
+                    continue
+                else:
+                    raise
 
             if isinstance(v, self._root._h5py.Group):
                 # add to the groups collection if this is a h5py(d) Group
@@ -745,7 +749,10 @@ class Group(Mapping):
                         if isinstance(v, self._root._h5py.Dataset):
                             self._variables.add(k)
                 except:
-                    warnings.warn(f'Cannot read {k}')
+                    if pyfive_backend:
+                        warnings.warn(f'Cannot read {k}')
+                    else:
+                        raise
 
         # iterate over found phony dimensions and create them
         if self._root._phony_dims_mode is not None:
@@ -1272,21 +1279,21 @@ class File(Group):
             self._h5py = pyfive
             logging.info(f'h5netcdf running with {pyfive.__version__}')
             try:
-                # We can ignore track order for reading.
-                # AFAIK it's not respected by
+                # We can ignore track order for now (and maybe for reading in general)?
                 if kwargs:
                     warnings.warn('Kwargs to pyfive are ignored')
+                # mode can only be read, and that's the default
                 self._h5file = self._h5py.File(path)
                 self._preexisting_file = True
             except OSError:
                 # pyfive is readonly, we need to raise this error
-                self._closed=True
+                self._closed = True
                 raise
             except Exception:
-                self._closed=True
+                self._closed = True
                 raise
             else:
-                self._closed=False
+                self._closed = False
 
         else:
             try:
