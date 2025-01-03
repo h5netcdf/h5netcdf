@@ -20,7 +20,6 @@ def hsds_up():
     """Provide HDF Highly Scalabale Data Service (HSDS) for h5pyd testing."""
     if with_reqd_pkgs:
         root_dir = Path(tempfile.mkdtemp(prefix="tmp-hsds-root-"))
-        print("root_dir:", root_dir)
         bucket_name = "pytest"
         os.environ["BUCKET_NAME"] = bucket_name
         os.mkdir(f"{root_dir}/{bucket_name}")  # need to create a directory for our bucket
@@ -58,12 +57,7 @@ def hsds_up():
         yield is_up
         hsds.check_processes()  # this will capture hsds log output
         hsds.stop()
-        print("hs_log")
-        print("="*40)
-        with open(f"{root_dir}/hsds.log") as f:
-            for line in f:
-                print(line.rstrip())
-        print("="*40)
+
         rmtree(root_dir, ignore_errors=True)
 
     else:

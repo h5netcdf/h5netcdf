@@ -988,8 +988,7 @@ class Group(Mapping):
         if name in self:
             raise ValueError(f"unable to create group {name:!r} (name already exists)")
         kwargs = {}
-        if self._root._h5py.__name__ == "h5py":
-            kwargs.update(track_order=self._track_order)
+        kwargs.update(track_order=self._track_order)
 
         self._h5group.create_group(name, **kwargs)
         self._groups[name] = self._group_cls(self, name)
@@ -1105,8 +1104,7 @@ class Group(Mapping):
             self._dimensions[name]._detach_scale()
             del self._h5group[name]
 
-        if self._root._h5py.__name__ == "h5py":
-            kwargs.update(dict(track_order=self._parent._track_order))
+        kwargs.update(dict(track_order=self._parent._track_order))
 
         # fill value handling
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
