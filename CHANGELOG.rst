@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development Version (unreleased):
+
+- Update CI to new versions (Python 3.13, 3.14 alpha), remove numpy 1 from h5pyd runs ({pull}`250`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.4.1 (November 13th, 2024):
 
 - Add CI run for hdf5 1.10.6, fix complex tests, fix enum/user type tests ({pull}`244`).
