@@ -5,6 +5,8 @@ Development Version (unreleased):
 
 - Update CI to new versions (Python 3.13, 3.14 alpha), remove numpy 1 from h5pyd runs ({pull}`250`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Update CI and reinstate h5pyd/hsds test runs ({pull}`247`).
+  By `John Readey  <https://github.com/jreadey>`_
 
 Version 1.4.1 (November 13th, 2024):
 

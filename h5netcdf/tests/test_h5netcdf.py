@@ -107,7 +107,9 @@ _vlen_string = "foo"
 
 
 def is_h5py_char_working(tmp_netcdf, name):
-    if not isinstance(tmp_netcdf, h5py.File):
+    if not isinstance(tmp_netcdf, h5py.File) and (
+        without_h5pyd or not isinstance(tmp_netcdf, h5pyd.File)
+    ):
         h5 = get_hdf5_module(tmp_netcdf)
         # https://github.com/Unidata/netcdf-c/issues/298
         with h5.File(tmp_netcdf, "r") as ds:
@@ -2649,6 +2651,8 @@ def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
     reason="does not work before netCDF4 v1.7.0",
 )
 def test_nc_complex_compatibility(tmp_local_or_remote_netcdf, netcdf_write_module):
+    if tmp_local_or_remote_netcdf.startswith(remote_h5):
+        pytest.skip("not yet implemented in h5pyd/hsds")
     # native complex
     complex_array = np.array([0 + 0j, 1 + 0j, 0 + 1j, 1 + 1j, 0.25 + 0.75j])
     # compound complex
@@ -2726,9 +2730,7 @@ def test_hsds(hsds_up):
     elif not hsds_up:
         pytest.skip("HSDS service not running")
     rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
-    fname = (
-        "hdf5://" + "home" + "/" + env["HS_USERNAME"] + "/" + "testfile" + rnd + ".nc"
-    )
+    fname = f"hdf5://testfile{rnd}.nc"
     with h5netcdf.File(fname, "w") as ds:
         g = ds.create_group("test")
         g.dimensions["x"] = None
