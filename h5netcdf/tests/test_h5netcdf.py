@@ -2650,9 +2650,8 @@ def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
     version.parse(netCDF4.__version__) < version.parse("1.7.0"),
     reason="does not work before netCDF4 v1.7.0",
 )
-def test_nc_complex_compatibility(tmp_local_or_remote_netcdf, netcdf_write_module):
+def test_nc_complex_compatibility(tmp_local_netcdf, netcdf_write_module):
     # native complex
-    print("native complex")
     complex_array = np.array([0 + 0j, 1 + 0j, 0 + 1j, 1 + 1j, 0.25 + 0.75j])
     # compound complex
     complex128 = np.dtype(
@@ -2704,7 +2703,6 @@ def test_nc_complex_compatibility(tmp_local_or_remote_netcdf, netcdf_write_modul
     reason="does not work before netCDF4 v1.7.0",
 )
 def test_complex_type_creation_errors(tmp_local_netcdf):
-    print("test_complex")
     complex_array = np.array([0 + 0j, 1 + 0j, 0 + 1j, 1 + 1j, 0.25 + 0.75j])
 
     with legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
@@ -2725,7 +2723,6 @@ def test_complex_type_creation_errors(tmp_local_netcdf):
 
 def test_hsds(hsds_up):
     # test hsds setup/write
-    print("test_hsds")
     if without_h5pyd:
         pytest.skip("h5pyd package not available")
     elif not hsds_up:
