@@ -2650,7 +2650,9 @@ def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
     version.parse(netCDF4.__version__) < version.parse("1.7.0"),
     reason="does not work before netCDF4 v1.7.0",
 )
-def test_nc_complex_compatibility(tmp_local_netcdf, netcdf_write_module):
+def test_nc_complex_compatibility(tmp_local_or_remote_netcdf, netcdf_write_module):
+    if tmp_local_or_remote_netcdf.startswith(remote_h5):
+        pytest.skip("not yet implemented in h5pyd/hsds")
     # native complex
     complex_array = np.array([0 + 0j, 1 + 0j, 0 + 1j, 1 + 1j, 0.25 + 0.75j])
     # compound complex
