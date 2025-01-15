@@ -1,5 +1,4 @@
 import os
-import sys
 import tempfile
 from pathlib import Path
 from shutil import rmtree
@@ -22,11 +21,13 @@ def hsds_up():
         root_dir = Path(tempfile.mkdtemp(prefix="tmp-hsds-root-"))
         bucket_name = "pytest"
         os.environ["BUCKET_NAME"] = bucket_name
-        os.mkdir(f"{root_dir}/{bucket_name}")  # need to create a directory for our bucket
+        os.mkdir(
+            f"{root_dir}/{bucket_name}"
+        )  # need to create a directory for our bucket
 
         hs_username = "h5netcdf-pytest"
         hs_password = "TestEarlyTestEverything"
-       
+
         kwargs = {}
         kwargs["username"] = hs_username
         kwargs["password"] = hs_password
@@ -35,10 +36,10 @@ def hsds_up():
         kwargs["log_level"] = "DEBUG"
         kwargs["host"] = "localhost"
         kwargs["sn_port"] = 5101
- 
+
         try:
             hsds = HsdsApp(**kwargs)
-                 
+
             hsds.run()
             is_up = hsds.ready
 
@@ -48,9 +49,9 @@ def hsds_up():
                 os.environ["HS_PASSWORD"] = hs_password
                 # make folders expected by pytest
                 # pytest/home/h5netcdf-pytest
-                #Folder("/pytest/", mode='w')
-                Folder("/home/", mode='w')
-                Folder("/home/h5netcdf-pytest/", mode='w')
+                # Folder("/pytest/", mode='w')
+                Folder("/home/", mode="w")
+                Folder("/home/h5netcdf-pytest/", mode="w")
         except Exception:
             is_up = False
 

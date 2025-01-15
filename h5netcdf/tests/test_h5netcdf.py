@@ -107,7 +107,9 @@ _vlen_string = "foo"
 
 
 def is_h5py_char_working(tmp_netcdf, name):
-    if not isinstance(tmp_netcdf, h5py.File) and (without_h5pyd or not isinstance(tmp_netcdf, h5pyd.File)):
+    if not isinstance(tmp_netcdf, h5py.File) and (
+        without_h5pyd or not isinstance(tmp_netcdf, h5pyd.File)
+    ):
         h5 = get_hdf5_module(tmp_netcdf)
         # https://github.com/Unidata/netcdf-c/issues/298
         with h5.File(tmp_netcdf, "r") as ds:
@@ -2721,7 +2723,7 @@ def test_complex_type_creation_errors(tmp_local_netcdf):
             ds.createVariable("data", "c32", ("x",))
 
 
-def test_hsds(hsds_up):        
+def test_hsds(hsds_up):
     # test hsds setup/write
     print("test_hsds")
     if without_h5pyd:
