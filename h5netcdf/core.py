@@ -419,6 +419,7 @@ class BaseVariable(BaseObject):
 
         # get padding
         padding = self._get_padding(key)
+
         # apply padding with fillvalue (both api)
         if padding:
             fv = self.dtype.type(self._h5ds.fillvalue)
