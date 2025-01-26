@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>h5netcdf.Group &#8212; h5netcdf - 1.4.1</title>
+    <title>h5netcdf.Group &#8212; h5netcdf - 1.5.0</title>
   
   
   
@@ -16,8 +16,8 @@
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
-  <!-- 
-    this give us a css class that will be invisible only if js is disabled 
+  <!--
+    this give us a css class that will be invisible only if js is disabled
   -->
   <noscript>
     <style>
@@ -27,19 +27,19 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=a3416100" />
   
   <!-- So that users can add custom icons -->
-  <script src="../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=07b797d1"></script>
+    <script src="../_static/documentation_options.js?v=40912020"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
@@ -126,7 +126,7 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.4.1</p>
+    <p class="title logo__title">h5netcdf - 1.5.0</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -182,9 +182,14 @@
   
   
   <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
   </div>
-  
-  <div id="rtd-footer-container"></div>
 
 
       </div>
@@ -564,14 +569,14 @@ Each group is like a Dataset itself.</p>
 if not existent.</p></li>
 <li><p><strong>dimensions</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – Tuple containing dimension name strings. Defaults to empty tuple, effectively
 creating a scalar variable.</p></li>
-<li><p><strong>dtype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.dtype</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UserType</span> <span class="pre">(Enum</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VL</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Compound)</span></code>, <em>optional</em>) – Datatype of the new variable. Defaults to None.</p></li>
-<li><p><strong>fillvalue</strong> (<a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-scalar" title="(in NumPy v2.1)"><span class="xref std std-term">scalar</span></a>, <em>optional</em>) – Specify fillvalue for uninitialized parts of the variable. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.dtype</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UserType</span> <span class="pre">(Enum</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VL</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Compound)</span></code>, <em>optional</em>) – Datatype of the new variable. Defaults to None.</p></li>
+<li><p><strong>fillvalue</strong> (<a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-scalar" title="(in NumPy v2.2)"><span class="xref std std-term">scalar</span></a>, <em>optional</em>) – Specify fillvalue for uninitialized parts of the variable. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>chunks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>, <em>optional</em>) – Tuple of integers specifying the chunksizes of each variable dimension.</p></li>
 <li><p><strong>chunking_heuristic</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Specify auto-chunking approach. Can be either of <code class="docutils literal notranslate"><span class="pre">h5py</span></code> or <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code>. Defaults to
 <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code>. Discussion on <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> chunking can be found in (<a class="extlink-issue reference external" href="https://github.com/h5netcdf/h5netcdf/issues/52">GH52</a>)
 and (<a class="extlink-pull reference external" href="https://github.com/h5netcdf/h5netcdf/pull/127">PR127</a>).</p></li>
-<li><p><strong>compression</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Compression filter to apply, defaults to <code class="docutils literal notranslate"><span class="pre">gzip</span></code></p></li>
-<li><p><strong>compression_opts</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Parameter for compression filter. For <code class="docutils literal notranslate"><span class="pre">compression=&quot;gzip&quot;</span></code> Integer from 1 to 9 specifying
+<li><p><strong>compression</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Compression filter to apply, defaults to <code class="docutils literal notranslate"><span class="pre">gzip</span></code>. <code class="docutils literal notranslate"><span class="pre">zlib</span></code> is an alias for <code class="docutils literal notranslate"><span class="pre">gzip</span></code>.</p></li>
+<li><p><strong>compression_opts</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>) – Parameter for compression filter. For <code class="docutils literal notranslate"><span class="pre">compression=&quot;gzip&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">compression=&quot;zlib&quot;</span></code> Integer from 1 to 9 specifying
 the compression level. Defaults to 4.</p></li>
 <li><p><strong>fletcher32</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, HDF5 Fletcher32 checksum algorithm is applied. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>shuffle</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, HDF5 shuffle filter will be applied. Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
@@ -759,7 +764,7 @@ By Author name not set
 
   <p class="copyright">
     
-      © Copyright 2015-2024, h5netcdf developers.
+      © Copyright 2015-2025, h5netcdf developers.
       <br/>
     
   </p>
@@ -783,8 +788,8 @@ By Author name not set
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
 
   <footer class="bd-footer">
   </footer>
