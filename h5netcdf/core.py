@@ -1185,7 +1185,7 @@ class Group(Mapping):
         compression : str, optional
             Compression filter to apply, defaults to ``gzip``. ``zlib`` is an alias for ``gzip``.
         compression_opts : int
-            Parameter for compression filter. For ``compression="gzip"`` Integer from 1 to 9 specifying
+            Parameter for compression filter. For ``compression="gzip"``/``compression="zlib"`` Integer from 1 to 9 specifying
             the compression level. Defaults to 4.
         fletcher32 : bool
             If ``True``, HDF5 Fletcher32 checksum algorithm is applied. Defaults to ``False``.
