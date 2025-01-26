@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development Version (unreleased):
+Version 1.5.0 (January 26th, 2025):
 
 - Update CI to new versions (Python 3.13, 3.14 alpha), remove numpy 1 from h5pyd runs ({pull}`250`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
