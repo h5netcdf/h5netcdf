@@ -186,14 +186,14 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.close()
 
 
-def write_h5netcdf(tmp_netcdf):
+def write_h5netcdf(tmp_netcdf, compression="gzip"):
     ds = h5netcdf.File(tmp_netcdf, "w")
     ds.attrs["global"] = 42
     ds.attrs["other_attr"] = "yes"
     ds.dimensions = {"x": 4, "y": 5, "z": 6, "empty": 0, "unlimited": None}
 
     v = ds.create_variable(
-        "foo", ("x", "y"), float, chunks=(4, 5), compression="gzip", shuffle=True
+        "foo", ("x", "y"), float, chunks=(4, 5), compression=compression, shuffle=True
     )
     v[...] = 1
     v.attrs["units"] = "meters"
@@ -515,6 +515,11 @@ def test_write_h5netcdf_read_netCDF4(tmp_local_netcdf):
 def test_roundtrip_h5netcdf(tmp_local_or_remote_netcdf, decode_vlen_strings):
     write_h5netcdf(tmp_local_or_remote_netcdf)
     read_h5netcdf(tmp_local_or_remote_netcdf, h5netcdf, decode_vlen_strings)
+
+
+def test_write_compression_as_zlib(tmp_local_netcdf):
+    write_h5netcdf(tmp_local_netcdf, compression="zlib")
+    read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf)
 
 
 def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):

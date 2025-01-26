@@ -7,6 +7,8 @@ Development Version (unreleased):
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Update CI and reinstate h5pyd/hsds test runs ({pull}`247`).
   By `John Readey  <https://github.com/jreadey>`_
+- Allow ``zlib`` to be used as an alias for ``gzip`` for enhanced compatibility with h5netcdf's API and xarray.
+  By `Mark Harfouche <https://github.com/hmaarrfk>`_
 
 Version 1.4.1 (November 13th, 2024):
 

@@ -1183,9 +1183,9 @@ class Group(Mapping):
             ``h5netcdf``. Discussion on ``h5netcdf`` chunking can be found in (:issue:`52`)
             and (:pull:`127`).
         compression : str, optional
-            Compression filter to apply, defaults to ``gzip``
+            Compression filter to apply, defaults to ``gzip``. ``zlib`` is an alias for ``gzip``.
         compression_opts : int
-            Parameter for compression filter. For ``compression="gzip"`` Integer from 1 to 9 specifying
+            Parameter for compression filter. For ``compression="gzip"``/``compression="zlib"`` Integer from 1 to 9 specifying
             the compression level. Defaults to 4.
         fletcher32 : bool
             If ``True``, HDF5 Fletcher32 checksum algorithm is applied. Defaults to ``False``.
@@ -1232,6 +1232,13 @@ class Group(Mapping):
         group = self
         for k in keys[:-1]:
             group = group._require_child_group(k)
+
+        # Allow zlib to be an alias for gzip
+        # but use getters and setters so as not to change the behavior
+        # of the default h5py functions
+        if kwargs.get("compression", None) == "zlib":
+            kwargs["compression"] = "gzip"
+
         return group._create_child_variable(
             keys[-1],
             dimensions,
