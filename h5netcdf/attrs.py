@@ -31,6 +31,7 @@ class Attributes(MutableMapping):
         if self._h5py.__name__ == "h5py":
             attr = self._h5attrs.get_id(key)
         else:
+            # pyfive backend
             attr = self._h5attrs[key]
 
         # handle Empty types
@@ -66,11 +67,21 @@ class Attributes(MutableMapping):
                     # transform string array to list
                     if not np.isscalar(output):
                         output = output.tolist()
+        else:
+            # pyfive backend: There is no '_h5py.check_string_dtype'
+            #                 method, but we only have to deal with
+            #                 the case of a numpy array of strings.
+            try:
+                if output.dtype == object:
+                    # transform string array to list
+                    output = output.tolist()
+            except AttributeError:
+                pass
 
-            # return item if single element list/array
-            # see https://github.com/h5netcdf/h5netcdf/issues/116
-            if not np.isscalar(output) and len(output) == 1:
-                return output[0]
+        # return item if single element list/array see
+        # https://github.com/h5netcdf/h5netcdf/issues/116
+        if not np.isscalar(output) and len(output) == 1:
+            return output[0]
 
         return output
 
