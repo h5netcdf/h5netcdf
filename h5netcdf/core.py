@@ -1506,8 +1506,10 @@ class File(Group):
         try:
             if isinstance(path, str):
                 if (
-                    path.startswith(("http://", "https://", "hdf5://"))
-                    and "driver" not in kwargs
+                    kwargs.get("driver") == "h5pyd" or (
+                        path.startswith(("http://", "https://", "hdf5://"))
+                        and "driver" not in kwargs
+                    )
                 ):
                     if no_h5pyd:
                         raise ImportError(
