@@ -248,6 +248,7 @@ jobs:
           pandas
           pip
           pytest
+          pytest-mypy-plugins
           wheel
           numpy=${{ matrix.numpy-version }}
     - name: Install xarray
