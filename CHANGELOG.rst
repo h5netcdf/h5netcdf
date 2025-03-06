@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development Version (unreleased):
+
+- Allow specifying `h5netcdf.File(driver="h5pyd")` to force the use of h5pyd ({pull}`256`).
+  By `Rickard Holmberg <https://github.com/rho-novatron>`
+
 Version 1.5.0 (January 26th, 2025):
 
 - Update CI to new versions (Python 3.13, 3.14 alpha), remove numpy 1 from h5pyd runs ({pull}`250`).
