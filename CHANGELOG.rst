@@ -4,7 +4,7 @@ Change Log
 Development Version (unreleased):
 
 - Allow specifying `h5netcdf.File(driver="h5pyd")` to force the use of h5pyd ({pull}`256`).
-  By `Rickard Holmberg <https://github.com/rho-novatron>`
+  By `Rickard Holmberg <https://github.com/rho-novatron>`_
 
 Version 1.5.0 (January 26th, 2025):
 
