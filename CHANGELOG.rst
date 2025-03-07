@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development Version (unreleased):
+Version 1.6.1 (March 7th, 2025):
 
 - Let Variable.chunks return None for scalar variables, independent of what the underlying
   h5ds object returns ({pull}`259`).

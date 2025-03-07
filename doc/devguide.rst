@@ -18,10 +18,12 @@ Contributors
 - `Ezequiel Cimadevilla Alvarez <https://github.com/zequihg50>`_
 - `Frédéric Laliberté <https://github.com/laliberte>`_
 - `Ghislain Vaillant <https://github.com/ghisvail>`_
+- `John Readey <https://github.com/jreadey>`_
 - `Lion Krischer <https://github.com/krischer>`_
 - `Mark Harfouche <https://github.com/hmaarrfk>`_
 - `Martin Raspaud <https://github.com/mraspaud>`_
 - `Pierre Augier <https://github.com/paugier>`_
+- `Rickard Holmberg <https://github.com/rho-novatron>`_
 - `Ryan Grout <https://github.com/groutr>`_
 - `Scott Henderson <https://github.com/scottyhq>`_
 - `Thomas Kluyver <https://github.com/takluyver>`_
