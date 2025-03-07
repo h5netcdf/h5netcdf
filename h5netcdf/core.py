@@ -1505,7 +1505,7 @@ class File(Group):
         self._close_h5file = True
         try:
             if isinstance(path, str):
-                if (
+                if kwargs.get("driver") == "h5pyd" or (
                     path.startswith(("http://", "https://", "hdf5://"))
                     and "driver" not in kwargs
                 ):

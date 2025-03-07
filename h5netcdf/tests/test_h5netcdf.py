@@ -2743,3 +2743,17 @@ def test_hsds(hsds_up):
 
     with h5netcdf.File(fname, "r") as ds:
         print(ds["test"]["var1"])
+
+
+def test_h5pyd_driver(hsds_up):
+    # test that specifying driver='h5pyd' forces use of h5pyd
+    if without_h5pyd:
+        pytest.skip("h5pyd package not available")
+    elif not hsds_up:
+        pytest.skip("HSDS service not running")
+    rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
+    for prefix in ("/", "hdf5://"):
+        fname = f"{prefix}testfile{rnd}.nc"
+        with h5netcdf.File(fname, "w", driver="h5pyd") as ds:
+            assert ds._h5py == h5pyd
+            assert isinstance(ds._h5file, h5pyd.File)
