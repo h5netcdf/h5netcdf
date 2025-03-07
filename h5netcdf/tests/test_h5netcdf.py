@@ -2757,3 +2757,19 @@ def test_h5pyd_driver(hsds_up):
         with h5netcdf.File(fname, "w", driver="h5pyd") as ds:
             assert ds._h5py == h5pyd
             assert isinstance(ds._h5file, h5pyd.File)
+
+
+def test_h5pyd_nonchunked_scalars(hsds_up):
+    if without_h5pyd:
+        pytest.skip("h5pyd package not available")
+    elif not hsds_up:
+        pytest.skip("HSDS service not running")
+    rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
+    fname = f"hdf5://testfile{rnd}.nc"
+    with h5pyd.File(fname, "w") as ds:
+        ds.create_dataset("foo", data=b"1234")
+    with h5netcdf.File(fname, "r", driver="h5pyd") as ds:
+        # HSDS stores this as a chunked dataset, but only with a single chunk
+        assert ds["foo"]._h5ds.chunks == (1,)
+        # However, since it is a scalar dataset, we should not expose the chunking
+        assert ds["foo"].chunks is None

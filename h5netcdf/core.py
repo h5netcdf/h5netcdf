@@ -608,6 +608,11 @@ class BaseVariable(BaseObject):
 class Variable(BaseVariable):
     @property
     def chunks(self):
+        if self.shape == ():
+            # In HSDS, the layout can be chunked even for scalar datasets, but with only a single chunk.
+            # Return None for scalar datasets since they shall be handled as non-chunked.
+            assert self._h5ds.chunks in (None, (), (1,))
+            return None
         return self._h5ds.chunks
 
     @property

@@ -1,6 +1,12 @@
 Change Log
 ----------
 
+Development Version (unreleased):
+
+- Let Variable.chunks return None for scalar variables, independent of what the underlying
+  h5ds object returns ({pull}`259`).
+  By `Rickard Holmberg <https://github.com/rho-novatron>`_
+
 Version 1.6.0 (March 7th, 2025):
 
 - Allow specifying `h5netcdf.File(driver="h5pyd")` to force the use of h5pyd ({issue}`255`, {pull}`256`).
