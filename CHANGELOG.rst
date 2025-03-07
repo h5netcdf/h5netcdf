@@ -1,10 +1,12 @@
 Change Log
 ----------
 
-Development Version (unreleased):
+Version 1.6.0 (March 7th, 2025):
 
-- Allow specifying `h5netcdf.File(driver="h5pyd")` to force the use of h5pyd ({pull}`256`).
+- Allow specifying `h5netcdf.File(driver="h5pyd")` to force the use of h5pyd ({issue}`255`, {pull}`256`).
   By `Rickard Holmberg <https://github.com/rho-novatron>`_
+- Add pytest-mypy-plugins for xarray nightly test ({pull}`257`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.5.0 (January 26th, 2025):
 
