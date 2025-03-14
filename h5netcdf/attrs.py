@@ -1,4 +1,5 @@
 from collections.abc import MutableMapping
+from collections import namedtuple
 
 import numpy as np
 
@@ -15,6 +16,22 @@ _HIDDEN_ATTRS = frozenset(
     ]
 )
 
+string_info = namedtuple('string_info', ['encoding', 'length'])
+
+
+def check_string_dtype(dt):
+    """If the dtype represents an  np._HDF5 string, returns a string_info object.
+
+    The returned string_info object holds the encoding and the length.
+    The encoding can only be 'utf-8' or 'ascii'. The length may be None
+    for a variable-length string, or a fixed length in bytes.
+
+    Returns None if the dtype does not represent an HDF5 string.
+    """
+    if dt.kind == 'S':
+        return string_info('utf-8', dt.itemsize)
+
+    return None
 
 class Attributes(MutableMapping):
     def __init__(self, h5attrs, check_dtype, h5py_pckg):
@@ -50,8 +67,16 @@ class Attributes(MutableMapping):
         # vlen strings are already decoded -> only decode fixed length strings
         # see https://github.com/h5netcdf/h5netcdf/issues/116
         # netcdf4-python returns string arrays as lists, we do as well
-        if self._h5py.__name__ == "h5py":
-            string_info = self._h5py.check_string_dtype(attr.dtype)
+        if 1: #self._h5py.__name__ == "h5py":
+            print (10000)
+            if self._h5py.__name__ == "h5py":
+                string_info = self._h5py.check_string_dtype(attr.dtype)
+            else:
+                print (11111)
+                string_info = check_string_dtype(attr.dtype)
+
+
+            print (44, key, repr(attr), repr(attr.dtype), attr.dtype.metadata, string_info)
             if string_info is not None:
                 # do not decode "S1"-type char arrays, as they are actually wanted as bytes
                 # see https://github.com/Unidata/netcdf4-python/issues/271
