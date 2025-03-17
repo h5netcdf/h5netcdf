@@ -63,6 +63,7 @@ class Attributes(MutableMapping):
             if isinstance(attr, str):
                 string_info = _string_info('utf-8', None)
             elif isinstance(attr, bytes):
+                print (999999)
                 string_info = _string_info('ascii', None)
             else:
                 string_info = None
