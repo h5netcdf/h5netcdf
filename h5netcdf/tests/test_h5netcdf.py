@@ -1969,8 +1969,9 @@ def test_dimensions_in_parent_groups(tmpdir):
             assert repr(ds0["group00"]["test"]) == repr(ds1["group00"]["test"])
             assert repr(ds0["group00"]["x"]) == repr(ds1["group00"]["x"])
 
-
-def test_array_attributes(tmp_local_netcdf):
+@pytest.mark.parametrize("backend", [None, 'pyfive'])
+def test_array_attributes(tmp_local_netcdf, backend):
+    print('ARRAY ATTRIBUTES backend =', backend)
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         dt = h5py.string_dtype("utf-8")
         unicode = "unicodé"
@@ -2024,7 +2025,7 @@ def test_array_attributes(tmp_local_netcdf):
         ds.attrs["empty_list"] = []
         ds.attrs["empty_array"] = np.array([])
 
-    with h5netcdf.File(tmp_local_netcdf, mode="r") as ds:
+    with h5netcdf.File(tmp_local_netcdf, mode="r", backend=backend) as ds:
         assert ds.attrs["unicode"] == unicode
         assert ds.attrs["unicode_0dim"] == unicode
         assert ds.attrs["unicode_1dim"] == unicode
@@ -2068,7 +2069,7 @@ def test_array_attributes(tmp_local_netcdf):
         np.testing.assert_equal(ds.attrs["empty_list"], np.array([]))
         np.testing.assert_equal(ds.attrs["empty_array"], np.array([]))
 
-    with legacyapi.Dataset(tmp_local_netcdf, mode="r") as ds:
+    with legacyapi.Dataset(tmp_local_netcdf, mode="r", backend=backend) as ds:
         assert ds.unicode == unicode
         assert ds.unicode_0dim == unicode
         assert ds.unicode_1dim == unicode
@@ -2112,7 +2113,7 @@ def test_array_attributes(tmp_local_netcdf):
         np.testing.assert_equal(ds.attrs["empty_list"], np.array([]))
         np.testing.assert_equal(ds.attrs["empty_array"], np.array([]))
 
-    with netCDF4.Dataset(tmp_local_netcdf, mode="r") as ds:
+    with netCDF4.Dataset(tmp_local_netcdf, mode="r", backend=backend) as ds:
         assert ds.unicode == unicode
         assert ds.unicode_0dim == unicode
         assert ds.unicode_1dim == unicode
@@ -2410,7 +2411,7 @@ def test_enum_type_errors_legacyapi(tmp_local_or_remote_netcdf):
             ds.createVariable("enum_var4", enum_type, ("enum_dim",), fill_value=100)
 
 
-def test_enum_type(tmp_local_or_remote_netcdf):
+def test_enum_type(tmp_local_or_remote_netcdf, backend):
     # test EnumType
     enum_dict = dict(one=1, two=2, three=3, missing=255)
     dict(one=1, two=2, three=3, missing=254)

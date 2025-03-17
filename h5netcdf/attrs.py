@@ -16,22 +16,9 @@ _HIDDEN_ATTRS = frozenset(
     ]
 )
 
-string_info = namedtuple('string_info', ['encoding', 'length'])
+# Local version of h5py.h5t.string_info
+_string_info = namedtuple('string_info', ['encoding', 'length'])
 
-
-def check_string_dtype(dt):
-    """If the dtype represents an  np._HDF5 string, returns a string_info object.
-
-    The returned string_info object holds the encoding and the length.
-    The encoding can only be 'utf-8' or 'ascii'. The length may be None
-    for a variable-length string, or a fixed length in bytes.
-
-    Returns None if the dtype does not represent an HDF5 string.
-    """
-    if dt.kind == 'S':
-        return string_info('utf-8', dt.itemsize)
-
-    return None
 
 class Attributes(MutableMapping):
     def __init__(self, h5attrs, check_dtype, h5py_pckg):
@@ -67,41 +54,34 @@ class Attributes(MutableMapping):
         # vlen strings are already decoded -> only decode fixed length strings
         # see https://github.com/h5netcdf/h5netcdf/issues/116
         # netcdf4-python returns string arrays as lists, we do as well
-        if 1: #self._h5py.__name__ == "h5py":
-            print (10000)
-            if self._h5py.__name__ == "h5py":
-                string_info = self._h5py.check_string_dtype(attr.dtype)
-            else:
-                print (11111)
-                string_info = check_string_dtype(attr.dtype)
-
-
-            print (44, key, repr(attr), repr(attr.dtype), attr.dtype.metadata, string_info)
-            if string_info is not None:
-                # do not decode "S1"-type char arrays, as they are actually wanted as bytes
-                # see https://github.com/Unidata/netcdf4-python/issues/271
-                if string_info.length is not None and string_info.length > 1:
-                    encoding = string_info.encoding
-                    if np.isscalar(output):
-                        output = output.decode(encoding, "surrogateescape")
-                    else:
-                        output = [
-                            b.decode(encoding, "surrogateescape") for b in output.flat
-                        ]
-                else:
-                    # transform string array to list
-                    if not np.isscalar(output):
-                        output = output.tolist()
+        if hasattr(attr, 'dtype'):
+            string_info = self._h5py.check_string_dtype(attr.dtype)
         else:
-            # pyfive backend: There is no '_h5py.check_string_dtype'
-            #                 method, but we only have to deal with
-            #                 the case of a numpy array of strings.
-            try:
-                if output.dtype == object:
-                    # transform string array to list
+            # A pyfive attribute could be a str or bytes object, which
+            # does not have a dtype, so we can't use the
+            # 'check_string_dtype' method in this case.
+            if isinstance(attr, str):
+                string_info = _string_info('utf-8', None)
+            elif isinstance(attr, bytes):
+                string_info = _string_info('ascii', None)
+            else:
+                string_info = None
+
+        if string_info is not None:
+            # do not decode "S1"-type char arrays, as they are actually wanted as bytes
+            # see https://github.com/Unidata/netcdf4-python/issues/271
+            if string_info.length is not None and string_info.length > 1:
+                encoding = string_info.encoding
+                if np.isscalar(output):
+                    output = output.decode(encoding, "surrogateescape")
+                else:
+                    output = [
+                        b.decode(encoding, "surrogateescape") for b in output.flat
+                    ]
+            else:
+                # transform string array to list
+                if not np.isscalar(output):
                     output = output.tolist()
-            except AttributeError:
-                pass
 
         # return item if single element list/array see
         # https://github.com/h5netcdf/h5netcdf/issues/116
