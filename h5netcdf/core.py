@@ -415,7 +415,11 @@ class BaseVariable(BaseObject):
         if getattr(self._root, "decode_vlen_strings", False):
             string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
             if string_info and string_info.length is None:
-                return self._h5ds.asstr()[key]
+                try:
+                    return self._h5ds.asstr()[key]
+                except AttributeError:
+                    # pyfive backend has already dealt with strings
+                    return self._h5ds[key]
 
         # get padding
         padding = self._get_padding(key)
