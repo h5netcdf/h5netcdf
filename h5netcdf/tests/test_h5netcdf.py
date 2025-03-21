@@ -2411,7 +2411,7 @@ def test_enum_type_errors_legacyapi(tmp_local_or_remote_netcdf):
             ds.createVariable("enum_var4", enum_type, ("enum_dim",), fill_value=100)
 
 
-def test_enum_type(tmp_local_or_remote_netcdf, backend):
+def test_enum_type(tmp_local_or_remote_netcdf):
     # test EnumType
     enum_dict = dict(one=1, two=2, three=3, missing=255)
     dict(one=1, two=2, three=3, missing=254)
