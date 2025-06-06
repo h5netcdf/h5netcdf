@@ -1693,7 +1693,7 @@ def test_track_order_specification(tmp_local_netcdf):
     # While netcdf4-c has historically only allowed track_order to be True
     # There doesn't seem to be a good reason for this
     # https://github.com/Unidata/netcdf-c/issues/2054 historically, h5netcdf
-    # has not specified this parameter (leaving it implicitely as False)
+    # has not specified this parameter (leaving it implicitly as False)
     # We want to make sure we allow both here
     with h5netcdf.File(tmp_local_netcdf, "w", track_order=False):
         pass
