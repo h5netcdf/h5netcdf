@@ -117,7 +117,7 @@ napoleon_type_aliases = {
     "Path": "~~pathlib.Path",
 }
 
-# handle release substition
+# handle release substitution
 url = "https://github.com/h5netcdf"
 
 # get version

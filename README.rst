@@ -259,7 +259,7 @@ The following describes the behavior of h5netcdf with respect to order tracking
 for a few key versions:
 
 - Version 0.12.0 and earlier, the ``track_order`` parameter`order was missing
-  and thus order tracking was implicitely set to ``False``.
+  and thus order tracking was implicitly set to ``False``.
 - Version 0.13.0 enabled order tracking by setting the parameter
   ``track_order`` to ``True`` by default without deprecation.
 - Versions 0.13.1 to 1.0.2 set ``track_order`` to ``False`` due to a bug in a
