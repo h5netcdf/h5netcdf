@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development Version (unreleased)
+Development Version (unreleased):
 
 - Codespell fixes ({pull}`261`).
   By `Kurt Schwehr <https://github.com/schwehr>`_
@@ -9,7 +9,7 @@ Development Version (unreleased)
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Fix and add circular referrer tests for Python 3.14 ({pull}`264`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- Avoid opening h5pyd file to check if there is a preexisting file ({issue}`262`).
+- Avoid opening h5pyd file to check if there is a preexisting file ({issue}`262`, {pull}`263`).
   By `Jonas Grönberg <https://github.com/JonasGronberg>`_
 
 Version 1.6.1 (March 7th, 2025):
