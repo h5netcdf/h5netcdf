@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development Version (unreleased):
+
+- Avoid opening h5pyd file to check if there is a preexisting file ({issue}`262`).
+  By `Jonas Grönberg <https://github.com/JonasGronberg>`_
+
 Version 1.6.1 (March 7th, 2025):
 
 - Let Variable.chunks return None for scalar variables, independent of what the underlying
