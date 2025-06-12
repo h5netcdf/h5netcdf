@@ -1519,12 +1519,7 @@ class File(Group):
                             "No module named 'h5pyd'. h5pyd is required for "
                             f"opening urls: {path}"
                         )
-                    try:
-                        with h5pyd.File(path, "r", **kwargs) as f:  # noqa
-                            pass
-                        self._preexisting_file = True
-                    except OSError:
-                        self._preexisting_file = False
+                    self._preexisting_file = mode in {"r", "r+", "a"}
                     self._h5py = h5pyd
                     self._h5file = self._h5py.File(
                         path, mode, track_order=track_order, **kwargs
