@@ -3,7 +3,7 @@ Change Log
 
 Development Version (unreleased):
 
-- Avoid opening h5pyd file to check if there is a preexisting file ({issue}`262`).
+- Avoid opening h5pyd file to check if there is a preexisting file ({issue}`262`, {pull}`263`).
   By `Jonas Grönberg <https://github.com/JonasGronberg>`_
 
 Version 1.6.1 (March 7th, 2025):
