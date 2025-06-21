@@ -1551,8 +1551,12 @@ def test_no_circular_references(tmp_local_or_remote_netcdf):
         ds.dimensions["y"] = 2
 
     gc.collect()
+
+    def get_refs(obj):
+        return gc.get_referrers(obj)
+
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
-        refs = gc.get_referrers(ds)
+        refs = get_refs(ds)
         for ref in refs:
             print(ref)
         assert len(refs) == 1
