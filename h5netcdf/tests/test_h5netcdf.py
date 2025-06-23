@@ -37,26 +37,30 @@ def tmp_local_netcdf(tmpdir):
     return str(tmpdir.join("testfile.nc"))
 
 
+@pytest.fixture()
+def setup_h5pyd_config(hsds_up):
+    env["HS_ENDPOINT"] = "http://127.0.0.1:5101"
+    env["HS_USERNAME"] = "h5netcdf-pytest"
+    env["HS_PASSWORD"] = "TestEarlyTestEverything"
+    env["HS_USE_HTTPS"] = "False"
+
+
 @pytest.fixture(params=["testfile.nc", "hdf5://testfile"])
-def tmp_local_or_remote_netcdf(request, tmpdir, hsds_up):
-    if request.param.startswith(remote_h5):
-        if without_h5pyd:
-            pytest.skip("h5pyd package not available")
-        elif not hsds_up:
-            pytest.skip("HSDS service not running")
-        rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
-        return (
-            "hdf5://"
-            + "home"
-            + "/"
-            + env["HS_USERNAME"]
-            + "/"
-            + "testfile"
-            + rnd
-            + ".nc"
-        )
+def tmp_local_or_remote_netcdf(request, tmpdir):
+    param = request.param
+    if param.startswith(remote_h5):
+        try:
+            hsds_up = request.getfixturevalue("hsds_up")
+        except pytest.skip.Exception:
+            pytest.skip("HSDS not available")
+
+        if not hsds_up:
+            pytest.skip("HSDS fixture returned False (not running)")
+
+        rnd = "".join(random.choices(string.ascii_uppercase, k=5))
+        return f"hdf5://home/{env['HS_USERNAME']}/testfile{rnd}.nc"
     else:
-        return str(tmpdir.join(request.param))
+        return str(tmpdir.join(param))
 
 
 @pytest.fixture(params=[True, False])
