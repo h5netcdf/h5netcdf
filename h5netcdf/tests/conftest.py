@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 from pathlib import Path
 from shutil import rmtree
 
@@ -16,50 +17,67 @@ except ImportError:
 
 @pytest.fixture(scope="session")
 def hsds_up():
-    """Provide HDF Highly Scalabale Data Service (HSDS) for h5pyd testing."""
-    if with_reqd_pkgs:
-        root_dir = Path(tempfile.mkdtemp(prefix="tmp-hsds-root-"))
-        bucket_name = "pytest"
-        os.environ["BUCKET_NAME"] = bucket_name
-        os.mkdir(
-            f"{root_dir}/{bucket_name}"
-        )  # need to create a directory for our bucket
+    """Provide HDF Highly Scalable Data Service (HSDS) for h5pyd testing."""
+    if not with_reqd_pkgs:
+        pytest.skip("Required packages h5pyd and hsds not available")
 
-        hs_username = "h5netcdf-pytest"
-        hs_password = "TestEarlyTestEverything"
+    root_dir = Path(tempfile.mkdtemp(prefix="tmp-hsds-root-"))
+    bucket_name = "pytest"
+    os.environ["BUCKET_NAME"] = bucket_name
+    # need to create a directory for our bucket
+    (root_dir / bucket_name).mkdir()
 
-        kwargs = {}
-        kwargs["username"] = hs_username
-        kwargs["password"] = hs_password
-        kwargs["root_dir"] = str(root_dir)
-        kwargs["logfile"] = f"{root_dir}/hsds.log"
-        kwargs["log_level"] = "DEBUG"
-        kwargs["host"] = "localhost"
-        kwargs["sn_port"] = 5101
+    kwargs = {
+        "username": "h5netcdf-pytest",
+        "password": "TestEarlyTestEverything",
+        "root_dir": str(root_dir),
+        "logfile": str(root_dir / "hsds.log"),
+        "log_level": "DEBUG",
+        "host": "localhost",
+        "sn_port": 5101,
+    }
 
+    os.environ.update(
+        {
+            "BUCKET_NAME": bucket_name,
+            "HS_USERNAME": kwargs["username"],
+            "HS_PASSWORD": kwargs["password"],
+            "HS_USE_HTTPS": "False",
+        }
+    )
+
+    hsds = HsdsApp(**kwargs)
+
+    try:
+        hsds.run()
+        timeout = time.time() + 60
+        while not hsds.ready:
+            if time.time() > timeout:
+                raise TimeoutError("HSDS server did not become ready in time")
+            time.sleep(1)
+
+        os.environ["HS_ENDPOINT"] = hsds.endpoint
+        # make folders expected by pytest
+        Folder("/home/", mode="w")
+        Folder("/home/h5netcdf-pytest/", mode="w")
+
+        yield True
+
+    except Exception as err:
+        log_path = kwargs["logfile"]
+        if os.path.exists(log_path):
+            with open(log_path) as f:
+                print("\n=== HSDS Log ===")
+                print(f.read())
+        else:
+            print(f"HSDS log not found at: {log_path}")
+        raise err
+
+    finally:
         try:
-            hsds = HsdsApp(**kwargs)
-
-            hsds.run()
-            is_up = hsds.ready
-
-            if is_up:
-                os.environ["HS_ENDPOINT"] = hsds.endpoint
-                os.environ["HS_USERNAME"] = hs_username
-                os.environ["HS_PASSWORD"] = hs_password
-                # make folders expected by pytest
-                # pytest/home/h5netcdf-pytest
-                # Folder("/pytest/", mode='w')
-                Folder("/home/", mode="w")
-                Folder("/home/h5netcdf-pytest/", mode="w")
+            hsds.check_processes()
+            hsds.stop()
         except Exception:
-            is_up = False
+            pass
 
-        yield is_up
-        hsds.check_processes()  # this will capture hsds log output
-        hsds.stop()
-
-        rmtree(root_dir, ignore_errors=True)
-
-    else:
-        yield False
+    rmtree(root_dir, ignore_errors=True)
