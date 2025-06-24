@@ -5,7 +5,9 @@ Development Version (unreleased)
 
 - Codespell fixes ({pull}`261`).
   By `Kurt Schwehr <https://github.com/schwehr>`_
-- fix hsds/h5pyd test fixture spinup issues ({pull}`265`).
+- Fix hsds/h5pyd test fixture spinup issues ({pull}`265`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Fix and add circular referrer tests for Python 3.14 ({pull}`264`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.6.1 (March 7th, 2025):

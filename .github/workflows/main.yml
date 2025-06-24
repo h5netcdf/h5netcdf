@@ -151,6 +151,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # need to test with numpy <2.3 for
         python-version: ["3.12", "3.13"]
         h5py-version: ["3.12", "3.13"]
         numpy-version: ["2.2.6"]
