@@ -1551,9 +1551,6 @@ def test_dimensions(tmp_local_netcdf, read_write_matrix):
     )
 
 
-@pytest.mark.skipif(
-    python_version >= version.parse("3.14"), reason="Only works for Python < 3.14"
-)
 def test_no_circular_references(tmp_local_or_remote_netcdf):
     # https://github.com/h5py/h5py/issues/2019
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
@@ -1565,7 +1562,10 @@ def test_no_circular_references(tmp_local_or_remote_netcdf):
         refs = gc.get_referrers(ds)
         for ref in refs:
             print(ref)
-        assert len(refs) == 1
+        if python_version >= version.parse("3.14"):
+            assert len(refs) == 0
+        else:
+            assert len(refs) == 1
 
 
 def test_no_circular_references_py314(tmp_local_or_remote_netcdf):
