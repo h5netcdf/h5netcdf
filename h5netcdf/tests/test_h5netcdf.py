@@ -3,7 +3,9 @@ import io
 import random
 import re
 import string
+import sys
 import tempfile
+import weakref
 from os import environ as env
 
 import h5py
@@ -30,6 +32,7 @@ except ImportError:
 
 
 remote_h5 = ("http:", "hdf5:")
+python_version = version.parse(".".join(map(str, sys.version_info[:3])))
 
 
 @pytest.fixture
@@ -1559,7 +1562,38 @@ def test_no_circular_references(tmp_local_or_remote_netcdf):
         refs = gc.get_referrers(ds)
         for ref in refs:
             print(ref)
-        assert len(refs) == 1
+        if python_version >= version.parse("3.14"):
+            assert len(refs) == 0
+        else:
+            assert len(refs) == 1
+
+
+def test_no_circular_references_py314(tmp_local_or_remote_netcdf):
+    # https://github.com/h5py/h5py/issues/2019
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.dimensions["x"] = 2
+        ds.dimensions["y"] = 2
+
+    # clean up everything
+    gc.collect()
+    gc.garbage.clear()
+
+    # use weakref to hold on object
+    file_ref = None
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+        file_ref = weakref.ref(ds)
+
+    # clean up
+    gc.collect()
+
+    # check garbage list
+    if file_ref() is not None:
+        print("Uncollectable object:", file_ref())
+        print("Potential GC garbage:")
+        for obj in gc.garbage:
+            print(repr(obj))
+
+    assert file_ref() is None or "<Closed h5netcdf.File>"
 
 
 def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
