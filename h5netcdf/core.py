@@ -1443,22 +1443,6 @@ class Group(Mapping):
         return cmptype
 
 
-def _h5pyd_file_exists(domain):
-    from urllib.parse import urljoin
-
-    import requests
-
-    cfg = h5pyd.config.get_config()
-    url = urljoin(cfg.hs_endpoint + "/", f"domains/{domain}")
-    auth = (
-        (cfg.hs_username, cfg.hs_password)
-        if cfg.hs_username and cfg.hs_password
-        else None
-    )
-    response = requests.get(url, auth=auth)
-    return response.status_code == 200
-
-
 class File(Group):
     def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, **kwargs):
         """NetCDF4 file constructor.
@@ -1535,11 +1519,25 @@ class File(Group):
                             "No module named 'h5pyd'. h5pyd is required for "
                             f"opening urls: {path}"
                         )
-                    self._preexisting_file = _h5pyd_file_exists(path) and mode != "w"
+                    override_append = False
+                    if mode == "a":
+                        override_append = True
+                        mode = "r+"
                     self._h5py = h5pyd
-                    self._h5file = self._h5py.File(
-                        path, mode, track_order=track_order, **kwargs
-                    )
+                    try:
+                        self._h5file = self._h5py.File(
+                            path, mode, track_order=track_order, **kwargs
+                        )
+                        self._preexisting_file = mode != "w"
+                    except OSError:
+                        if override_append:
+                            mode = "w"
+                            self._h5file = self._h5py.File(
+                                path, mode, track_order=track_order, **kwargs
+                            )
+                            self._preexisting_file = False
+                        else:
+                            raise
                 else:
                     self._preexisting_file = os.path.exists(path) and mode != "w"
                     self._h5py = h5py
