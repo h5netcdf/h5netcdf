@@ -1307,6 +1307,24 @@ def test_overwrite_existing_file(tmp_local_netcdf):
         assert ds.attrs._h5attrs.get("_NCProperties", False)
 
 
+def test_overwrite_existing_remote_file(tmp_local_or_remote_netcdf):
+    # create file with legacyapi
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.createDimension("x", 10)
+
+    # check attribute
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+        assert ds.attrs._h5attrs.get("_NCProperties", False)
+
+    # overwrite file with new api
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.dimensions["x"] = 10
+
+    # check attribute
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+        assert ds.attrs._h5attrs.get("_NCProperties", False)
+
+
 def test_scales_on_append(tmp_local_netcdf):
     # create file with _NCProperties attribute
     with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
