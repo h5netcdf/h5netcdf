@@ -1519,16 +1519,35 @@ class File(Group):
                             "No module named 'h5pyd'. h5pyd is required for "
                             f"opening urls: {path}"
                         )
-                    try:
-                        with h5pyd.File(path, "r", **kwargs) as f:  # noqa
-                            pass
-                        self._preexisting_file = True
-                    except OSError:
-                        self._preexisting_file = False
+                    self._preexisting_file = mode in {"r", "r+", "a"}
+                    # remap "a" -> "r+" to check file existence
+                    # fallback to "w" if not
+                    _mode = mode
+                    if mode == "a":
+                        mode = "r+"
                     self._h5py = h5pyd
-                    self._h5file = self._h5py.File(
-                        path, mode, track_order=track_order, **kwargs
-                    )
+                    try:
+                        self._h5file = self._h5py.File(
+                            path, mode, track_order=track_order, **kwargs
+                        )
+                        self._preexisting_file = mode != "w"
+                    except OSError:
+                        # if file does not exist, create it
+                        if _mode == "a":
+                            mode = "w"
+                            self._h5file = self._h5py.File(
+                                path, mode, track_order=track_order, **kwargs
+                            )
+                            self._preexisting_file = False
+                            msg = (
+                                "Append mode for h5pyd now probes with 'r+' first and "
+                                "only falls back to 'w' if the file is missing.\n"
+                                "To silence this warning use 'r+' (open-existing) or 'w' "
+                                "(create-new) directly."
+                            )
+                            warnings.warn(msg, UserWarning, stacklevel=2)
+                        else:
+                            raise
                 else:
                     self._preexisting_file = os.path.exists(path) and mode != "w"
                     self._h5py = h5py

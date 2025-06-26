@@ -1307,6 +1307,24 @@ def test_overwrite_existing_file(tmp_local_netcdf):
         assert ds.attrs._h5attrs.get("_NCProperties", False)
 
 
+def test_overwrite_existing_remote_file(tmp_local_or_remote_netcdf):
+    # create file with legacyapi
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.createDimension("x", 10)
+
+    # check attribute
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+        assert ds.attrs._h5attrs.get("_NCProperties", False)
+
+    # overwrite file with new api
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.dimensions["x"] = 10
+
+    # check attribute
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+        assert ds.attrs._h5attrs.get("_NCProperties", False)
+
+
 def test_scales_on_append(tmp_local_netcdf):
     # create file with _NCProperties attribute
     with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
@@ -2811,3 +2829,19 @@ def test_h5pyd_nonchunked_scalars(hsds_up):
         assert ds["foo"]._h5ds.chunks == (1,)
         # However, since it is a scalar dataset, we should not expose the chunking
         assert ds["foo"].chunks is None
+
+
+def test_h5pyd_append(hsds_up):
+    if without_h5pyd:
+        pytest.skip("h5pyd package not available")
+    elif not hsds_up:
+        pytest.skip("HSDS service not running")
+    rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
+    fname = f"hdf5://testfile{rnd}.nc"
+
+    with pytest.warns(UserWarning, match="Append mode for h5pyd"):
+        with h5netcdf.File(fname, "a", driver="h5pyd") as ds:
+            assert not ds._preexisting_file
+
+    with h5netcdf.File(fname, "a", driver="h5pyd") as ds:
+        assert ds._preexisting_file
