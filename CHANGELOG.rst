@@ -12,6 +12,8 @@ Development Version (unreleased):
 - Avoid opening h5pyd file to check if there is a preexisting file,
   instead remap mode "a" -> "r+", resort to "w" if file doesn't exist ({issue}`262`, {pull}`266`).
   By `Jonas Grönberg <https://github.com/JonasGronberg>`_ and `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Reduce CI time by installing available scientific-python-nightly-wheels and using pip cache ({pull}`267`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.6.1 (March 7th, 2025):
 
