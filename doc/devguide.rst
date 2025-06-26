@@ -19,6 +19,8 @@ Contributors
 - `Frédéric Laliberté <https://github.com/laliberte>`_
 - `Ghislain Vaillant <https://github.com/ghisvail>`_
 - `John Readey <https://github.com/jreadey>`_
+- `Jonas Grönberg <https://github.com/JonasGronberg>`_
+- `Kurt Schwehr <https://github.com/schwehr>`_
 - `Lion Krischer <https://github.com/krischer>`_
 - `Mark Harfouche <https://github.com/hmaarrfk>`_
 - `Martin Raspaud <https://github.com/mraspaud>`_

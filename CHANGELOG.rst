@@ -1,13 +1,13 @@
 Change Log
 ----------
 
-Development Version (unreleased):
+Version 1.6.2 (June 26th, 2025):
 
 - Codespell fixes ({pull}`261`).
   By `Kurt Schwehr <https://github.com/schwehr>`_
 - Fix hsds/h5pyd test fixture spinup issues ({pull}`265`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- Fix and add circular referrer tests for Python 3.14 ({pull}`264`).
+- Fix and add circular referrer tests for Python 3.14 and update CI matrix ({pull}`264`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Avoid opening h5pyd file to check if there is a preexisting file,
   instead remap mode "a" -> "r+", resort to "w" if file doesn't exist ({issue}`262`, {pull}`266`).
