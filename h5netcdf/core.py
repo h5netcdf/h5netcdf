@@ -1519,9 +1519,11 @@ class File(Group):
                             "No module named 'h5pyd'. h5pyd is required for "
                             f"opening urls: {path}"
                         )
-                    override_append = False
+                    self._preexisting_file = mode in {"r", "r+", "a"}
+                    # remap "a" -> "r+" to check file existence
+                    # fallback to "w" if not
+                    _mode = mode
                     if mode == "a":
-                        override_append = True
                         mode = "r+"
                     self._h5py = h5pyd
                     try:
@@ -1530,12 +1532,20 @@ class File(Group):
                         )
                         self._preexisting_file = mode != "w"
                     except OSError:
-                        if override_append:
+                        # if file does not exist, create it
+                        if _mode == "a":
                             mode = "w"
                             self._h5file = self._h5py.File(
                                 path, mode, track_order=track_order, **kwargs
                             )
                             self._preexisting_file = False
+                            msg = (
+                                "Append mode for h5pyd now probes with 'r+' first and "
+                                "only falls back to 'w' if the file is missing.\n"
+                                "To silence this warning use 'r+' (open-existing) or 'w' "
+                                "(create-new) directly."
+                            )
+                            warnings.warn(msg, UserWarning, stacklevel=2)
                         else:
                             raise
                 else:

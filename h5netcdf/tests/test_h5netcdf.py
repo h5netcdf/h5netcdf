@@ -2829,3 +2829,19 @@ def test_h5pyd_nonchunked_scalars(hsds_up):
         assert ds["foo"]._h5ds.chunks == (1,)
         # However, since it is a scalar dataset, we should not expose the chunking
         assert ds["foo"].chunks is None
+
+
+def test_h5pyd_append(hsds_up):
+    if without_h5pyd:
+        pytest.skip("h5pyd package not available")
+    elif not hsds_up:
+        pytest.skip("HSDS service not running")
+    rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
+    fname = f"hdf5://testfile{rnd}.nc"
+
+    with pytest.warns(UserWarning, match="Append mode for h5pyd"):
+        with h5netcdf.File(fname, "a", driver="h5pyd") as ds:
+            assert not ds._preexisting_file
+
+    with h5netcdf.File(fname, "a", driver="h5pyd") as ds:
+        assert ds._preexisting_file
