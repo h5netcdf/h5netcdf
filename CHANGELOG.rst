@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development Version (unreleased):
+
+- fix invalid string format specifier, match raises/warns with messages in test suite ({issue}`269`, {pull}`270`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.6.2 (June 26th, 2025):
 
 - Codespell fixes ({pull}`261`).
