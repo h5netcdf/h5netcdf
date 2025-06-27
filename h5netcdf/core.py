@@ -982,16 +982,16 @@ class Group(Mapping):
         for k, v in self._all_dimensions.maps[0].items():
             if k in value:
                 if v != value[k]:
-                    raise ValueError(f"cannot modify existing dimension {k:!r}")
+                    raise ValueError(f"cannot modify existing dimension {k!r}")
             else:
                 raise ValueError(
-                    f"new dimensions do not include existing dimension {k:!r}"
+                    f"new dimensions do not include existing dimension {k!r}"
                 )
         self._dimensions.update(value)
 
     def _create_child_group(self, name):
         if name in self:
-            raise ValueError(f"unable to create group {name:!r} (name already exists)")
+            raise ValueError(f"unable to create group {name!r} (name already exists)")
         kwargs = {}
         kwargs.update(track_order=self._track_order)
 
@@ -1035,7 +1035,7 @@ class Group(Mapping):
     ):
         if name in self:
             raise ValueError(
-                f"unable to create variable {name:!r} (name already exists)"
+                f"unable to create variable {name!r} (name already exists)"
             )
         if data is not None:
             data = np.asarray(data)
