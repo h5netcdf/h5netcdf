@@ -166,7 +166,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
 
     with raises(
         (h5netcdf.CompatibilityError, TypeError),
-        match=r"boolean dtypes are not a supported NetCDF feature|Illegal primitive data type",
+        match=r"(?i)boolean dtypes are not a supported NetCDF feature|illegal primitive data type)",
     ):
         ds.createVariable("boolean", np.bool_, ("x"))
 
