@@ -1,9 +1,9 @@
 Change Log
 ----------
 
-Development Version (unreleased):
+Version 1.6.3 (June 30th, 2025):
 
-- fix invalid string format specifier, match raises/warns with messages in test suite, 
+- fix invalid string format specifier, match raises/warns with messages in test suite,
   remove tests for h5py < 3.7, fix sphinx issue and pr roles in CHANGELOG.rst (:issue:`269`, :pull:`270`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
