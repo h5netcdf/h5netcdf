@@ -677,7 +677,7 @@ def _unlabeled_dimension_mix(h5py_dataset):
     if not dimlist:
         status = "nodim"
     else:
-        dimset = set([len(j) for j in dimlist])
+        dimset = {len(j) for j in dimlist}
         # either all dimensions have exactly one scale
         # or all dimensions have no scale
         if dimset ^ {0} == set():
@@ -788,7 +788,7 @@ def _check_fillvalue(group, fillvalue, dtype):
             # 1. we need to warn the user that writing enums with default values
             # which are defined in the enum dict will mask those values
             if (h5fillvalue or 0) in dtype.enum_dict.values():
-                reverse = dict((v, k) for k, v in dtype.enum_dict.items())
+                reverse = {v: k for k, v in dtype.enum_dict.items()}
                 msg = (
                     f"Creating variable with default fill_value {h5fillvalue or 0!r}"
                     f" which IS defined in enum type {dtype!r}."
@@ -1271,10 +1271,8 @@ class Group(Mapping):
         return item
 
     def __iter__(self):
-        for name in self.groups:
-            yield name
-        for name in self.variables:
-            yield name
+        yield from self.groups
+        yield from self.variables
 
     def __len__(self):
         return len(self.variables) + len(self.groups)
