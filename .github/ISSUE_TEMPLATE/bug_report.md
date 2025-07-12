@@ -16,7 +16,6 @@ assignees: ''
 
 ```python
 # Your code here
-
 ```
 
 #### Expected Output

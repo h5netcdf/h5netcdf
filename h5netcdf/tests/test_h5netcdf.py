@@ -262,26 +262,30 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
         assert ds.other_attr == "yes"
     with raises(AttributeError, match="not found"):
         ds.does_not_exist
-    assert set(ds.dimensions) == set(
-        ["x", "y", "z", "empty", "string3", "mismatched_dim", "unlimited"]
-    )
-    assert set(ds.variables) == set(
-        [
-            "enum_var",
-            "foo",
-            "y",
-            "z",
-            "intscalar",
-            "scalar",
-            "var_len_str",
-            "mismatched_dim",
-            "foo_unlimited",
-        ]
-    )
+    assert set(ds.dimensions) == {
+        "x",
+        "y",
+        "z",
+        "empty",
+        "string3",
+        "mismatched_dim",
+        "unlimited",
+    }
+    assert set(ds.variables) == {
+        "enum_var",
+        "foo",
+        "y",
+        "z",
+        "intscalar",
+        "scalar",
+        "var_len_str",
+        "mismatched_dim",
+        "foo_unlimited",
+    }
 
-    assert set(ds.enumtypes) == set(["enum_t"])
+    assert set(ds.enumtypes) == {"enum_t"}
 
-    assert set(ds.groups) == set(["subgroup"])
+    assert set(ds.groups) == {"subgroup"}
     assert ds.parent is None
     v = ds.variables["foo"]
     assert array_equal(v, np.ones((4, 5)))
@@ -382,27 +386,31 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     if write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs["other_attr"] == "yes"
-    assert set(ds.dimensions) == set(
-        ["x", "y", "z", "empty", "string3", "mismatched_dim", "unlimited"]
-    )
-    variables = set(
-        [
-            "enum_var",
-            "foo",
-            "z",
-            "intscalar",
-            "scalar",
-            "var_len_str",
-            "mismatched_dim",
-            "foo_unlimited",
-        ]
-    )
+    assert set(ds.dimensions) == {
+        "x",
+        "y",
+        "z",
+        "empty",
+        "string3",
+        "mismatched_dim",
+        "unlimited",
+    }
+    variables = {
+        "enum_var",
+        "foo",
+        "z",
+        "intscalar",
+        "scalar",
+        "var_len_str",
+        "mismatched_dim",
+        "foo_unlimited",
+    }
     # fix current failure of hsds/h5pyd
     if not remote_file:
-        variables |= set(["y"])
+        variables |= {"y"}
     assert set(ds.variables) == variables
 
-    assert set(ds.groups) == set(["subgroup"])
+    assert set(ds.groups) == {"subgroup"}
     assert ds.parent is None
 
     v = ds["foo"]
@@ -845,13 +853,13 @@ def test_hierarchical_access_auto_create(tmp_local_or_remote_netcdf):
     ds.create_variable("/foo/bar", data=1)
     g = ds.create_group("foo/baz")
     g.create_variable("/foo/hello", data=2)
-    assert set(ds) == set(["foo"])
-    assert set(ds["foo"]) == set(["bar", "baz", "hello"])
+    assert set(ds) == {"foo"}
+    assert set(ds["foo"]) == {"bar", "baz", "hello"}
     ds.close()
 
     ds = h5netcdf.File(tmp_local_or_remote_netcdf, "r")
-    assert set(ds) == set(["foo"])
-    assert set(ds["foo"]) == set(["bar", "baz", "hello"])
+    assert set(ds) == {"foo"}
+    assert set(ds["foo"]) == {"bar", "baz", "hello"}
     ds.close()
 
 
