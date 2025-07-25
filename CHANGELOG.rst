@@ -9,8 +9,10 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Update h5pyd testing.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- CI and lint maintenance ({pull}`235`).
-  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Support pyfive as an alternative backend ({pull}`???`).
+  By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
+  <https://github.com/davidhassell>`_, and `Valeriu Predoi
+  <https://github.com/valeriupredoi>`_
 
 Version 1.3.0 (November 7th, 2023):
 
