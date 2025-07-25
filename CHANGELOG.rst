@@ -9,7 +9,7 @@ Development Version:
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Update h5pyd testing.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- Support pyfive as an alternative backend ({pull}`???`).
+- Support pyfive as an alternative backend ({pull}`273`).
   By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
   <https://github.com/davidhassell>`_, and `Valeriu Predoi
   <https://github.com/valeriupredoi>`_
