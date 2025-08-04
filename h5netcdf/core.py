@@ -126,7 +126,7 @@ class BaseObject:
     def _h5ds(self):
         # Always refer to the root file and store not h5py object
         # subclasses:
-        return self._root._h5file[self._h5path]
+        return self._root.h5file[self._h5path]
 
     @property
     def name(self):
@@ -296,7 +296,7 @@ class BaseVariable(BaseObject):
                 # If a dimension has attached more than one scale for some reason, then
                 # take the last one. This is in line with netcdf-c and netcdf4-python.
                 return tuple(
-                    self._root._h5file[ref[-1]].name.split("/")[-1]
+                    self._root.h5file[ref[-1]].name.split("/")[-1]
                     for ref in list(self._h5ds.attrs.get("DIMENSION_LIST", []))
                 )
 
@@ -720,11 +720,11 @@ def _check_dtype(group, dtype):
     # we just use the h5py user type here
     if isinstance(dtype, (EnumType, VLType, CompoundType)):
         h5type = dtype._h5ds
-        if dtype._root._h5file.filename != group._root._h5file.filename:
+        if dtype._root.h5file.filename != group._root.h5file.filename:
             raise TypeError(
                 f"Given dtype {dtype} is not committed into current file"
-                f" {group._root._h5file.filename}. Instead it's committed into"
-                f" file {dtype._root._h5file.filename}"
+                f" {group._root.h5file.filename}. Instead it's committed into"
+                f" file {dtype._root.h5file.filename}"
             )
         # check if committed type can be accessed in current group hierarchy
         user_type = group._get_usertype(h5type)
@@ -946,7 +946,7 @@ class Group(Mapping):
     def _h5group(self):
         # Always refer to the root file and store not h5py object
         # subclasses:
-        return self._root._h5file[self._h5path]
+        return self._root.h5file[self._h5path]
 
     @property
     def _track_order(self):
@@ -1525,7 +1525,7 @@ class File(Group):
                         mode = "r+"
                     self._h5py = h5pyd
                     try:
-                        self._h5file = self._h5py.File(
+                        self.h5file = self._h5py.File(
                             path, mode, track_order=track_order, **kwargs
                         )
                         self._preexisting_file = mode != "w"
@@ -1533,7 +1533,7 @@ class File(Group):
                         # if file does not exist, create it
                         if _mode == "a":
                             mode = "w"
-                            self._h5file = self._h5py.File(
+                            self.h5file = self._h5py.File(
                                 path, mode, track_order=track_order, **kwargs
                             )
                             self._preexisting_file = False
@@ -1570,6 +1570,7 @@ class File(Group):
         else:
             self._closed = False
 
+        self._filename = self.h5file.filename
         self._mode = mode
         self._writable = mode != "r"
         self._root_ref = weakref.ref(self)
@@ -1619,7 +1620,7 @@ class File(Group):
             if obj.attrs.get("CLASS", None) == b"DIMENSION_SCALE":
                 dimids.append(obj.attrs.get("_Netcdf4Dimid", -1))
 
-        self._h5file.visititems(_dimids)
+        self.h5file.visititems(_dimids)
 
         return max(dimids) if dimids else -1
 
@@ -1648,11 +1649,11 @@ class File(Group):
 
     @property
     def mode(self):
-        return self._h5file.mode
+        return self.h5file.mode
 
     @property
     def filename(self):
-        return self._h5file.filename
+        return self.h5file.filename
 
     @property
     def parent(self):
@@ -1694,11 +1695,17 @@ class File(Group):
 
     sync = flush
 
+    @property
+    def h5file(self):
+        if self._closed:
+            raise ValueError(f"I/O operation on {self}: {self._filename!r}")
+        return self._h5file
+
     def close(self):
         if not self._closed:
             self.flush()
             if self._close_h5file:
-                self._h5file.close()
+                self.h5file.close()
             self._h5file = None
             self._closed = True
 
