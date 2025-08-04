@@ -1525,7 +1525,7 @@ class File(Group):
                         mode = "r+"
                     self._h5py = h5pyd
                     try:
-                        self.h5file = self._h5py.File(
+                        self._h5file = self._h5py.File(
                             path, mode, track_order=track_order, **kwargs
                         )
                         self._preexisting_file = mode != "w"
@@ -1533,7 +1533,7 @@ class File(Group):
                         # if file does not exist, create it
                         if _mode == "a":
                             mode = "w"
-                            self.h5file = self._h5py.File(
+                            self._h5file = self._h5py.File(
                                 path, mode, track_order=track_order, **kwargs
                             )
                             self._preexisting_file = False
