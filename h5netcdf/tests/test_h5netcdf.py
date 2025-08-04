@@ -2835,6 +2835,6 @@ def test_raise_on_closed_file(tmp_local_netcdf):
     f.close()
     with pytest.raises(
         ValueError,
-        match=f"I/O operation on <Closed h5netcdf.File> '{tmp_local_netcdf}'",
+        match=f"I/O operation on <Closed h5netcdf.File>: '{tmp_local_netcdf}'",
     ):
         print(v[:])
