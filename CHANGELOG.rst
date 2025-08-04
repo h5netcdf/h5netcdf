@@ -3,7 +3,7 @@ Change Log
 
 Development Version (unreleased):
 
-- Add better error messages when iperating on a closed file (:issue:`274`, :pull:`275`).
+- Add better error messages when operating on a closed file (:issue:`274`, :pull:`275`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.6.3 (June 30th, 2025):
