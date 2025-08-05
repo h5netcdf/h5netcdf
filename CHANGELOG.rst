@@ -1,9 +1,14 @@
 Change Log
 ----------
 
+Development Version (unreleased):
+
+- Fix unintentional changes in test suite (:pull:`277`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.6.4 (August 5th, 2025):
 
-- Cleanup: pyupgrade --py39-plus
+- Cleanup: pyupgrade --py39-plus (:pull:`272`).
   By `Kurt Schwehr <https://github.com/schwehr>`_
 - Add better error messages when operating on a closed file (:issue:`274`, :pull:`275`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
