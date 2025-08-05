@@ -1525,7 +1525,7 @@ class File(Group):
                         mode = "r+"
                     self._h5py = h5pyd
                     try:
-                        self._h5file = self._h5py.File(
+                        self.__h5file = self._h5py.File(
                             path, mode, track_order=track_order, **kwargs
                         )
                         self._preexisting_file = mode != "w"
@@ -1533,7 +1533,7 @@ class File(Group):
                         # if file does not exist, create it
                         if _mode == "a":
                             mode = "w"
-                            self._h5file = self._h5py.File(
+                            self.__h5file = self._h5py.File(
                                 path, mode, track_order=track_order, **kwargs
                             )
                             self._preexisting_file = False
@@ -1549,19 +1549,19 @@ class File(Group):
                 else:
                     self._preexisting_file = os.path.exists(path) and mode != "w"
                     self._h5py = h5py
-                    self._h5file = self._h5py.File(
+                    self.__h5file = self._h5py.File(
                         path, mode, track_order=track_order, **kwargs
                     )
             elif isinstance(path, h5py.File):
                 self._preexisting_file = mode in {"r", "r+", "a"}
                 self._h5py = h5py
-                self._h5file = path
+                self.__h5file = path
                 # h5py File passed in: let the caller decide when to close it
                 self._close_h5file = False
             else:  # file-like object
                 self._preexisting_file = mode in {"r", "r+", "a"}
                 self._h5py = h5py
-                self._h5file = self._h5py.File(
+                self.__h5file = self._h5py.File(
                     path, mode, track_order=track_order, **kwargs
                 )
         except Exception:
@@ -1570,6 +1570,7 @@ class File(Group):
         else:
             self._closed = False
 
+        self._filename = self._h5file.filename
         self._mode = mode
         self._writable = mode != "r"
         self._root_ref = weakref.ref(self)
@@ -1694,12 +1695,18 @@ class File(Group):
 
     sync = flush
 
+    @property
+    def _h5file(self):
+        if self._closed:
+            raise ValueError(f"I/O operation on {self}: {self._filename!r}")
+        return self.__h5file
+
     def close(self):
         if not self._closed:
             self.flush()
             if self._close_h5file:
                 self._h5file.close()
-            self._h5file = None
+            self.__h5file = None
             self._closed = True
 
     __del__ = close
