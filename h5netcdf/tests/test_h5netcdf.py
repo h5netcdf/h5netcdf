@@ -1111,12 +1111,12 @@ def test_creating_variables_with_unlimited_dimensions(tmp_local_or_remote_netcdf
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as f:
         assert f.dimensions["x"].isunlimited()
         assert f.dimensions["x"].size == 3
-        assert f.h5file["x"].maxshape == (None,)
-        assert f.h5file["x"].shape == (3,)
+        assert f._h5file["x"].maxshape == (None,)
+        assert f._h5file["x"].shape == (3,)
 
         assert f.dimensions["y"].size == 2
-        assert f.h5file["y"].maxshape == (2,)
-        assert f.h5file["y"].shape == (2,)
+        assert f._h5file["y"].maxshape == (2,)
+        assert f._h5file["y"].shape == (2,)
 
 
 def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
@@ -1379,7 +1379,7 @@ def create_attach_scales(filename, append_module):
         assert len(refs) == 3
         for (ref, dim), name in zip(refs, ["/test", "/test1", "/_nc4_non_coord_y"]):
             assert dim == 0
-            assert ds._root.h5file[ref].name == name
+            assert ds._root._h5file[ref].name == name
 
 
 def test_create_attach_scales_netcdf4(tmp_local_netcdf):
@@ -1403,7 +1403,7 @@ def test_detach_scale(tmp_local_or_remote_netcdf):
         assert len(refs) == 1
         for (ref, dim), name in zip(refs, ["/test"]):
             assert dim == 0
-            assert ds._root.h5file[ref].name == name
+            assert ds._root._h5file[ref].name == name
 
     with h5netcdf.File(tmp_local_or_remote_netcdf, "a") as ds:
         ds.dimensions["x"]._detach_scale()
@@ -1427,8 +1427,8 @@ def test_get_dim_scale_refs(tmp_local_or_remote_netcdf):
         ds.createVariable("test1", "i8", ("x",))
     with legacyapi.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
         refs = ds.dimensions["x"]._scale_refs
-        assert ds.h5file[refs[0][0]] == ds["test0"]._h5ds
-        assert ds.h5file[refs[1][0]] == ds["test1"]._h5ds
+        assert ds._h5file[refs[0][0]] == ds["test0"]._h5ds
+        assert ds._h5file[refs[1][0]] == ds["test1"]._h5ds
 
 
 def create_netcdf_dimensions(ds, idx):
@@ -1774,10 +1774,10 @@ def test_track_order_specification(tmp_local_netcdf):
 # This should always work with the default file opening settings
 # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
 def test_more_than_7_attr_creation(tmp_local_netcdf):
-    with h5netcdf.File(tmp_local_netcdf, "w") as h5file:
+    with h5netcdf.File(tmp_local_netcdf, "w") as _h5file:
         for i in range(100):
-            h5file.attrs[f"key{i}"] = i
-            h5file.attrs[f"key{i}"] = 0
+            _h5file.attrs[f"key{i}"] = i
+            _h5file.attrs[f"key{i}"] = 0
 
 
 # Add a test that is supposed to fail in relation to issue #136
@@ -1786,10 +1786,10 @@ def test_more_than_7_attr_creation(tmp_local_netcdf):
 # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
 @pytest.mark.parametrize("track_order", [False, True])
 def test_more_than_7_attr_creation_track_order(tmp_local_netcdf, track_order):
-    with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
+    with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as _h5file:
         for i in range(100):
-            h5file.attrs[f"key{i}"] = i
-            h5file.attrs[f"key{i}"] = 0
+            _h5file.attrs[f"key{i}"] = i
+            _h5file.attrs[f"key{i}"] = 0
 
 
 def test_group_names(tmp_local_netcdf):
@@ -2792,7 +2792,7 @@ def test_h5pyd_driver(hsds_up):
         fname = f"{prefix}testfile{rnd}.nc"
         with h5netcdf.File(fname, "w", driver="h5pyd") as ds:
             assert ds._h5py == h5pyd
-            assert isinstance(ds.h5file, h5pyd.File)
+            assert isinstance(ds._h5file, h5pyd.File)
 
 
 def test_h5pyd_nonchunked_scalars(hsds_up):

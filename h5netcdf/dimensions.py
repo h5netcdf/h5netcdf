@@ -132,7 +132,7 @@ class Dimension:
     def _h5ds(self):
         if self._phony:
             return None
-        return self._root.h5file[self._h5path]
+        return self._root._h5file[self._h5path]
 
     @property
     def _isscale(self):
