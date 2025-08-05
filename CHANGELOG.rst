@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development Version (unreleased):
+Version 1.6.4 (August 5th, 2025):
 
 - Add better error messages when operating on a closed file (:issue:`274`, :pull:`275`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
