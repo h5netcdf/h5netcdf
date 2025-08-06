@@ -1774,10 +1774,10 @@ def test_track_order_specification(tmp_local_netcdf):
 # This should always work with the default file opening settings
 # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
 def test_more_than_7_attr_creation(tmp_local_netcdf):
-    with h5netcdf.File(tmp_local_netcdf, "w") as _h5file:
+    with h5netcdf.File(tmp_local_netcdf, "w") as h5file:
         for i in range(100):
-            _h5file.attrs[f"key{i}"] = i
-            _h5file.attrs[f"key{i}"] = 0
+            h5file.attrs[f"key{i}"] = i
+            h5file.attrs[f"key{i}"] = 0
 
 
 # Add a test that is supposed to fail in relation to issue #136
@@ -1786,10 +1786,10 @@ def test_more_than_7_attr_creation(tmp_local_netcdf):
 # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
 @pytest.mark.parametrize("track_order", [False, True])
 def test_more_than_7_attr_creation_track_order(tmp_local_netcdf, track_order):
-    with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as _h5file:
+    with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
         for i in range(100):
-            _h5file.attrs[f"key{i}"] = i
-            _h5file.attrs[f"key{i}"] = 0
+            h5file.attrs[f"key{i}"] = i
+            h5file.attrs[f"key{i}"] = 0
 
 
 def test_group_names(tmp_local_netcdf):
