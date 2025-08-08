@@ -166,6 +166,7 @@ class BaseObject:
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
+        self._backend = getattr(parent, "_backend", None)
 
     @property
     def _parent(self):
@@ -454,11 +455,11 @@ class BaseVariable(BaseObject):
         if getattr(self._root, "decode_vlen_strings", False):
             string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
             if string_info and string_info.length is None:
-                try:
-                    return self._h5ds.asstr()[key]
-                except AttributeError:
+                if self._backend == "pyfive":
                     # pyfive backend has already dealt with strings
                     return self._h5ds[key]
+                else:
+                    return self._h5ds.asstr()[key]
 
         # get padding
         padding = self._get_padding(key)
