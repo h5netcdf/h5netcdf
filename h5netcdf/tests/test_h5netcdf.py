@@ -544,9 +544,6 @@ def test_fileobj(decode_vlen_strings):
     read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings)
 
 def test_fileobj_pyfive(decode_vlen_strings):
-    #fileobj = tempfile.TemporaryFile()
-    #write_h5netcdf(fileobj, pyfive=True)
-    #read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend='pyfive')
     fileobj = io.BytesIO()
     write_h5netcdf(fileobj, pyfive=True)
     read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend='pyfive')
