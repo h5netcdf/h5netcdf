@@ -206,7 +206,7 @@ def write_h5netcdf(tmp_netcdf, pyfive=False):
     v = ds.create_variable("intscalar", data=np.int64(2))
 
     v = ds.create_variable("foo_unlimited", ("x", "unlimited"), float)
-    v[:] = np.ones((4,1))
+    v[...] = 1
 
     with raises((h5netcdf.CompatibilityError, TypeError)):
         ds.create_variable("boolean", data=True)
