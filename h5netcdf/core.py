@@ -62,7 +62,6 @@ def _invalid_netcdf_feature(feature, allow):
         )
         raise CompatibilityError(msg)
 
-
 def _transform_1d_boolean_indexers(key):
     """Find and transform 1D boolean indexers to int"""
     # return key, if not iterable
@@ -120,6 +119,46 @@ def _expanded_indexer(key, ndim):
     k1 = slice(ellipsis)
     k2 = slice(len_key, None) if ellipsis is None else slice(ellipsis + 1, None)
     return key[k1] + res_dims + key[k2]
+
+
+def _parse_backend(backend, mode):
+    """Parse the 'backend' keyword to File.__init__.
+
+    Parameters
+    ----------
+    backend : str
+        The backend parameter.
+
+    mode : "r", "r+", "a", "w"
+        A valid file access mode. Defaults to "r".
+
+    Returns
+    -------
+    backend: str
+        The backend end that is going to used. If the input backend is
+        None, then a vlaue of the H5NETCDF_BACKEND environment
+        variable is used.
+
+    """
+    if backend is None:
+        backend = os.environ.get("H5NETCDF_BACKEND", "h5py")
+
+    if backend not in ("pyfive", "h5py"):
+        raise ValueError(
+            f"Unknown backend {backend!r} - valid options are: "
+            "None, 'pyfive', 'h5py'"
+        )
+
+    if backend == "pyfive" and no_pyfive:
+        raise ImportError("No module named 'pyfive', backend not available")
+
+    if backend == "h5py" and no_h5py:
+        raise ImportError("No module named 'h5py', backend not available")
+
+    if mode != "r" and backend == "pyfive":
+        raise ValueError("'pyfive' backend can only be used with mode='r'")
+
+    return backend
 
 
 class BaseObject:
@@ -1277,23 +1316,12 @@ class File(Group):
 
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
 
-        if backend is None:
-            backend = os.environ.get("H5NETCDF_BACKEND", "h5py")
-        self.backend = backend
+        backend = _parse_backend(backend, mode)
+        self._backend = backend
 
-        if backend not in ['pyfive', 'h5py']:
-            raise ValueError('Unknown backend {backend} - valid options are: None,"pyfive","h5py"')
-        if backend == 'pyfive' and no_pyfive:
-            raise ImportError('No module named "pyfive", backend not available')
-        if backend == 'h5py' and no_h5py:
-            raise ImportError('No module named "h5py", backend not available')
-        if mode != 'r' and backend == 'pyfive':
-            raise ValueError('pyfive backend can only be used with mode="r"')
-
-        if backend == 'pyfive':
-            
+        if backend == "pyfive":
             self._h5py = pyfive
-            logging.info(f'h5netcdf running with {pyfive.__version__}')
+            logging.info(f"h5netcdf running with {pyfive.__version__}")
             try:
                 # We can ignore track order for now (and maybe for reading in general)?
                 if kwargs:
@@ -1447,6 +1475,11 @@ class File(Group):
     @property
     def _root(self):
         return self
+
+    @property
+    def backend(self):
+        """The HDF5 backend."""
+        return self._backend
 
     def flush(self):
         if self._writable:
