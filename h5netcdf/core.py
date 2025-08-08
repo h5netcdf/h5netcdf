@@ -1529,10 +1529,10 @@ class File(Group):
     def __repr__(self):
         if self._closed:
             return f"<Closed {self._cls_name}>"
-        header = "<{} {!r} (mode {})>".format(
-            self._cls_name,
-            self.filename.split("/")[-1],
-            self.mode,
+        header = (
+            f"<{self._cls_name} "
+            f"{self.filename.split('/')[-1]!r} "
+            f"(mode {self.mode}, backend {self.backend})>"
         )
         return "\n".join([header] + self._repr_body())
 
