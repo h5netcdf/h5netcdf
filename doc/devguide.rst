@@ -15,14 +15,20 @@ Contributors
 - `Brett Naul <https://github.com/bnaul>`_
 - `Dion Häfner <https://github.com/dionhaefner>`_
 - `Drew Parsons <https://github.com/drew-parsons>`_
+- `Ezequiel Cimadevilla Alvarez <https://github.com/zequihg50>`_
 - `Frédéric Laliberté <https://github.com/laliberte>`_
 - `Ghislain Vaillant <https://github.com/ghisvail>`_
+- `John Readey <https://github.com/jreadey>`_
+- `Jonas Grönberg <https://github.com/JonasGronberg>`_
+- `Kurt Schwehr <https://github.com/schwehr>`_
 - `Lion Krischer <https://github.com/krischer>`_
 - `Mark Harfouche <https://github.com/hmaarrfk>`_
 - `Martin Raspaud <https://github.com/mraspaud>`_
 - `Pierre Augier <https://github.com/paugier>`_
+- `Rickard Holmberg <https://github.com/rho-novatron>`_
 - `Ryan Grout <https://github.com/groutr>`_
 - `Scott Henderson <https://github.com/scottyhq>`_
+- `Thomas Kluyver <https://github.com/takluyver>`_
 - `Tom Augspurger <https://github.com/TomAugspurger>`_
 
 If you are interested to contribute, just let us know by creating an issue or pull request on github.

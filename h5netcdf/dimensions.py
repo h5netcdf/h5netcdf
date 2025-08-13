@@ -22,7 +22,7 @@ class Dimensions(MutableMapping):
         if not self._group._root._writable:
             raise RuntimeError("H5NetCDF: Write to read only")
         if name in self._objects:
-            raise ValueError(f"dimension {name:!r} already exists")
+            raise ValueError(f"dimension {name!r} already exists")
 
         self._objects[name] = Dimension(self._group, name, size, create_h5ds=True)
 

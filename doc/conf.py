@@ -117,7 +117,7 @@ napoleon_type_aliases = {
     "Path": "~~pathlib.Path",
 }
 
-# handle release substition
+# handle release substitution
 url = "https://github.com/h5netcdf"
 
 # get version
@@ -130,7 +130,7 @@ else:
     # extract git revision
     gh_tree_name = version_tuple[-1].split(".")[0][1:]
 
-rel = "`{0} <{1}/h5netcdf/tree/{2}>`__".format(release, url, gh_tree_name)
+rel = f"`{release} <{url}/h5netcdf/tree/{gh_tree_name}>`__"
 
 rst_epilog = ""
 rst_epilog += f"""
