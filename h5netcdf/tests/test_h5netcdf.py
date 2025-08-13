@@ -591,6 +591,16 @@ def test_h5py_file_obj(tmp_local_netcdf, decode_vlen_strings):
         assert isinstance(h5py_f["foo"], h5py.Dataset)
 
 
+def test_h5py_file_obj(tmp_local_netcdf, decode_vlen_strings):
+    with h5py.File(tmp_local_netcdf, "w") as h5py_f:
+        write_h5netcdf(h5py_f)
+        read_h5netcdf(h5py_f, h5netcdf, decode_vlen_strings)
+
+        # The h5py File object should still be open & usable, although the
+        # h5netcdf file object has been closed.
+        assert isinstance(h5py_f["foo"], h5py.Dataset)
+
+
 def test_repr(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)
     f = h5netcdf.File(tmp_local_or_remote_netcdf, "a")
