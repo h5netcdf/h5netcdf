@@ -3,7 +3,9 @@ import io
 import random
 import re
 import string
+import sys
 import tempfile
+import weakref
 from os import environ as env
 
 import h5py
@@ -11,12 +13,16 @@ import netCDF4
 import numpy as np
 import pytest
 from packaging import version
-from pytest import raises
+from pytest import raises, warns
 import warnings
 
 import h5netcdf
 from h5netcdf import legacyapi
-from h5netcdf.core import NOT_A_VARIABLE, CompatibilityError
+from h5netcdf.core import (
+    NOT_A_VARIABLE,
+    CompatibilityError,
+    VLType,
+)
 
 try:
     import h5pyd
@@ -27,6 +33,7 @@ except ImportError:
 
 
 remote_h5 = ("http:", "hdf5:")
+python_version = version.parse(".".join(map(str, sys.version_info[:3])))
 
 
 @pytest.fixture
@@ -34,26 +41,30 @@ def tmp_local_netcdf(tmpdir):
     return str(tmpdir.join("testfile.nc"))
 
 
+@pytest.fixture()
+def setup_h5pyd_config(hsds_up):
+    env["HS_ENDPOINT"] = "http://127.0.0.1:5101"
+    env["HS_USERNAME"] = "h5netcdf-pytest"
+    env["HS_PASSWORD"] = "TestEarlyTestEverything"
+    env["HS_USE_HTTPS"] = "False"
+
+
 @pytest.fixture(params=["testfile.nc", "hdf5://testfile"])
-def tmp_local_or_remote_netcdf(request, tmpdir, hsds_up):
-    if request.param.startswith(remote_h5):
-        if without_h5pyd:
-            pytest.skip("h5pyd package not available")
-        elif not hsds_up:
-            pytest.skip("HSDS service not running")
-        rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
-        return (
-            "hdf5://"
-            + "home"
-            + "/"
-            + env["HS_USERNAME"]
-            + "/"
-            + "testfile"
-            + rnd
-            + ".nc"
-        )
+def tmp_local_or_remote_netcdf(request, tmpdir):
+    param = request.param
+    if param.startswith(remote_h5):
+        try:
+            hsds_up = request.getfixturevalue("hsds_up")
+        except pytest.skip.Exception:
+            pytest.skip("HSDS not available")
+
+        if not hsds_up:
+            pytest.skip("HSDS fixture returned False (not running)")
+
+        rnd = "".join(random.choices(string.ascii_uppercase, k=5))
+        return f"hdf5://home/{env['HS_USERNAME']}/testfile{rnd}.nc"
     else:
-        return str(tmpdir.join(request.param))
+        return str(tmpdir.join(param))
 
 
 @pytest.fixture(params=[True, False])
@@ -104,18 +115,23 @@ _vlen_string = "foo"
 
 
 def is_h5py_char_working(tmp_netcdf, name):
-    h5 = get_hdf5_module(tmp_netcdf)
-    # https://github.com/Unidata/netcdf-c/issues/298
-    with h5.File(tmp_netcdf, "r") as ds:
-        v = ds[name]
-        try:
-            assert array_equal(v, _char_array)
-            return True
-        except Exception as e:
-            if re.match("^Can't read data", e.args[0]):
-                return False
-            else:
-                raise
+    if not isinstance(tmp_netcdf, h5py.File) and (
+        without_h5pyd or not isinstance(tmp_netcdf, h5pyd.File)
+    ):
+        h5 = get_hdf5_module(tmp_netcdf)
+        # https://github.com/Unidata/netcdf-c/issues/298
+        with h5.File(tmp_netcdf, "r") as ds:
+            return is_h5py_char_working(ds, name)
+
+    v = tmp_netcdf[name]
+    try:
+        assert array_equal(v, _char_array)
+        return True
+    except Exception as e:
+        if re.match("^Can't read data", e.args[0]):
+            return False
+        else:
+            raise
 
 
 def write_legacy_netcdf(tmp_netcdf, write_module):
@@ -149,7 +165,10 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     v = ds.createVariable("foo_unlimited", float, ("x", "unlimited"))
     v[...] = 1
 
-    with raises((h5netcdf.CompatibilityError, TypeError)):
+    with raises(
+        (h5netcdf.CompatibilityError, TypeError),
+        match=r"(?i)(boolean dtypes are not a supported NetCDF feature|illegal primitive data type)",
+    ):
         ds.createVariable("boolean", np.bool_, ("x"))
 
     g = ds.createGroup("subgroup")
@@ -189,7 +208,7 @@ def write_h5netcdf(tmp_netcdf, pyfive=False):
     ds.dimensions = {"x": 4, "y": 5, "z": 6, "empty": 0, "unlimited": None}
 
     v = ds.create_variable(
-        "foo", ("x", "y"), float, chunks=(4, 5), compression="gzip", shuffle=True
+        "foo", ("x", "y"), float, chunks=(4, 5), compression=compression, shuffle=True
     )
     v[...] = 1
     v.attrs["units"] = "meters"
@@ -247,28 +266,32 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     if write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.other_attr == "yes"
-    with pytest.raises(AttributeError):
+    with raises(AttributeError, match="not found"):
         ds.does_not_exist
-    assert set(ds.dimensions) == set(
-        ["x", "y", "z", "empty", "string3", "mismatched_dim", "unlimited"]
-    )
-    assert set(ds.variables) == set(
-        [
-            "enum_var",
-            "foo",
-            "y",
-            "z",
-            "intscalar",
-            "scalar",
-            "var_len_str",
-            "mismatched_dim",
-            "foo_unlimited",
-        ]
-    )
+    assert set(ds.dimensions) == {
+        "x",
+        "y",
+        "z",
+        "empty",
+        "string3",
+        "mismatched_dim",
+        "unlimited",
+    }
+    assert set(ds.variables) == {
+        "enum_var",
+        "foo",
+        "y",
+        "z",
+        "intscalar",
+        "scalar",
+        "var_len_str",
+        "mismatched_dim",
+        "foo_unlimited",
+    }
 
-    assert set(ds.enumtypes) == set(["enum_t"])
+    assert set(ds.enumtypes) == {"enum_t"}
 
-    assert set(ds.groups) == set(["subgroup"])
+    assert set(ds.groups) == {"subgroup"}
     assert ds.parent is None
     v = ds.variables["foo"]
     assert array_equal(v, np.ones((4, 5)))
@@ -369,6 +392,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
     if write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs["other_attr"] == "yes"
+
     assert set(ds.dimensions) == set(
         ["x", "y", "z", "empty", "string3", "mismatched_dim", "unlimited"]
     )
@@ -394,7 +418,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
     else:
         assert set(ds.variables) == variables
 
-    assert set(ds.groups) == set(["subgroup"])
+    assert set(ds.groups) == {"subgroup"}
     assert ds.parent is None
 
     v = ds["foo"]
@@ -525,6 +549,11 @@ def test_roundtrip_h5netcdf(tmp_local_or_remote_netcdf, decode_vlen_strings):
     read_h5netcdf(tmp_local_or_remote_netcdf, h5netcdf, decode_vlen_strings)
 
 
+def test_write_compression_as_zlib(tmp_local_netcdf):
+    write_h5netcdf(tmp_local_netcdf, compression="zlib")
+    read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf)
+
+
 def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):
     write_legacy_netcdf(tmp_local_netcdf, netCDF4)
     read_h5netcdf(tmp_local_netcdf, netCDF4, decode_vlen_strings)
@@ -547,6 +576,16 @@ def test_fileobj_pyfive(decode_vlen_strings):
     fileobj = io.BytesIO()
     write_h5netcdf(fileobj, pyfive=True)
     read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend='pyfive')
+
+def test_h5py_file_obj(tmp_local_netcdf, decode_vlen_strings):
+    with h5py.File(tmp_local_netcdf, "w") as h5py_f:
+        write_h5netcdf(h5py_f)
+        read_h5netcdf(h5py_f, h5netcdf, decode_vlen_strings)
+
+        # The h5py File object should still be open & usable, although the
+        # h5netcdf file object has been closed.
+        assert isinstance(h5py_f["foo"], h5py.Dataset)
+
 
 def test_repr(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)
@@ -643,25 +682,27 @@ def test_optional_netcdf4_attrs(tmp_local_or_remote_netcdf):
 def test_error_handling(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
         ds.dimensions["x"] = 1
-        with raises(ValueError):
+        with raises(ValueError, match="already exists"):
             ds.dimensions["x"] = 2
-        with raises(ValueError):
+        with raises(ValueError, match="cannot modify existing dimension"):
             ds.dimensions = {"x": 2}
-        with raises(ValueError):
+        with raises(
+            ValueError, match="new dimensions do not include existing dimension"
+        ):
             ds.dimensions = {"y": 3}
         ds.create_variable("x", ("x",), dtype=float)
-        with raises(ValueError):
+        with raises(ValueError, match="unable to create variable"):
             ds.create_variable("x", ("x",), dtype=float)
-        with raises(ValueError):
+        with raises(ValueError, match="name parameter cannot be an empty string"):
             ds.create_variable("y/", ("x",), dtype=float)
         ds.create_group("subgroup")
-        with raises(ValueError):
+        with raises(ValueError, match="unable to create group"):
             ds.create_group("subgroup")
 
 
 def test_decode_string_error(tmp_local_or_remote_netcdf):
     write_h5netcdf(tmp_local_or_remote_netcdf)
-    with pytest.raises(TypeError):
+    with raises(TypeError, match="keyword argument is not allowed"):
         with h5netcdf.legacyapi.Dataset(
             tmp_local_or_remote_netcdf, "r", decode_vlen_strings=True
         ) as ds:
@@ -728,10 +769,10 @@ def test_invalid_netcdf4(tmp_local_or_remote_netcdf):
                 check_invalid_netcdf4(var, i)
 
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
-        with raises(ValueError):
+        with raises(ValueError, match="has no dimension scale associated"):
             ds["bar"].variables["foo1"].dimensions
 
-    with raises(ValueError):
+    with raises(ValueError, match="unknown value"):
         with h5netcdf.File(tmp_local_or_remote_netcdf, "r", phony_dims="srt") as ds:
             pass
 
@@ -796,7 +837,7 @@ def test_invalid_netcdf4_mixed(tmp_local_or_remote_netcdf):
             check_invalid_netcdf4_mixed(var, 3)
 
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
-        with raises(ValueError):
+        with raises(ValueError, match="has no dimension scale associated with"):
             ds.variables["foo1"].dimensions
 
 
@@ -814,12 +855,12 @@ def test_invalid_netcdf_malformed_dimension_scales(tmp_local_or_remote_netcdf):
         f["z"].make_scale()
         f["foo1"].dims[0].attach_scale(f["x"])
 
-    with raises(ValueError):
+    with raises(ValueError, match="has mixing of labeled and unlabeled dimensions"):
         with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
             assert ds
             print(ds)
 
-    with raises(ValueError):
+    with raises(ValueError, match="has mixing of labeled and unlabeled dimensions"):
         with h5netcdf.File(tmp_local_or_remote_netcdf, "r", phony_dims="sort") as ds:
             assert ds
             print(ds)
@@ -830,13 +871,13 @@ def test_hierarchical_access_auto_create(tmp_local_or_remote_netcdf):
     ds.create_variable("/foo/bar", data=1)
     g = ds.create_group("foo/baz")
     g.create_variable("/foo/hello", data=2)
-    assert set(ds) == set(["foo"])
-    assert set(ds["foo"]) == set(["bar", "baz", "hello"])
+    assert set(ds) == {"foo"}
+    assert set(ds["foo"]) == {"bar", "baz", "hello"}
     ds.close()
 
     ds = h5netcdf.File(tmp_local_or_remote_netcdf, "r")
-    assert set(ds) == set(["foo"])
-    assert set(ds["foo"]) == set(["bar", "baz", "hello"])
+    assert set(ds) == {"foo"}
+    assert set(ds["foo"]) == {"bar", "baz", "hello"}
     ds.close()
 
 
@@ -933,19 +974,17 @@ def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
         f.create_variable(
             "lzf_compressed", data=[1], dimensions=("x"), compression="lzf"
         )
-        # invalid
-        with pytest.raises(h5netcdf.CompatibilityError):
-            f.create_variable("complex", data=1j)
-        with pytest.raises(h5netcdf.CompatibilityError):
-            f.attrs["complex_attr"] = 1j
-        with pytest.raises(h5netcdf.CompatibilityError):
+        with raises(
+            h5netcdf.CompatibilityError,
+            match="scale-offset filters are not a supported NetCDF feature",
+        ):
             f.create_variable("scaleoffset", data=[1], dimensions=("x",), scaleoffset=0)
 
 
 def test_invalid_netcdf_okay(tmp_local_or_remote_netcdf):
     if tmp_local_or_remote_netcdf.startswith(remote_h5):
         pytest.skip("h5pyd does not support NumPy complex dtype yet")
-    with pytest.warns(UserWarning, match="invalid netcdf features"):
+    with warns(UserWarning, match="invalid netcdf features"):
         with h5netcdf.File(tmp_local_or_remote_netcdf, "w", invalid_netcdf=True) as f:
             f.create_variable(
                 "lzf_compressed", data=[1], dimensions=("x"), compression="lzf"
@@ -967,7 +1006,7 @@ def test_invalid_netcdf_overwrite_valid(tmp_local_netcdf):
     # https://github.com/h5netcdf/h5netcdf/issues/165
     with netCDF4.Dataset(tmp_local_netcdf, mode="w"):
         pass
-    with pytest.warns(UserWarning):
+    with warns(UserWarning, match="You are writing invalid netcdf features"):
         with h5netcdf.File(tmp_local_netcdf, "a", invalid_netcdf=True) as f:
             f.create_variable(
                 "lzf_compressed", data=[1], dimensions=("x"), compression="lzf"
@@ -996,7 +1035,7 @@ def test_reopen_file_different_dimension_sizes(tmp_local_netcdf):
 
 
 def test_invalid_then_valid_no_ncproperties(tmp_local_or_remote_netcdf):
-    with pytest.warns(UserWarning, match="invalid netcdf features"):
+    with warns(UserWarning, match="invalid netcdf features"):
         with h5netcdf.File(tmp_local_or_remote_netcdf, "w", invalid_netcdf=True):
             pass
     with h5netcdf.File(tmp_local_or_remote_netcdf, "a"):
@@ -1014,11 +1053,8 @@ def test_creating_and_resizing_unlimited_dimensions(tmp_local_or_remote_netcdf):
         f.dimensions["z"] = None
         f.resize_dimension("z", 20)
 
-        with pytest.raises(ValueError) as e:
+        with raises(ValueError, match="is not unlimited and thus cannot be resized"):
             f.resize_dimension("y", 20)
-        assert e.value.args[0] == (
-            "Dimension 'y' is not unlimited and thus cannot be resized."
-        )
 
     h5 = get_hdf5_module(tmp_local_or_remote_netcdf)
     # Assert some behavior observed by using the C netCDF bindings.
@@ -1044,11 +1080,10 @@ def test_creating_variables_with_unlimited_dimensions(tmp_local_or_remote_netcdf
 
         # Trying to create a variable while the current size of the dimension
         # is still zero will fail.
-        with pytest.raises(ValueError) as e:
+        with raises(ValueError, match="Shape tuple is incompatible with data"):
             f.create_variable(
                 "dummy2", data=np.array([[1, 2], [3, 4]]), dimensions=("x", "y")
             )
-        assert e.value.args[0] == "Shape tuple is incompatible with data"
 
         # Creating a coordinate variable
         f.create_variable("x", dimensions=("x",), dtype=np.int64)
@@ -1073,7 +1108,7 @@ def test_creating_variables_with_unlimited_dimensions(tmp_local_or_remote_netcdf
             # We don't expect any errors. This is effectively a void context manager
             expected_errors = memoryview(b"")
         else:
-            expected_errors = pytest.raises(TypeError)
+            expected_errors = raises(TypeError, match="Can't broadcast")
         with expected_errors as e:
             f.variables["dummy3"][:] = np.ones((5, 2))
         if not tmp_local_or_remote_netcdf.startswith(remote_h5):
@@ -1110,11 +1145,10 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
         f.dimensions["z"] = None
 
         # Cannot create it without first resizing it.
-        with pytest.raises(ValueError) as e:
+        with raises(ValueError, match="Shape tuple is incompatible with data"):
             f.create_variable(
                 "dummy1", data=np.array([[1, 2, 3]]), dimensions=("x", "y")
             )
-            assert e.value.args[0] == "Shape tuple is incompatible with data"
 
         # Without data.
         f.create_variable("dummy1", dimensions=("x", "y"), dtype=np.int64)
@@ -1143,7 +1177,9 @@ def test_writing_to_an_unlimited_dimension(tmp_local_or_remote_netcdf):
 
         # broadcast writing
         if tmp_local_or_remote_netcdf.startswith(remote_h5):
-            expected_errors = pytest.raises(OSError)
+            expected_errors = raises(
+                OSError, match="Got asyncio.IncompleteReadError during binary read"
+            )
         else:
             # We don't expect any errors. This is effectively a void context manager
             expected_errors = memoryview(b"")
@@ -1299,6 +1335,24 @@ def test_overwrite_existing_file(tmp_local_netcdf):
 
     # check attribute
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        assert ds.attrs._h5attrs.get("_NCProperties", False)
+
+
+def test_overwrite_existing_remote_file(tmp_local_or_remote_netcdf):
+    # create file with legacyapi
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.createDimension("x", 10)
+
+    # check attribute
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+        assert ds.attrs._h5attrs.get("_NCProperties", False)
+
+    # overwrite file with new api
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.dimensions["x"] = 10
+
+    # check attribute
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
         assert ds.attrs._h5attrs.get("_NCProperties", False)
 
 
@@ -1557,7 +1611,38 @@ def test_no_circular_references(tmp_local_or_remote_netcdf):
         refs = gc.get_referrers(ds)
         for ref in refs:
             print(ref)
-        assert len(refs) == 1
+        if python_version >= version.parse("3.14"):
+            assert len(refs) == 0
+        else:
+            assert len(refs) == 1
+
+
+def test_no_circular_references_py314(tmp_local_or_remote_netcdf):
+    # https://github.com/h5py/h5py/issues/2019
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.dimensions["x"] = 2
+        ds.dimensions["y"] = 2
+
+    # clean up everything
+    gc.collect()
+    gc.garbage.clear()
+
+    # use weakref to hold on object
+    file_ref = None
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+        file_ref = weakref.ref(ds)
+
+    # clean up
+    gc.collect()
+
+    # check garbage list
+    if file_ref() is not None:
+        print("Uncollectable object:", file_ref())
+        print("Potential GC garbage:")
+        for obj in gc.garbage:
+            print(repr(obj))
+
+    assert file_ref() is None or "<Closed h5netcdf.File>"
 
 
 def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
@@ -1695,7 +1780,7 @@ def test_track_order_specification(tmp_local_netcdf):
     # While netcdf4-c has historically only allowed track_order to be True
     # There doesn't seem to be a good reason for this
     # https://github.com/Unidata/netcdf-c/issues/2054 historically, h5netcdf
-    # has not specified this parameter (leaving it implicitely as False)
+    # has not specified this parameter (leaving it implicitly as False)
     # We want to make sure we allow both here
     with h5netcdf.File(tmp_local_netcdf, "w", track_order=False):
         pass
@@ -1719,18 +1804,10 @@ def test_more_than_7_attr_creation(tmp_local_netcdf):
 # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
 @pytest.mark.parametrize("track_order", [False, True])
 def test_more_than_7_attr_creation_track_order(tmp_local_netcdf, track_order):
-    h5py_version = version.parse(h5py.__version__)
-    if track_order and h5py_version < version.parse("3.7.0"):
-        expected_errors = pytest.raises(KeyError)
-    else:
-        # We don't expect any errors. This is effectively a void context manager
-        expected_errors = memoryview(b"")
-
     with h5netcdf.File(tmp_local_netcdf, "w", track_order=track_order) as h5file:
-        with expected_errors:
-            for i in range(100):
-                h5file.attrs[f"key{i}"] = i
-                h5file.attrs[f"key{i}"] = 0
+        for i in range(100):
+            h5file.attrs[f"key{i}"] = i
+            h5file.attrs[f"key{i}"] = 0
 
 
 def test_group_names(tmp_local_netcdf):
@@ -1817,18 +1894,11 @@ def test_bool_slicing_length_one_dim(tmp_local_netcdf):
         data = ds["hello"][bool_slice, :]
         np.testing.assert_equal(data, np.zeros((1, 2)))
 
-    # should raise for h5py >= 3.0.0 and h5py < 3.7.0
+    # regression test
     # https://github.com/h5py/h5py/pull/2079
     # https://github.com/h5netcdf/h5netcdf/pull/125/
     with h5netcdf.File(tmp_local_netcdf, "r") as ds:
-        h5py_version = version.parse(h5py.__version__)
-        if version.parse("3.0.0") <= h5py_version < version.parse("3.7.0"):
-            error = "Indexing arrays must have integer dtypes"
-            with pytest.raises(TypeError) as e:
-                ds["hello"][bool_slice, :]
-            assert error == str(e.value)
-        else:
-            ds["hello"][bool_slice, :]
+        ds["hello"][bool_slice, :]
 
 
 def test_fancy_indexing(tmp_local_or_remote_netcdf):
@@ -2250,32 +2320,40 @@ def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
             enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict1)
 
             if tmp_local_or_remote_netcdf.startswith(remote_h5):
-                testcontext = pytest.raises(RuntimeError, match="Conflict")
+                testcontext = raises(RuntimeError, match="Conflict")
             else:
                 testcontext = pytest.raises(TypeError, match="name already exists")
             with testcontext:
                 ds.create_enumtype(np.uint8, "enum_t", enum_dict2)
 
             enum_type2 = g.create_enumtype(np.uint8, "enum_t2", enum_dict2)
-            with pytest.raises(TypeError, match="Please provide h5netcdf user type"):
+            g.create_enumtype(np.uint8, "enum_t", enum_dict2)
+            with raises(TypeError, match="Please provide h5netcdf user type"):
                 ds.create_variable(
                     "enum_var1",
                     ("enum_dim",),
                     dtype=enum_type._h5ds,
                     fillvalue=enum_dict1["missing"],
                 )
-            with pytest.raises(TypeError, match="is not committed into current file"):
+            with raises(TypeError, match="is not committed into current file"):
                 ds.create_variable(
                     "enum_var2",
                     ("enum_dim",),
                     dtype=enum_type_ext,
                     fillvalue=enum_dict1["missing"],
                 )
-            with pytest.raises(TypeError, match="is not accessible in current group"):
+            with raises(TypeError, match="is not accessible in current group"):
                 ds.create_variable(
                     "enum_var3",
                     ("enum_dim",),
                     dtype=enum_type2,
+                    fillvalue=enum_dict2["missing"],
+                )
+            with raises(TypeError, match="Another dtype with same name"):
+                g.create_variable(
+                    "enum_var4",
+                    ("enum_dim",),
+                    dtype=enum_type,
                     fillvalue=enum_dict2["missing"],
                 )
 
@@ -2290,32 +2368,39 @@ def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
             g = ds.createGroup("subgroup")
             enum_type = ds.createEnumType(np.uint8, "enum_t", enum_dict1)
             if tmp_local_or_remote_netcdf.startswith(remote_h5):
-                testcontext = pytest.raises(RuntimeError, match="Conflict")
+                testcontext = raises(RuntimeError, match="Conflict")
             else:
                 testcontext = pytest.raises(TypeError, match="name already exists")
             with testcontext:
                 ds.createEnumType(np.uint8, "enum_t", enum_dict1)
 
             enum_type2 = g.createEnumType(np.uint8, "enum_t2", enum_dict2)
-
-            with pytest.raises(TypeError, match="Please provide h5netcdf user type"):
+            g.create_enumtype(np.uint8, "enum_t", enum_dict2)
+            with raises(TypeError, match="Please provide h5netcdf user type"):
                 ds.createVariable(
                     "enum_var1",
                     enum_type._h5ds,
                     ("enum_dim",),
                     fill_value=enum_dict1["missing"],
                 )
-            with pytest.raises(TypeError, match="is not committed into current file"):
+            with raises(TypeError, match="is not committed into current file"):
                 ds.createVariable(
                     "enum_var2",
                     enum_type_ext,
                     ("enum_dim",),
                     fill_value=enum_dict1["missing"],
                 )
-            with pytest.raises(TypeError, match="is not accessible in current group"):
+            with raises(TypeError, match="is not accessible in current group"):
                 ds.createVariable(
                     "enum_var3",
                     enum_type2,
+                    ("enum_dim",),
+                    fill_value=enum_dict2["missing"],
+                )
+            with raises(TypeError, match="Another dtype with same name"):
+                g.createVariable(
+                    "enum_var4",
+                    enum_type,
                     ("enum_dim",),
                     fill_value=enum_dict2["missing"],
                 )
@@ -2330,7 +2415,7 @@ def test_enum_type_errors_new_api(tmp_local_or_remote_netcdf):
         enum_type2 = ds.create_enumtype(np.uint8, "enum_t2", enum_dict2)
 
         # 1.
-        with pytest.warns(UserWarning, match="default fill_value 0 which IS defined"):
+        with warns(UserWarning, match="default fill_value 0 which IS defined"):
             ds.create_variable(
                 "enum_var1",
                 ("enum_dim",),
@@ -2338,18 +2423,14 @@ def test_enum_type_errors_new_api(tmp_local_or_remote_netcdf):
             )
         # 2. is for legacyapi only
         # 3.
-        with pytest.warns(
-            UserWarning, match="default fill_value 0 which IS NOT defined"
-        ):
+        with warns(UserWarning, match="default fill_value 0 which IS NOT defined"):
             ds.create_variable(
                 "enum_var2",
                 ("enum_dim",),
                 dtype=enum_type,
             )
         # 4.
-        with pytest.warns(
-            UserWarning, match="with specified fill_value 0 which IS NOT"
-        ):
+        with warns(UserWarning, match="with specified fill_value 0 which IS NOT"):
             ds.create_variable(
                 "enum_var3",
                 ("enum_dim",),
@@ -2357,9 +2438,7 @@ def test_enum_type_errors_new_api(tmp_local_or_remote_netcdf):
                 fillvalue=0,
             )
         # 5.
-        with pytest.raises(
-            ValueError, match="with specified fill_value 100 which IS NOT"
-        ):
+        with raises(ValueError, match="with specified fill_value 100 which IS NOT"):
             ds.create_variable(
                 "enum_var4",
                 ("enum_dim",),
@@ -2377,14 +2456,14 @@ def test_enum_type_errors_legacyapi(tmp_local_or_remote_netcdf):
         enum_type2 = ds.createEnumType(np.uint8, "enum_t2", enum_dict2)
 
         # 1.
-        with pytest.warns(UserWarning, match="default fill_value 255 which IS defined"):
+        with warns(UserWarning, match="default fill_value 255 which IS defined"):
             ds.createVariable(
                 "enum_var1",
                 enum_type2,
                 ("enum_dim",),
             )
         # 2.
-        with pytest.raises(ValueError, match="default fill_value 255 which IS NOT"):
+        with raises(ValueError, match="default fill_value 255 which IS NOT"):
             ds.createVariable(
                 "enum_var2",
                 enum_type,
@@ -2392,9 +2471,7 @@ def test_enum_type_errors_legacyapi(tmp_local_or_remote_netcdf):
             )
         # 3. is only for new api
         # 4.
-        with pytest.warns(
-            UserWarning, match="interpreted as '_UNDEFINED' by netcdf-c."
-        ):
+        with warns(UserWarning, match="interpreted as '_UNDEFINED' by netcdf-c."):
             ds.createVariable(
                 "enum_var3",
                 enum_type,
@@ -2402,28 +2479,26 @@ def test_enum_type_errors_legacyapi(tmp_local_or_remote_netcdf):
                 fill_value=0,
             )
         # 5.
-        with pytest.raises(
-            ValueError, match="with specified fill_value 100 which IS NOT"
-        ):
+        with raises(ValueError, match="with specified fill_value 100 which IS NOT"):
             ds.createVariable("enum_var4", enum_type, ("enum_dim",), fill_value=100)
 
 
 def test_enum_type(tmp_local_or_remote_netcdf):
     # test EnumType
     enum_dict = dict(one=1, two=2, three=3, missing=255)
-    dict(one=1, two=2, three=3, missing=254)
+    enum_dict2 = dict(one=1, two=2, three=3, missing=254)
 
     # first with new API
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
         ds.dimensions = {"enum_dim": 4}
+        ds.create_enumtype(np.uint8, "enum_t2", enum_dict2)
         enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict)
         v = ds.create_variable(
             "enum_var", ("enum_dim",), dtype=enum_type, fillvalue=enum_dict["missing"]
         )
         v[0:3] = [1, 2, 3]
-        with pytest.raises(ValueError) as e:
+        with raises(ValueError, match="assign illegal value"):
             v[3] = 5
-        assert "assign illegal value(s)" in e.value.args[0]
 
     # check, if new API can read them
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
@@ -2464,9 +2539,8 @@ def test_enum_type(tmp_local_or_remote_netcdf):
             "enum_var", enum_type, ("enum_dim",), fill_value=enum_dict["missing"]
         )
         v[0:3] = [1, 2, 3]
-        with pytest.raises(ValueError) as e:
+        with raises(ValueError, match="assign illegal value"):
             v[3] = 5
-        assert "assign illegal value(s)" in e.value.args[0]
 
     # check, if new API can read them
     with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
@@ -2508,9 +2582,7 @@ def test_enum_type(tmp_local_or_remote_netcdf):
                 "enum_var", enum_type, ("enum_dim",), fill_value=enum_dict["missing"]
             )
             v[0:3] = [1, 2, 3]
-            with pytest.raises(
-                ValueError, match="assign illegal value to Enum variable"
-            ):
+            with raises(ValueError, match="assign illegal value to Enum variable"):
                 v[3] = 5
 
         # check, if new API can read them
@@ -2544,6 +2616,173 @@ def test_enum_type(tmp_local_or_remote_netcdf):
             assert enum_var.datatype.name == "enum_t"
 
 
+@pytest.mark.parametrize("dtype", ["int", "int8", "uint16", "float32", "int64"])
+def test_vltype_creation(tmp_local_or_remote_netcdf, netcdf_write_module, dtype):
+    # skip for netCDF4 writer for remote hsds files
+    if netcdf_write_module == netCDF4 and tmp_local_or_remote_netcdf.startswith(
+        remote_h5
+    ):
+        pytest.skip()
+
+    with netcdf_write_module.Dataset(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.createVLType(dtype, "vlen_t")
+
+    with h5netcdf.File(tmp_local_or_remote_netcdf, "r") as ds:
+        vlen_type = ds.vltypes["vlen_t"]
+        assert isinstance(vlen_type, VLType)
+        assert h5py.check_vlen_dtype(vlen_type.dtype) == np.dtype(dtype)
+        assert vlen_type.name == "vlen_t"
+
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+        vlen_type = ds.vltypes["vlen_t"]
+        assert isinstance(vlen_type, legacyapi.VLType)
+        assert h5py.check_vlen_dtype(vlen_type.dtype) == np.dtype(dtype)
+        assert vlen_type.name == "vlen_t"
+
+    if not tmp_local_or_remote_netcdf.startswith(remote_h5):
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+            vlen_type = ds.vltypes["vlen_t"]
+            assert isinstance(vlen_type, netCDF4.VLType)
+            assert vlen_type.dtype == np.dtype(dtype)
+            assert vlen_type.name == "vlen_t"
+
+
+def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
+    # compound type is created with array of chars
+    compound = np.dtype(
+        [
+            ("time", np.int32),
+            ("station_name", "S1", 10),
+            ("temperature", np.float32),
+            ("pressure", np.float32),
+        ]
+    )
+
+    # data is filled with fixed strings
+    compound2 = np.dtype(
+        [
+            ("time", np.int32),
+            ("station_name", "S10"),
+            ("temperature", np.float32),
+            ("pressure", np.float32),
+        ]
+    )
+    cmp_array = np.array(
+        [
+            (0, *["Boulder"], 0.0, 0.0),
+            (1, *["New York"], 2.0, 3.0),
+            (2, *["Denver"], 4.0, 6.0),
+            (3, *["Washington"], 5.0, 7.0),
+            (4, *["Wachtberg"], 6.0, 8.0),
+        ],
+        dtype=compound2,
+    )
+    if (
+        netcdf_write_module.__name__ == "netCDF4"
+        and tmp_local_or_remote_netcdf.startswith(remote_h5)
+    ):
+        pytest.skip("does not work for netCDF4")
+    with netcdf_write_module.Dataset(tmp_local_or_remote_netcdf, "w") as ds:
+        ds.createDimension("x", 5)
+        ds.createGroup("test")
+        compound_t = ds.createCompoundType(compound, "cmp_t")
+        var = ds.createVariable("data", compound_t, ("x",))
+        var[:] = cmp_array
+
+    if not tmp_local_or_remote_netcdf.startswith(remote_h5):
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+            cmptype = ds.cmptypes["cmp_t"]
+            assert isinstance(cmptype, netCDF4.CompoundType)
+            assert cmptype.name == "cmp_t"
+            assert array_equal(ds["data"][:], cmp_array)
+            assert ds["data"].datatype == cmptype.dtype
+
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+        cmptype = ds.cmptypes["cmp_t"]
+        assert isinstance(cmptype, h5netcdf.legacyapi.CompoundType)
+        assert cmptype.name == "cmp_t"
+        assert array_equal(ds["data"][:], cmp_array)
+        assert ds["data"].datatype == cmptype
+        assert ds["data"].dtype == cmptype.dtype
+
+
+@pytest.mark.skipif(
+    version.parse(netCDF4.__version__) < version.parse("1.7.0"),
+    reason="does not work before netCDF4 v1.7.0",
+)
+def test_nc_complex_compatibility(tmp_local_or_remote_netcdf, netcdf_write_module):
+    if tmp_local_or_remote_netcdf.startswith(remote_h5):
+        pytest.skip("not yet implemented in h5pyd/hsds")
+    # native complex
+    complex_array = np.array([0 + 0j, 1 + 0j, 0 + 1j, 1 + 1j, 0.25 + 0.75j])
+    # compound complex
+    complex128 = np.dtype(
+        {
+            "names": ["r", "i"],
+            "formats": ["f8", "f8"],
+            "offsets": [0, 8],
+            "itemsize": 16,
+            "aligned": True,
+        }
+    )
+    cdata = np.array(
+        [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.25, 0.75)], dtype=complex128
+    )
+    kwargs = {}
+    if (
+        netcdf_write_module.__name__ == "netCDF4"
+        and tmp_local_or_remote_netcdf.startswith(remote_h5)
+    ):
+        pytest.skip("does not work for netCDF4")
+
+    if netcdf_write_module.__name__ == "netCDF4":
+        kwargs.update(auto_complex=True)
+    with netcdf_write_module.Dataset(tmp_local_or_remote_netcdf, "w", **kwargs) as ds:
+        ds.createDimension("x", size=len(complex_array))
+        var = ds.createVariable("data", "c16", ("x",))
+        var[:] = complex_array
+
+    with legacyapi.Dataset(tmp_local_or_remote_netcdf, "r") as ds:
+        dtype = ds.cmptypes["_PFNC_DOUBLE_COMPLEX_TYPE"]
+        assert isinstance(dtype, h5netcdf.legacyapi.CompoundType)
+        assert dtype.name == "_PFNC_DOUBLE_COMPLEX_TYPE"
+        assert array_equal(ds["data"][:], complex_array)
+
+    if not tmp_local_or_remote_netcdf.startswith(remote_h5):
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r", auto_complex=True) as ds:
+            dtype = ds.cmptypes["_PFNC_DOUBLE_COMPLEX_TYPE"]
+            assert isinstance(dtype, netCDF4._netCDF4.CompoundType)
+            assert array_equal(ds["data"][:], complex_array)
+
+        with netCDF4.Dataset(tmp_local_or_remote_netcdf, "r", auto_complex=False) as ds:
+            dtype = ds.cmptypes["_PFNC_DOUBLE_COMPLEX_TYPE"]
+            assert isinstance(dtype, netCDF4._netCDF4.CompoundType)
+            assert array_equal(ds["data"][:], cdata)
+
+
+@pytest.mark.skipif(
+    version.parse(netCDF4.__version__) < version.parse("1.7.0"),
+    reason="does not work before netCDF4 v1.7.0",
+)
+def test_complex_type_creation_errors(tmp_local_netcdf):
+    complex_array = np.array([0 + 0j, 1 + 0j, 0 + 1j, 1 + 1j, 0.25 + 0.75j])
+
+    with legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("x", size=len(complex_array))
+        with raises(TypeError, match="data type 'c4' not understood"):
+            ds.createVariable("data", "c4", ("x",))
+
+    if "complex256" not in np.sctypeDict:
+        pytest.skip("numpy 'complex256' dtype not available")
+    with legacyapi.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("x", size=len(complex_array))
+        with raises(
+            TypeError,
+            match="Currently only 'complex64' and 'complex128' dtypes are allowed.",
+        ):
+            ds.createVariable("data", "c32", ("x",))
+
+
 def test_hsds(hsds_up):
     # test hsds setup/write
     if without_h5pyd:
@@ -2551,9 +2790,7 @@ def test_hsds(hsds_up):
     elif not hsds_up:
         pytest.skip("HSDS service not running")
     rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
-    fname = (
-        "hdf5://" + "home" + "/" + env["HS_USERNAME"] + "/" + "testfile" + rnd + ".nc"
-    )
+    fname = f"hdf5://testfile{rnd}.nc"
     with h5netcdf.File(fname, "w") as ds:
         g = ds.create_group("test")
         g.dimensions["x"] = None
@@ -2561,3 +2798,62 @@ def test_hsds(hsds_up):
 
     with h5netcdf.File(fname, "r") as ds:
         print(ds["test"]["var1"])
+
+
+def test_h5pyd_driver(hsds_up):
+    # test that specifying driver='h5pyd' forces use of h5pyd
+    if without_h5pyd:
+        pytest.skip("h5pyd package not available")
+    elif not hsds_up:
+        pytest.skip("HSDS service not running")
+    rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
+    for prefix in ("/", "hdf5://"):
+        fname = f"{prefix}testfile{rnd}.nc"
+        with h5netcdf.File(fname, "w", driver="h5pyd") as ds:
+            assert ds._h5py == h5pyd
+            assert isinstance(ds._h5file, h5pyd.File)
+
+
+def test_h5pyd_nonchunked_scalars(hsds_up):
+    if without_h5pyd:
+        pytest.skip("h5pyd package not available")
+    elif not hsds_up:
+        pytest.skip("HSDS service not running")
+    rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
+    fname = f"hdf5://testfile{rnd}.nc"
+    with h5pyd.File(fname, "w") as ds:
+        ds.create_dataset("foo", data=b"1234")
+    with h5netcdf.File(fname, "r", driver="h5pyd") as ds:
+        # HSDS stores this as a chunked dataset, but only with a single chunk
+        assert ds["foo"]._h5ds.chunks == (1,)
+        # However, since it is a scalar dataset, we should not expose the chunking
+        assert ds["foo"].chunks is None
+
+
+def test_h5pyd_append(hsds_up):
+    if without_h5pyd:
+        pytest.skip("h5pyd package not available")
+    elif not hsds_up:
+        pytest.skip("HSDS service not running")
+    rnd = "".join(random.choice(string.ascii_uppercase) for _ in range(5))
+    fname = f"hdf5://testfile{rnd}.nc"
+
+    with warns(UserWarning, match="Append mode for h5pyd"):
+        with h5netcdf.File(fname, "a", driver="h5pyd") as ds:
+            assert not ds._preexisting_file
+
+    with h5netcdf.File(fname, "a", driver="h5pyd") as ds:
+        assert ds._preexisting_file
+
+
+def test_raise_on_closed_file(tmp_local_netcdf):
+    f = h5netcdf.File(tmp_local_netcdf, "w")
+    f.dimensions = {"x": 5}
+    v = f.create_variable("hello", ("x",), float)
+    v[:] = np.ones(5)
+    f.close()
+    with pytest.raises(
+        ValueError,
+        match=f"I/O operation on <Closed h5netcdf.File>: '{tmp_local_netcdf}'",
+    ):
+        print(v[:])

@@ -193,10 +193,44 @@ class BaseObject:
         return self._h5ds.dtype
 
 
+_h5type_mapping = {
+    "H5T_INTEGER": 0,
+    "H5T_FLOAT": 1,
+    "H5T_STRING": 3,
+    "H5T_COMPOUND": 6,
+    "H5T_ENUM": 8,
+    "H5T_VLEN": 9,
+}
+
+
+def _get_h5usertype_identifier(h5type):
+    """Return H5 Type Identifier from given H5 Datatype."""
+    try:
+        # h5py first
+        h5typeid = h5type.id.get_class()
+    except AttributeError:
+        # h5pyd second
+        h5typeid = _h5type_mapping[h5type.id.type_json["class"]]
+    return h5typeid
+
+
+def _get_h5dstype_identifier(h5type):
+    """Return H5 Type Identifier from given H5 Dataset."""
+    try:
+        # h5py first
+        h5typeid = h5type.id.get_type().get_class()
+    except AttributeError:
+        # h5pyd second
+        h5typeid = _h5type_mapping[h5type.id.type_json["class"]]
+    return h5typeid
+
+
 class UserType(BaseObject):
+    _cls_name = "h5netcdf.UserType"
+
     @property
     def name(self):
-        """Return enum name."""
+        """Return user type name."""
         # strip hdf5 path
         return super().name.split("/")[-1]
 
@@ -206,16 +240,81 @@ class UserType(BaseObject):
         header = f"<class {self._cls_name!r}: name = {self.name!r}, numpy dtype = {self.dtype!r}"
         return header
 
+    @property
+    def _h5type_identifier(self):
+        """Returns type identifier.
+
+        See https://api.h5py.org/h5t.html#datatype-class-codes and
+        https://docs.hdfgroup.org (enum H5T_class_t)
+
+        """
+        return _get_h5usertype_identifier(self._h5ds)
+
+    @property
+    def _h5datatype(self):
+        """Returns comparable h5type.
+
+        - DatatypeID for h5py
+        - (dtype, dtype.metadata) for h5pyd
+        """
+        if self._root._h5py.__name__ == "h5py":
+            return self._h5ds.id
+        else:
+            return self.dtype, self.dtype.metadata
+
 
 class EnumType(UserType):
     _cls_name = "h5netcdf.EnumType"
 
     @property
     def enum_dict(self):
+        """Dictionary containing the Enum field/value pairs."""
         return self.dtype.metadata["enum"]
 
     def __repr__(self):
         return super().__repr__() + f", fields / values = {self.enum_dict!r}"
+
+
+class VLType(UserType):
+    _cls_name = "h5netcdf.VLType"
+
+
+def _string_to_char_array_dtype(dtype):
+    """Converts fixed string to char array dtype."""
+    if dtype.kind == "c":
+        return None
+    return np.dtype(
+        {
+            name: (
+                np.dtype(("S1", fmt.itemsize)) if fmt.kind == "S" else fmt,
+                offset,
+            )
+            for name, (fmt, offset) in dtype.fields.items()
+        }
+    )
+
+
+def _char_array_to_string_dtype(dtype):
+    """Converts char array to fixed string dtype."""
+    if dtype.kind == "c":
+        return None
+    return np.dtype(
+        {
+            name: (
+                np.dtype(f"S{fmt.shape[0]}") if fmt.base == "S1" else fmt,
+                offset,
+            )
+            for name, (fmt, offset) in dtype.fields.items()
+        }
+    )
+
+
+class CompoundType(UserType):
+    _cls_name = "h5netcdf.CompoundType"
+
+    @property
+    def dtype_view(self):
+        return _char_array_to_string_dtype(self.dtype)
 
 
 class BaseVariable(BaseObject):
@@ -350,7 +449,11 @@ class BaseVariable(BaseObject):
             self._h5ds.resize(new_shape)
 
     def _add_fillvalue(self, fillvalue):
-        """Add _FillValue attribute"""
+        """Add _FillValue attribute.
+
+        This method takes care of adding fillvalue with the wanted
+        variable dtype.
+        """
 
         # trying to create correct type of fillvalue
         if self.dtype is str:
@@ -392,15 +495,43 @@ class BaseVariable(BaseObject):
         return self.shape[0]
 
     @property
+    def _h5type_identifier(self):
+        """Returns type identifier.
+
+        See https://api.h5py.org/h5t.html#datatype-class-codes and
+        https://docs.hdfgroup.org (enum H5T_class_t)
+
+        """
+        return _get_h5dstype_identifier(self._h5ds)
+
+    @property
+    def _h5datatype(self):
+        """Returns comparable h5type.
+
+        This property can be used to compare two variables/datatypes or
+        a variable and a datatype for equality of the underlying datatype.
+
+        - DatatypeID for h5py
+        - (dtype, dtype.metadata) for h5pyd
+        """
+        if self._root._h5py.__name__ == "h5py":
+            return self._h5ds.id.get_type()
+        else:
+            return self.dtype, self.dtype.metadata
+
+    @property
     def datatype(self):
-        """Return numpy dtype or user defined type."""
-        if (enum_dict := self._root._h5py.check_enum_dtype(self.dtype)) is not None:
-            for tid in self._parent._all_enumtypes.values():
-                if self._root._h5py == h5py:
-                    found = self._h5ds.id.get_type().equal(tid._h5ds.id)
-                else:
-                    found = tid.enum_dict == enum_dict
-                if found:
+        """Return datatype.
+
+        Returns numpy dtype (for primitive types) or VLType/CompoundType/EnumType
+        instance (for compound, vlen or enum data types).
+        """
+        # this is really painful as we have to iterate over all types
+        # and check equality
+        usertype = self._parent._get_usertype_dict(self._h5type_identifier)
+        if usertype is not None:
+            for tid in usertype.values():
+                if self._h5datatype == tid._h5datatype:
                     return tid
         return self.dtype
 
@@ -467,14 +598,22 @@ class BaseVariable(BaseObject):
         # apply padding with fillvalue (both api)
         if padding:
             fv = self.dtype.type(self._h5ds.fillvalue)
-            return np.pad(
+            h5ds = np.pad(
                 self._h5ds,
                 pad_width=padding,
                 mode="constant",
                 constant_values=fv,
-            )[key]
+            )
+        else:
+            h5ds = self._h5ds
 
-        return self._h5ds[key]
+        if (
+            isinstance(self.datatype, CompoundType)
+            and (view := self.datatype.dtype_view) is not None
+        ):
+            return h5ds[key].view(view)
+        else:
+            return h5ds[key]
 
     def __setitem__(self, key, value):
         from .legacyapi import Dataset
@@ -495,7 +634,14 @@ class BaseVariable(BaseObject):
             key = _transform_1d_boolean_indexers(key)
             # resize on write only for legacy API
             self._maybe_resize_dimensions(key, value)
-        self._h5ds[key] = value
+
+        if (
+            isinstance(self.datatype, CompoundType)
+            and (view := _string_to_char_array_dtype(self.datatype.dtype)) is not None
+        ):
+            self._h5ds[key] = value.view(view)
+        else:
+            self._h5ds[key] = value
 
     @property
     def attrs(self):
@@ -520,6 +666,11 @@ class BaseVariable(BaseObject):
 class Variable(BaseVariable):
     @property
     def chunks(self):
+        if self.shape == ():
+            # In HSDS, the layout can be chunked even for scalar datasets, but with only a single chunk.
+            # Return None for scalar datasets since they shall be handled as non-chunked.
+            assert self._h5ds.chunks in (None, (), (1,))
+            return None
         return self._h5ds.chunks
 
     @property
@@ -584,7 +735,7 @@ def _unlabeled_dimension_mix(h5py_dataset):
     if not dimlist:
         status = "nodim"
     else:
-        dimset = set([len(j) for j in dimlist])
+        dimset = {len(j) for j in dimlist}
         # either all dimensions have exactly one scale
         # or all dimensions have no scale
         if dimset ^ {0} == set():
@@ -601,20 +752,23 @@ def _unlabeled_dimension_mix(h5py_dataset):
     return status
 
 
-def _check_dtype(self, dtype):
-    """Check and handle dtypes"""
+def _check_dtype(group, dtype):
+    """Check and handle dtypes when adding variable to given group.
+
+    Raises errors and issues warnings according to given dtype.
+    """
 
     if dtype == np.bool_:
         # never warn since h5netcdf has always errored here
         _invalid_netcdf_feature(
             "boolean dtypes",
-            self._root.invalid_netcdf,
+            group._root.invalid_netcdf,
         )
     else:
-        self._root._check_valid_netcdf_dtype(dtype)
+        group._root._check_valid_netcdf_dtype(dtype)
 
     # we only allow h5netcdf user types, not named h5py.Datatype
-    if isinstance(dtype, self._root._h5py.Datatype):
+    if isinstance(dtype, group._root._h5py.Datatype):
         raise TypeError(
             f"Argument dtype {dtype!r} is not allowed. "
             f"Please provide h5netcdf user type or numpy compatible type."
@@ -622,43 +776,68 @@ def _check_dtype(self, dtype):
 
     # is user type is given extract underlying h5py object
     # we just use the h5py user type here
-    if isinstance(dtype, (EnumType,)):
+    if isinstance(dtype, (EnumType, VLType, CompoundType)):
         h5type = dtype._h5ds
-        if dtype._root._h5file.filename != self._root._h5file.filename:
+        if dtype._root._h5file.filename != group._root._h5file.filename:
             raise TypeError(
                 f"Given dtype {dtype} is not committed into current file"
-                f" {self._root._h5file.filename}. Instead it's committed into"
+                f" {group._root._h5file.filename}. Instead it's committed into"
                 f" file {dtype._root._h5file.filename}"
             )
         # check if committed type can be accessed in current group hierarchy
-        dname = dtype.name.split("/")[-1]
-        if (
-            (user_type := self._all_enumtypes.get(dname)) is None
-        ) or user_type._h5ds.name != h5type.name:
+        user_type = group._get_usertype(h5type)
+        if user_type is None:
             msg = (
                 f"Given dtype {dtype.name!r} is not accessible in current group"
-                f" {self._h5group.name!r} or any parent group. Instead it's defined at"
+                f" {group._h5group.name!r} or any parent group. Instead it's defined at"
                 f" {h5type.name!r}. Please create it in the current or any parent group."
             )
             raise TypeError(msg)
+        # this checks for committed types which are overridden by re-definitions
+        elif (actual := user_type._h5ds.name) != h5type.name:
+            msg = (
+                f"Given dtype {dtype.name!r} is defined at {h5type.name!r}."
+                f" Another dtype with same name is defined at {actual!r} and"
+                f" would override it."
+            )
+            raise TypeError(msg)
+    elif np.dtype(dtype).kind == "c":
+        itemsize = np.dtype(dtype).itemsize
+        try:
+            width = {8: "FLOAT", 16: "DOUBLE"}[itemsize]
+        except KeyError as e:
+            raise TypeError(
+                "Currently only 'complex64' and 'complex128' dtypes are allowed."
+            ) from e
+        dname = f"_PFNC_{width}_COMPLEX_TYPE"
+        # todo check compound type for existing complex types
+        #  which may be used here
+        # if dname is not available in current group-path
+        # create and commit type in current group
+        if dname not in group._all_cmptypes:
+            dtype = group.create_cmptype(dtype, dname).dtype
 
     return dtype
 
 
-def _check_fillvalue(self, fillvalue, dtype):
-    """Handles fillvalues before dataset creation"""
+def _check_fillvalue(group, fillvalue, dtype):
+    """Handles fillvalues when adding variable to given group.
+
+    Raises errors and issues warnings according to
+    given fillvalue and dtype.
+    """
 
     # handling default fillvalues for legacyapi
     # see https://github.com/h5netcdf/h5netcdf/issues/182
     from .legacyapi import Dataset, _get_default_fillvalue
 
-    stacklevel = 5 if isinstance(self._parent, Dataset) else 4
+    stacklevel = 5 if isinstance(group._root, Dataset) else 4
 
     h5fillvalue = fillvalue
 
     # if no fillvalue is provided take netcdf4 default values for legacyapi
     if fillvalue is None:
-        if isinstance(self._parent, Dataset):
+        if isinstance(group._root, Dataset):
             h5fillvalue = _get_default_fillvalue(dtype)
 
     # handling for EnumType
@@ -667,7 +846,7 @@ def _check_fillvalue(self, fillvalue, dtype):
             # 1. we need to warn the user that writing enums with default values
             # which are defined in the enum dict will mask those values
             if (h5fillvalue or 0) in dtype.enum_dict.values():
-                reverse = dict((v, k) for k, v in dtype.enum_dict.items())
+                reverse = {v: k for k, v in dtype.enum_dict.items()}
                 msg = (
                     f"Creating variable with default fill_value {h5fillvalue or 0!r}"
                     f" which IS defined in enum type {dtype!r}."
@@ -729,6 +908,8 @@ class Group(Mapping):
     _variable_cls = Variable
     _dimension_cls = Dimension
     _enumtype_cls = EnumType
+    _vltype_cls = VLType
+    _cmptype_cls = CompoundType
 
     @property
     def _group_cls(self):
@@ -746,15 +927,22 @@ class Group(Mapping):
 
         self._dimensions = Dimensions(self)
         self._enumtypes = _LazyObjectLookup(self, self._enumtype_cls)
+        self._vltypes = _LazyObjectLookup(self, self._vltype_cls)
+        self._cmptypes = _LazyObjectLookup(self, self._cmptype_cls)
 
         # this map keeps track of all dimensions
         if parent is self:
             self._all_dimensions = ChainMap(self._dimensions)
             self._all_enumtypes = ChainMap(self._enumtypes)
+            self._all_vltypes = ChainMap(self._vltypes)
+            self._all_cmptypes = ChainMap(self._cmptypes)
+
         else:
             self._all_dimensions = parent._all_dimensions.new_child(self._dimensions)
             self._all_h5groups = parent._all_h5groups.new_child(self._h5group)
             self._all_enumtypes = parent._all_enumtypes.new_child(self._enumtypes)
+            self._all_vltypes = parent._all_vltypes.new_child(self._vltypes)
+            self._all_cmptypes = parent._all_cmptypes.new_child(self._cmptypes)
 
         self._variables = _LazyObjectLookup(self, self._variable_cls)
         self._groups = _LazyObjectLookup(self, self._group_cls)
@@ -779,11 +967,9 @@ class Group(Mapping):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
                 self._groups.add(k)
-            # todo: add other user types here
-            elif isinstance(
-                v, self._root._h5py.Datatype
-            ) and self._root._h5py.check_enum_dtype(v.dtype):
-                self._enumtypes.add(k)
+            elif isinstance(v, self._root._h5py.Datatype):
+                # add usertypes (enum, vlen, compound)
+                self._add_usertype(v)
             else:
                 try:
                     if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
@@ -871,19 +1057,18 @@ class Group(Mapping):
         for k, v in self._all_dimensions.maps[0].items():
             if k in value:
                 if v != value[k]:
-                    raise ValueError(f"cannot modify existing dimension {k:!r}")
+                    raise ValueError(f"cannot modify existing dimension {k!r}")
             else:
                 raise ValueError(
-                    f"new dimensions do not include existing dimension {k:!r}"
+                    f"new dimensions do not include existing dimension {k!r}"
                 )
         self._dimensions.update(value)
 
     def _create_child_group(self, name):
         if name in self:
-            raise ValueError(f"unable to create group {name:!r} (name already exists)")
+            raise ValueError(f"unable to create group {name!r} (name already exists)")
         kwargs = {}
-        if self._root._h5py.__name__ == "h5py":
-            kwargs.update(track_order=self._track_order)
+        kwargs.update(track_order=self._track_order)
 
         self._h5group.create_group(name, **kwargs)
         self._groups[name] = self._group_cls(self, name)
@@ -925,7 +1110,7 @@ class Group(Mapping):
     ):
         if name in self:
             raise ValueError(
-                f"unable to create variable {name:!r} (name already exists)"
+                f"unable to create variable {name!r} (name already exists)"
             )
         if data is not None:
             data = np.asarray(data)
@@ -999,8 +1184,7 @@ class Group(Mapping):
             self._dimensions[name]._detach_scale()
             del self._h5group[name]
 
-        if self._root._h5py.__name__ == "h5py":
-            kwargs.update(dict(track_order=self._parent._track_order))
+        kwargs.update(dict(track_order=self._parent._track_order))
 
         # fill value handling
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
@@ -1068,7 +1252,7 @@ class Group(Mapping):
         dimensions : tuple
             Tuple containing dimension name strings. Defaults to empty tuple, effectively
             creating a scalar variable.
-        dtype : numpy.dtype, str, optional
+        dtype : numpy.dtype, str, UserType (Enum, VL, Compound), optional
             Datatype of the new variable. Defaults to None.
         fillvalue : scalar, optional
             Specify fillvalue for uninitialized parts of the variable. Defaults to ``None``.
@@ -1079,9 +1263,9 @@ class Group(Mapping):
             ``h5netcdf``. Discussion on ``h5netcdf`` chunking can be found in (:issue:`52`)
             and (:pull:`127`).
         compression : str, optional
-            Compression filter to apply, defaults to ``gzip``
+            Compression filter to apply, defaults to ``gzip``. ``zlib`` is an alias for ``gzip``.
         compression_opts : int
-            Parameter for compression filter. For ``compression="gzip"`` Integer from 1 to 9 specifying
+            Parameter for compression filter. For ``compression="gzip"``/``compression="zlib"`` Integer from 1 to 9 specifying
             the compression level. Defaults to 4.
         fletcher32 : bool
             If ``True``, HDF5 Fletcher32 checksum algorithm is applied. Defaults to ``False``.
@@ -1128,6 +1312,13 @@ class Group(Mapping):
         group = self
         for k in keys[:-1]:
             group = group._require_child_group(k)
+
+        # Allow zlib to be an alias for gzip
+        # but use getters and setters so as not to change the behavior
+        # of the default h5py functions
+        if kwargs.get("compression", None) == "zlib":
+            kwargs["compression"] = "gzip"
+
         return group._create_child_variable(
             keys[-1],
             dimensions,
@@ -1155,10 +1346,8 @@ class Group(Mapping):
         return item
 
     def __iter__(self):
-        for name in self.groups:
-            yield name
-        for name in self.variables:
-            yield name
+        yield from self.groups
+        yield from self.variables
 
     def __len__(self):
         return len(self.variables) + len(self.groups)
@@ -1180,9 +1369,47 @@ class Group(Mapping):
     def variables(self):
         return Frozen(self._variables)
 
+    def _add_usertype(self, h5type):
+        """Add usertype to related usertype dict.
+
+        The type is added by name to the dict attached to current group.
+        """
+        name = h5type.name.split("/")[-1]
+        h5typeid = _get_h5usertype_identifier(h5type)
+        # add usertype to corresponding dict
+        self._get_usertype_dict(h5typeid).maps[0].add(name)
+
+    def _get_usertype(self, h5type):
+        """Get usertype from related usertype dict."""
+        h5typeid = _get_h5usertype_identifier(h5type)
+        return self._get_usertype_dict(h5typeid).get(h5type.name.split("/")[-1])
+
+    def _get_usertype_dict(self, h5typeid):
+        """Return usertype-dict related to given h5 type identifier.
+
+        See https://api.h5py.org/h5t.html#datatype-class-codes and
+        https://docs.hdfgroup.org (enum H5T_class_t)
+        """
+        return {
+            6: self._all_cmptypes,
+            8: self._all_enumtypes,
+            9: self._all_vltypes,
+        }.get(h5typeid)
+
     @property
     def enumtypes(self):
+        """Return group defined enum types."""
         return Frozen(self._enumtypes)
+
+    @property
+    def vltypes(self):
+        """Return group defined vlen types."""
+        return Frozen(self._vltypes)
+
+    @property
+    def cmptypes(self):
+        """Return group defined compound types."""
+        return Frozen(self._cmptypes)
 
     @property
     def dims(self):
@@ -1252,6 +1479,42 @@ class Group(Mapping):
         self._enumtypes[datatype_name] = enumtype
         return enumtype
 
+    def create_vltype(self, datatype, datatype_name):
+        """Create VLType.
+
+        datatype: np.dtype
+            A numpy dtype object describing the base type.
+        datatype_name: string
+            A Python string containing a description of the VL data type.
+        """
+        # wrap in numpy dtype first
+        datatype = np.dtype(datatype)
+        et = self._root._h5py.vlen_dtype(datatype)
+        self._h5group[datatype_name] = et
+        # create vltype class instance
+        vltype = self._vltype_cls(self, datatype_name)
+        self._vltypes[datatype_name] = vltype
+        return vltype
+
+    def create_cmptype(self, datatype, datatype_name):
+        """Create CompoundType.
+
+        datatype: np.dtype
+            A numpy dtype object describing the structured type.
+        datatype_name: string
+            A Python string containing a description of the compound data type.
+        """
+        # wrap in numpy dtype first
+        datatype = np.dtype(datatype)
+        if (new_dtype := _string_to_char_array_dtype(datatype)) is not None:
+            # "SN" -> ("S1", (N,))
+            datatype = new_dtype
+        self._h5group[datatype_name] = datatype
+        # create compound class instance
+        cmptype = self._cmptype_cls(self, datatype_name)
+        self._cmptypes[datatype_name] = cmptype
+        return cmptype
+
 
 class File(Group):
     def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, backend=None, **kwargs):
@@ -1260,7 +1523,8 @@ class File(Group):
         Parameters
         ----------
         path: path-like
-            Location of the netCDF4 file to be accessed.
+            Location of the netCDF4 file to be accessed, or an h5py File object,
+            or a Python file-like object (which should read/write bytes).
 
         mode: "r", "r+", "a", "w"
             A valid file access mode. Defaults to "r".
@@ -1299,6 +1563,10 @@ class File(Group):
 
         Datasets created with h5netcdf version 0.12.0 that are opened with
         newer versions of h5netcdf will continue to disable order tracker.
+
+        If an h5py File object is passed in, closing the h5netcdf wrapper will
+        not close the h5py File. In other cases, closing the h5netcdf File object
+        does close the underlying file.
         """
         # 2022/01/09
         # netCDF4 wants the track_order parameter to be true
@@ -1316,6 +1584,7 @@ class File(Group):
         track_order = kwargs.pop("track_order", track_order_default)
 
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
+        self._close_h5file = True
 
         backend = _parse_backend(backend, mode)
         self._backend = backend
@@ -1328,7 +1597,7 @@ class File(Group):
                 if kwargs:
                     warnings.warn('Kwargs to pyfive are ignored')
                 # mode can only be read, and that's the default
-                self._h5file = self._h5py.File(path)
+                self.__h5file = self._h5py.File(path)
                 self._preexisting_file = True
             except OSError:
                 # pyfive is readonly, we need to raise this error
@@ -1343,37 +1612,61 @@ class File(Group):
         else:
             try:
                 if isinstance(path, str):
-                    if (
+                    if kwargs.get("driver") == "h5pyd" or (
                         path.startswith(("http://", "https://", "hdf5://"))
                         and "driver" not in kwargs
                     ):
                         if no_h5pyd:
                             raise ImportError(
                                 "No module named 'h5pyd'. h5pyd is required for "
-                                f"opening urls with h5py backend: {path}"
+                                f"opening urls: {path}"
                             )
-                      
-                        try:
-                            with h5pyd.File(path, "r", **kwargs) as f:  # noqa
-                                pass
-                            self._preexisting_file = True
-                        except OSError:
-                            self._preexisting_file = False
+                        self._preexisting_file = mode in {"r", "r+", "a"}
+                        # remap "a" -> "r+" to check file existence
+                        # fallback to "w" if not
+                        _mode = mode
+                        if mode == "a":
+                            mode = "r+"
                         self._h5py = h5pyd
-                        self._h5file = self._h5py.File(
-                            path, mode, track_order=track_order, **kwargs
-                        )
+                        try:
+                            self.__h5file = self._h5py.File(
+                                path, mode, track_order=track_order, **kwargs
+                            )
+                            self._preexisting_file = mode != "w"
+                        except OSError:
+                            # if file does not exist, create it
+                            if _mode == "a":
+                                mode = "w"
+                                self.__h5file = self._h5py.File(
+                                    path, mode, track_order=track_order, **kwargs
+                                )
+                                self._preexisting_file = False
+                                msg = (
+                                    "Append mode for h5pyd now probes with 'r+' first and "
+                                    "only falls back to 'w' if the file is missing.\n"
+                                    "To silence this warning use 'r+' (open-existing) or 'w' "
+                                    "(create-new) directly."
+                                )
+                                warnings.warn(msg, UserWarning, stacklevel=2)
+                            else:
+                                raise
                     else:
                         self._preexisting_file = os.path.exists(path) and mode != "w"
                         self._h5py = h5py
-                        self._h5file = self._h5py.File(
+                        self.__h5file = self._h5py.File(
                             path, mode, track_order=track_order, **kwargs
                         )
+                elif isinstance(path, h5py.File):
+                    self._preexisting_file = mode in {"r", "r+", "a"}
+                    self._h5py = h5py
+                    self.__h5file = path
+                    # h5py File passed in: let the caller decide when to close it
+                    self._close_h5file = False
                 else:  # file-like object
                     self._preexisting_file = mode in {"r", "r+", "a"}
                     self._h5py = h5py
-                    self._h5file = self._h5py.File(
-                            path, mode, track_order=track_order, **kwargs
+                    self.__h5file = self._h5py.File(
+                        path, mode, track_order=track_order, **kwargs
                     )
             except Exception:
                 self._closed = True
@@ -1381,6 +1674,7 @@ class File(Group):
             else:
                 self._closed = False
 
+        self._filename = self._h5file.filename
         self._mode = mode
         self._writable = mode != "r"
         self._root_ref = weakref.ref(self)
@@ -1446,12 +1740,8 @@ class File(Group):
 
         if dtype == bool:  # noqa
             description = "boolean"
-        elif dtype == complex:  # noqa
-            description = "complex"
         elif self._h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
-        elif self._h5py.check_dtype(vlen=dtype) not in {None, str, bytes}:
-            description = "non-string variable length"
         else:
             description = None
 
@@ -1486,7 +1776,11 @@ class File(Group):
         if self._writable:
             # only write `_NCProperties` in newly created files
             if not self._preexisting_file and not self.invalid_netcdf:
-                _NC_PROPERTIES = f"version=2,h5netcdf={__version__},hdf5={self._h5py.version.hdf5_version},{self._h5py.__name__}={self._h5py.__version__}"
+                _NC_PROPERTIES = (
+                    f"version=2,h5netcdf={__version__},"
+                    f"hdf5={self._h5py.version.hdf5_version},"
+                    f"{self._h5py.__name__}={self._h5py.__version__}"
+                )
                 self.attrs._h5attrs["_NCProperties"] = np.array(
                     _NC_PROPERTIES,
                     dtype=self._h5py.string_dtype(
@@ -1510,10 +1804,18 @@ class File(Group):
 
     sync = flush
 
+    @property
+    def _h5file(self):
+        if self._closed:
+            raise ValueError(f"I/O operation on {self}: {self._filename!r}")
+        return self.__h5file
+
     def close(self):
         if not self._closed:
             self.flush()
-            self._h5file.close()
+            if self._close_h5file:
+                self._h5file.close()
+            self.__h5file = None
             self._closed = True
 
     __del__ = close
