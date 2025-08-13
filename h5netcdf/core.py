@@ -953,18 +953,7 @@ class Group(Mapping):
         if self._root._phony_dims_mode is not None:
             phony_dims = Counter()
 
-        pyfive_backend = isinstance(self._h5group, pyfive.Group)
-        for k in self._h5group:
-            #with warnings.catch_warnings(record=True) as wlist:
-            try:
-                v = self._h5group[k]
-            except Exception as e:
-                if pyfive_backend:
-                    warnings.warn(f'Skipping {k} - {e}')
-                    continue
-                else:
-                    raise
-
+        for k, v in self._h5group.items():
             if isinstance(v, self._root._h5py.Group):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
@@ -973,25 +962,19 @@ class Group(Mapping):
                 # add usertypes (enum, vlen, compound)
                 self._add_usertype(v)
             else:
-                try:
-                    if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
-                        # add dimension and retrieve size
-                        self._dimensions.add(k)
-                    else:
-                        if self._root._phony_dims_mode is not None:
-                            # check if malformed variable and raise
-                            if _unlabeled_dimension_mix(v) == "unlabeled":
-                                # if unscaled variable, get phony dimensions
-                                phony_dims |= Counter(v.shape)
+                if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
+                    # add dimension and retrieve size
+                    self._dimensions.add(k)
+                else:
+                    if self._root._phony_dims_mode is not None:
+                        # check if malformed variable and raise
+                        if _unlabeled_dimension_mix(v) == "unlabeled":
+                            # if unscaled variable, get phony dimensions
+                            phony_dims |= Counter(v.shape)
 
-                    if not _netcdf_dimension_but_not_variable(v):
-                        if isinstance(v, self._root._h5py.Dataset):
-                            self._variables.add(k)
-                except:
-                    if pyfive_backend:
-                        warnings.warn(f'Cannot read {k}')
-                    else:
-                        raise
+                if not _netcdf_dimension_but_not_variable(v):
+                    if isinstance(v, self._root._h5py.Dataset):
+                        self._variables.add(k)
 
         # iterate over found phony dimensions and create them
         if self._root._phony_dims_mode is not None:
