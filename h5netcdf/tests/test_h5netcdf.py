@@ -426,6 +426,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
 
     v = ds["foo"]
     assert v.name == "/foo"
+    print ('FILE:', tmp_netcdf)
     assert array_equal(v, np.ones((4, 5)))
     assert v.dtype == float
     assert v.dimensions == ("x", "y")

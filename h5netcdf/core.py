@@ -528,11 +528,13 @@ class BaseVariable(BaseObject):
         """
         # this is really painful as we have to iterate over all types
         # and check equality
-        usertype = self._parent._get_usertype_dict(self._h5type_identifier)
-        if usertype is not None:
-            for tid in usertype.values():
-                if self._h5datatype == tid._h5datatype:
-                    return tid
+        if self._backend not in (None, "pyfive"):
+            usertype = self._parent._get_usertype_dict(self._h5type_identifier)
+            if usertype is not None:
+                for tid in usertype.values():
+                    if self._h5datatype == tid._h5datatype:
+                        return tid
+
         return self.dtype
 
     def _get_padding(self, key):
