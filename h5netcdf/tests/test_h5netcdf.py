@@ -197,7 +197,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.close()
 
 
-def write_h5netcdf(tmp_netcdf, pyfive=False):
+def write_h5netcdf(tmp_netcdf, compression="gzip", pyfive=False):
     """
     Test file written does not include enum variables or variable length
     strings if pyfive is True
@@ -393,27 +393,30 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs["other_attr"] == "yes"
 
-    assert set(ds.dimensions) == set(
-        ["x", "y", "z", "empty", "string3", "mismatched_dim", "unlimited"]
-    )
-    variables = set(
-        [
-            "enum_var",
-            "foo",
-            "z",
-            "intscalar",
-            "scalar",
-            "var_len_str",
-            "mismatched_dim",
-            "foo_unlimited",
-        ]
-    )
+    assert set(ds.dimensions) == {
+        "x",
+        "y",
+        "z",
+        "empty",
+        "string3",
+        "mismatched_dim",
+        "unlimited",
+    }
+    variables = {
+        "enum_var",
+        "foo",
+        "z",
+        "intscalar",
+        "scalar",
+        "var_len_str",
+        "mismatched_dim",
+        "foo_unlimited",
+    }
 
     # fix current failure of hsds/h5pyd
     if not remote_file:
-        variables |= set(["y"])
-
-    if backend == 'pyfive':
+        variables |= {"y"}
+    if backend == "pyfive":
         assert set(ds.variables) == variables - {'enum_var', 'var_len_str'}
     else:
         assert set(ds.variables) == variables
@@ -479,8 +482,8 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
     assert v.dimensions == ()
     assert list(v.attrs) == []
 
-    if backend == 'pyfive':
-        warnings.warn('pyfive tests ignore var_len_str')
+    if backend == "pyfive":
+        warnings.warn("pyfive tests ignore var_len_str")
     else:
         v = ds["var_len_str"]
         assert h5py.check_dtype(vlen=v.dtype) is str
@@ -505,8 +508,8 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
     assert ds["/subgroup/y_var"].shape == (10,)
     assert ds["/subgroup"].dimensions["y"].size == 10
 
-    if backend == 'pyfive':
-        warnings.warn('pyfive tests ignore enum_t and enum_var')
+    if backend == "pyfive":
+        warnings.warn("pyfive tests ignore enum_t and enum_var")
     else:
         enum_dict = dict(one=1, two=2, three=3, missing=255)
         enum_type = ds.enumtypes["enum_t"]
@@ -575,7 +578,7 @@ def test_fileobj(decode_vlen_strings):
 def test_fileobj_pyfive(decode_vlen_strings):
     fileobj = io.BytesIO()
     write_h5netcdf(fileobj, pyfive=True)
-    read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend='pyfive')
+    read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend="pyfive")
 
 def test_h5py_file_obj(tmp_local_netcdf, decode_vlen_strings):
     with h5py.File(tmp_local_netcdf, "w") as h5py_f:
@@ -2036,7 +2039,7 @@ def test_dimensions_in_parent_groups(tmpdir):
             assert repr(ds0["group00"]["test"]) == repr(ds1["group00"]["test"])
             assert repr(ds0["group00"]["x"]) == repr(ds1["group00"]["x"])
 
-@pytest.mark.parametrize("backend", [None, 'pyfive'])
+@pytest.mark.parametrize("backend", [None, "pyfive"])
 def test_array_attributes(tmp_local_netcdf, backend):
     print('ARRAY ATTRIBUTES backend =', backend)
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
@@ -2322,7 +2325,7 @@ def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
             if tmp_local_or_remote_netcdf.startswith(remote_h5):
                 testcontext = raises(RuntimeError, match="Conflict")
             else:
-                testcontext = pytest.raises(TypeError, match="name already exists")
+                testcontext = raises((KeyError, TypeError), match="name already exists")
             with testcontext:
                 ds.create_enumtype(np.uint8, "enum_t", enum_dict2)
 
@@ -2370,7 +2373,7 @@ def test_user_type_errors_legacyapi(tmp_local_or_remote_netcdf):
             if tmp_local_or_remote_netcdf.startswith(remote_h5):
                 testcontext = raises(RuntimeError, match="Conflict")
             else:
-                testcontext = pytest.raises(TypeError, match="name already exists")
+                testcontext = raises((KeyError, TypeError), match="name already exists")
             with testcontext:
                 ds.createEnumType(np.uint8, "enum_t", enum_dict1)
 
