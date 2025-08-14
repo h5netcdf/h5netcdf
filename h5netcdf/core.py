@@ -8,7 +8,6 @@ from collections.abc import Mapping
 
 import numpy as np
 from packaging import version
-import logging
 
 from . import __version__
 from .attrs import Attributes
@@ -61,6 +60,7 @@ def _invalid_netcdf_feature(feature, allow):
             "h5netcdf unless invalid_netcdf=True."
         )
         raise CompatibilityError(msg)
+
 
 def _transform_1d_boolean_indexers(key):
     """Find and transform 1D boolean indexers to int"""
@@ -985,6 +985,11 @@ class Group(Mapping):
             elif isinstance(v, self._root._h5py.Datatype):
                 # add usertypes (enum, vlen, compound)
                 self._add_usertype(v)
+            # this is just for now, reminding the user that the file contains
+            # data which can't be accessed atm
+            elif v is None:
+                msg = f"{backend!r} backend: Found unsupported type {k!r}"
+                warnings.warn(msg, UserWarning, stacklevel=2)
             else:
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
                     # add dimension and retrieve size
@@ -1526,7 +1531,16 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, backend=None, skip_unsupported_hdf5_features=False, **kwargs):
+    def __init__(
+        self,
+        path,
+        mode="r",
+        invalid_netcdf=False,
+        phony_dims=None,
+        backend=None,
+        skip_unsupported_hdf5_features=False,
+        **kwargs,
+    ):
         """NetCDF4 file constructor.
 
         Parameters
@@ -1628,9 +1642,13 @@ class File(Group):
         else:
             try:
                 if isinstance(path, str):
-                    if kwargs.get("driver") == "h5pyd" or (
-                        path.startswith(("http://", "https://", "hdf5://"))
-                        and "driver" not in kwargs
+                    if (
+                        kwargs.get("driver") == "h5pyd"
+                        or kwargs.get("backend") == "h5pyd"
+                        or (
+                            path.startswith(("http://", "https://", "hdf5://"))
+                            and "driver" not in kwargs
+                        )
                     ):
                         if no_h5pyd:
                             raise ImportError(

@@ -30,6 +30,12 @@ try:
 except ImportError:
     without_h5pyd = True
 
+try:
+    import pyfive  # noqa: F401
+
+    without_pyfive = False
+except ImportError:
+    without_pyfive = True
 
 remote_h5 = ("http:", "hdf5:")
 python_version = version.parse(".".join(map(str, sys.version_info[:3])))
@@ -73,6 +79,15 @@ def decode_vlen_strings(request):
 
 @pytest.fixture(params=[netCDF4, legacyapi])
 def netcdf_write_module(request):
+    return request.param
+
+
+@pytest.fixture(params=["h5py", "pyfive", "h5pyd"])
+def backend(request):
+    if (request.param == "h5pyd" and without_h5pyd) or (
+        request.param == "pyfive" and without_pyfive
+    ):
+        pytest.skip(f"Module {request.param} not available!")
     return request.param
 
 
@@ -291,7 +306,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend=None):
         "foo_unlimited",
     }
     if backend == "pyfive":
-        assert set(ds.variables) == variables - {'enum_var', 'var_len_str'}
+        assert set(ds.variables) == variables - {"enum_var"}
     else:
         assert set(ds.variables) == variables
 
@@ -394,7 +409,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend=None):
     ds.close()
 
 
-def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py'):
+def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py"):
     remote_file = isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5)
     ds = h5netcdf.File(tmp_netcdf, "r", **decode_vlen_strings, backend=backend)
     assert ds.name == "/"
@@ -428,7 +443,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
     if not remote_file:
         variables |= {"y"}
     if backend == "pyfive":
-        assert set(ds.variables) == variables - {'enum_var', 'var_len_str'}
+        assert set(ds.variables) == variables - {"enum_var"}
     else:
         assert set(ds.variables) == variables
 
@@ -529,36 +544,38 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
     ds.close()
 
 
-def roundtrip_legacy_netcdf(tmp_netcdf, read_module, write_module):
+def roundtrip_legacy_netcdf(tmp_netcdf, read_module, write_module, backend):
     write_legacy_netcdf(tmp_netcdf, write_module)
-    read_legacy_netcdf(tmp_netcdf, read_module, write_module)
+    read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend)
 
 
 def test_write_legacyapi_read_netCDF4(tmp_local_netcdf):
-    roundtrip_legacy_netcdf(tmp_local_netcdf, netCDF4, legacyapi)
+    roundtrip_legacy_netcdf(tmp_local_netcdf, netCDF4, legacyapi, backend=None)
 
 
-def test_roundtrip_h5netcdf_legacyapi(tmp_local_netcdf):
-    roundtrip_legacy_netcdf(tmp_local_netcdf, legacyapi, legacyapi)
+def test_roundtrip_h5netcdf_legacyapi(tmp_local_netcdf, backend):
+    roundtrip_legacy_netcdf(tmp_local_netcdf, legacyapi, legacyapi, backend)
 
 
-def test_write_netCDF4_read_legacyapi(tmp_local_netcdf):
-    roundtrip_legacy_netcdf(tmp_local_netcdf, legacyapi, netCDF4)
+def test_write_netCDF4_read_legacyapi(tmp_local_netcdf, backend):
+    roundtrip_legacy_netcdf(tmp_local_netcdf, legacyapi, netCDF4, backend)
 
 
-def test_write_h5netcdf_read_legacyapi(tmp_local_netcdf):
+def test_write_h5netcdf_read_legacyapi(tmp_local_netcdf, backend):
     write_h5netcdf(tmp_local_netcdf)
-    read_legacy_netcdf(tmp_local_netcdf, legacyapi, h5netcdf)
+    read_legacy_netcdf(tmp_local_netcdf, legacyapi, h5netcdf, backend)
 
 
 def test_write_h5netcdf_read_netCDF4(tmp_local_netcdf):
     write_h5netcdf(tmp_local_netcdf)
-    read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf)
+    read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf, backend=None)
 
 
-def test_roundtrip_h5netcdf(tmp_local_or_remote_netcdf, decode_vlen_strings):
+def test_roundtrip_h5netcdf(tmp_local_or_remote_netcdf, decode_vlen_strings, backend):
     write_h5netcdf(tmp_local_or_remote_netcdf)
-    read_h5netcdf(tmp_local_or_remote_netcdf, h5netcdf, decode_vlen_strings)
+    read_h5netcdf(
+        tmp_local_or_remote_netcdf, h5netcdf, decode_vlen_strings, backend=backend
+    )
 
 
 def test_write_compression_as_zlib(tmp_local_netcdf):
@@ -566,14 +583,14 @@ def test_write_compression_as_zlib(tmp_local_netcdf):
     read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf)
 
 
-def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):
+def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings, backend):
     write_legacy_netcdf(tmp_local_netcdf, netCDF4)
-    read_h5netcdf(tmp_local_netcdf, netCDF4, decode_vlen_strings)
+    read_h5netcdf(tmp_local_netcdf, netCDF4, decode_vlen_strings, backend=backend)
 
 
-def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):
+def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings, backend):
     write_legacy_netcdf(tmp_local_netcdf, legacyapi)
-    read_h5netcdf(tmp_local_netcdf, legacyapi, decode_vlen_strings)
+    read_h5netcdf(tmp_local_netcdf, legacyapi, decode_vlen_strings, backend=backend)
 
 
 def test_fileobj(decode_vlen_strings):
@@ -584,24 +601,17 @@ def test_fileobj(decode_vlen_strings):
     write_h5netcdf(fileobj)
     read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings)
 
+
 def test_fileobj_pyfive(decode_vlen_strings):
     fileobj = io.BytesIO()
-    write_h5netcdf(fileobj, pyfive=True)
+    write_h5netcdf(fileobj)
     read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend="pyfive")
+
 
 def test_fileobj_pyfive_legacyapi():
     fileobj = io.BytesIO()
-    write_h5netcdf(fileobj, pyfive=True)
-    read_legacy_netcdf(fileobj, legacyapi, legacyapi,  backend="pyfive")
-
-def test_h5py_file_obj(tmp_local_netcdf, decode_vlen_strings):
-    with h5py.File(tmp_local_netcdf, "w") as h5py_f:
-        write_h5netcdf(h5py_f)
-        read_h5netcdf(h5py_f, h5netcdf, decode_vlen_strings)
-
-        # The h5py File object should still be open & usable, although the
-        # h5netcdf file object has been closed.
-        assert isinstance(h5py_f["foo"], h5py.Dataset)
+    write_h5netcdf(fileobj)
+    read_legacy_netcdf(fileobj, legacyapi, legacyapi, backend="pyfive")
 
 
 def test_h5py_file_obj(tmp_local_netcdf, decode_vlen_strings):
@@ -1531,12 +1541,19 @@ def create_h5netcdf_dimensions(ds, idx):
     g.variables["ship"][0] = list("Skiff     ")
 
 
-def check_netcdf_dimensions(tmp_netcdf, write_module, read_module):
+def check_netcdf_dimensions(tmp_netcdf, write_module, read_module, backend):
+    print("read_module:", backend)
+    print("backend:", backend)
+    open_kwargs = {}
     if read_module in [legacyapi, netCDF4]:
         opener = read_module.Dataset
     else:
         opener = h5netcdf.File
-    with opener(tmp_netcdf, "r") as ds:
+    if backend is not None:
+        open_kwargs.update(backend=backend)
+    with opener(tmp_netcdf, "r", **open_kwargs) as ds:
+        if backend is not None:
+            assert ds._h5py.__name__ == backend
         for i, grp in enumerate(["dimtest0", "dimtest1"]):
             g = ds.groups[grp]
             assert set(g.dimensions) == {
@@ -1601,30 +1618,10 @@ def write_dimensions(tmp_netcdf, write_module):
             create_h5netcdf_dimensions(ds, 1)
 
 
-@pytest.fixture(
-    params=[
-        [netCDF4, netCDF4],
-        [legacyapi, legacyapi],
-        [h5netcdf, h5netcdf],
-        [legacyapi, netCDF4],
-        [netCDF4, legacyapi],
-        [h5netcdf, netCDF4],
-        [netCDF4, h5netcdf],
-        [legacyapi, h5netcdf],
-        [h5netcdf, legacyapi],
-    ]
-)
-def read_write_matrix(request):
-    print("write module:", request.param[0].__name__)
-    print("read_module:", request.param[1].__name__)
-    return request.param
-
-
-def test_dimensions(tmp_local_netcdf, read_write_matrix):
-    write_dimensions(tmp_local_netcdf, read_write_matrix[0])
-    check_netcdf_dimensions(
-        tmp_local_netcdf, read_write_matrix[0], read_write_matrix[1]
-    )
+def test_dimensions(tmp_local_netcdf, read_write_matrix, backend_module):
+    write_module, read_module = read_write_matrix
+    write_dimensions(tmp_local_netcdf, write_module)
+    check_netcdf_dimensions(tmp_local_netcdf, write_module, read_module, backend_module)
 
 
 def test_no_circular_references(tmp_local_or_remote_netcdf):
@@ -2063,7 +2060,7 @@ def test_dimensions_in_parent_groups(tmpdir):
             assert repr(ds0["group00"]["test"]) == repr(ds1["group00"]["test"])
             assert repr(ds0["group00"]["x"]) == repr(ds1["group00"]["x"])
 
-@pytest.mark.parametrize("backend", [None, "pyfive"])
+
 def test_array_attributes(tmp_local_netcdf, backend):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         dt = h5py.string_dtype("utf-8")
