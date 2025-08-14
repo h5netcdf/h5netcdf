@@ -1604,7 +1604,6 @@ class File(Group):
 
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         self._close_h5file = True
-        self._close_h5file = True
         self._skip_unsupported_hdf5_features = bool(skip_unsupported_hdf5_features)
 
         backend = _parse_backend(backend, mode)
