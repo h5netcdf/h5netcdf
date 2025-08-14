@@ -2206,7 +2206,7 @@ def test_array_attributes(tmp_local_netcdf, backend):
         np.testing.assert_equal(ds.attrs["empty_list"], np.array([]))
         np.testing.assert_equal(ds.attrs["empty_array"], np.array([]))
 
-    with netCDF4.Dataset(tmp_local_netcdf, mode="r", backend=backend) as ds:
+    with netCDF4.Dataset(tmp_local_netcdf, mode="r") as ds:
         assert ds.unicode == unicode
         assert ds.unicode_0dim == unicode
         assert ds.unicode_1dim == unicode
