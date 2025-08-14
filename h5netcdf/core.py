@@ -1576,7 +1576,6 @@ class File(Group):
 
         if backend == "pyfive":
             self._h5py = pyfive
-            logging.info(f"h5netcdf running with {pyfive.__version__}")
             try:
                 # We can ignore track order for now (and maybe for reading in general)?
                 if kwargs:
