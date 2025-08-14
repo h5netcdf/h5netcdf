@@ -950,7 +950,34 @@ class Group(Mapping):
         if self._root._phony_dims_mode is not None:
             phony_dims = Counter()
 
-        for k, v in self._h5group.items():
+        skip_unsupported_hdf5_features = getattr(
+            parent, "skip_unsupported_hdf5_features", False
+        )
+        backend = getattr(parent, "backend", None)
+
+        for k in self._h5group:
+            if backend == "pyfive":
+                # Some backends might have unsupported HDF5
+                # features. Either skip over them, or fail.
+                try:
+                    v = self._h5group[k]
+                except Exception as e:
+                    if skip_unsupported_hdf5_features:
+                        warnings.warn(
+                            f"{backend} backend: Skipping unsupported type "
+                            "of HDF5 variable or dimension {k!r}"
+                        )
+                        continue
+
+                    e.add_note(
+                        f"{backend} backend: Found unsupported type of HDF5 "
+                        f"variable or dimension {k!r}. Consider setting "
+                        "skip_unsupported_hdf5_features=True"
+                    )
+                    raise e
+            else:
+                v = self._h5group[k]
+
             if isinstance(v, self._root._h5py.Group):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
@@ -1499,7 +1526,7 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, backend=None, **kwargs):
+    def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, backend=None, skip_unsupported_hdf5_features=False, **kwargs):
         """NetCDF4 file constructor.
 
         Parameters
@@ -1523,8 +1550,13 @@ class File(Group):
             The default backend is h5py (backend=None, or backend=h5py), but
             for reading data, the pure python pyfive backend is available.
 
-        track_order: bool
+        skip_unsupported_hdf5_features: bool
+            If True, then skip over types of HDF5 variables or
+            dimensions that are not supported by the backend. If False
+            (the default) then an exception is raised when such a
+            feature is found in the file.
 
+        track_order: bool
             Corresponds to the h5py.File `track_order` parameter. Unless
             specified, the library will choose a default that enhances
             compatibility with netCDF4-c. If h5py version 3.7.0 or greater is
@@ -1572,6 +1604,8 @@ class File(Group):
 
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         self._close_h5file = True
+        self._close_h5file = True
+        self._skip_unsupported_hdf5_features = bool(skip_unsupported_hdf5_features)
 
         backend = _parse_backend(backend, mode)
         self._backend = backend
@@ -1760,6 +1794,18 @@ class File(Group):
 
         """
         return self._backend
+
+    @property
+    def skip_unsupported_hdf5_features(self) -> bool:
+        """Whether to skip unsupported HDF5 variable or dimension types.
+
+        If True, then types of HDF5 variables or dimensions that are
+        not supported by the backend are skipped over. If False (the
+        default) then an exception is raised when such a feature is
+        found in the file.
+
+        """
+        return self._skip_unsupported_hdf5_features
 
     def flush(self):
         if self._writable:
