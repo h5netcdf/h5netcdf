@@ -1818,7 +1818,7 @@ class File(Group):
             return f"<Closed {self._cls_name}>"
         header = (
             f"<{self._cls_name} "
-            f"{self.filename.split('/')[-1]!r} "
+            f"{os.path.basename(self.filename)!r} "
             f"(mode {self.mode}, backend {self.backend})>"
         )
         return "\n".join([header] + self._repr_body())
