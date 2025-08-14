@@ -155,9 +155,6 @@ def _parse_backend(backend, mode):
     if backend == "h5py" and no_h5py:
         raise ImportError("No module named 'h5py', backend not available")
 
-    if mode != "r" and backend == "pyfive":
-        raise ValueError("'pyfive' backend can only be used with mode='r'")
-
     return backend
 
 
@@ -1527,6 +1524,7 @@ class File(Group):
             for reading data, the pure python pyfive backend is available.
 
         track_order: bool
+
             Corresponds to the h5py.File `track_order` parameter. Unless
             specified, the library will choose a default that enhances
             compatibility with netCDF4-c. If h5py version 3.7.0 or greater is
@@ -1535,10 +1533,13 @@ class File(Group):
             append to a file. If an older version of h5py is detected, this
             parameter will be set to False by default to work around a bug in
             h5py limiting the number of attributes for a given variable.
+            Ignored when for the 'pyfive' backend.
 
         **kwargs:
-            Additional keyword arguments to be passed to the ``h5py.File``
-            constructor.
+            Additional keyword arguments to be passed to the backend
+            file constructor, which is ``h5py.File`` for the 'h5py'
+            backend (the default), or ``pyfive.File`` for the 'pyfive'
+            backend.
 
         Notes
         -----
@@ -1552,6 +1553,7 @@ class File(Group):
         If an h5py File object is passed in, closing the h5netcdf wrapper will
         not close the h5py File. In other cases, closing the h5netcdf File object
         does close the underlying file.
+
         """
         # 2022/01/09
         # netCDF4 wants the track_order parameter to be true
@@ -1578,10 +1580,7 @@ class File(Group):
             self._h5py = pyfive
             try:
                 # We can ignore track order for now (and maybe for reading in general)?
-                if kwargs:
-                    warnings.warn('Kwargs to pyfive are ignored')
-                # mode can only be read, and that's the default
-                self.__h5file = self._h5py.File(path)
+                self.__h5file = self._h5py.File(path, mode, **kwargs)
                 self._preexisting_file = True
             except OSError:
                 # pyfive is readonly, we need to raise this error
