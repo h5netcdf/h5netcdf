@@ -1579,7 +1579,7 @@ class File(Group):
         if backend == "pyfive":
             self._h5py = pyfive
             try:
-                # We can ignore track order for now (and maybe for reading in general)?
+                # We can ignore track_order because pyfive read-only
                 self.__h5file = self._h5py.File(path, mode, **kwargs)
                 self._preexisting_file = True
             except OSError:
