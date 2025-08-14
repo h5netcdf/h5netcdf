@@ -1753,7 +1753,7 @@ class File(Group):
         return self
 
     @property
-    def backend(self):
+    def backend(self) -> str:
         """The HDF5 backend."""
         return self._backend
 
