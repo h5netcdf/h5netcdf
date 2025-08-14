@@ -14,7 +14,6 @@ import numpy as np
 import pytest
 from packaging import version
 from pytest import raises, warns
-import warnings
 
 import h5netcdf
 from h5netcdf import legacyapi
@@ -366,9 +365,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend=None):
     assert v.dimensions == ()
     assert v.ncattrs() == []
 
-    if backend == "pyfive":
-        warnings.warn("pyfive tests ignore var_len_str")
-    else:
+    if backend != "pyfive":
+        # pyfive tests ignore var_len_str
         v = ds.variables["var_len_str"]
         assert v.dtype == str
         assert v[0] == _vlen_string
@@ -385,9 +383,8 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend=None):
     assert v.shape == (10,)
     assert "y" in ds.groups["subgroup"].dimensions
 
-    if backend == "pyfive":
-        warnings.warn("pyfive tests ignore enum_t and enum_var")
-    else:
+    if backend != "pyfive":
+        # pyfive tests ignore enum_t and enum_var"
         enum_dict = dict(one=1, two=2, three=3, missing=255)
         enum_type = ds.enumtypes["enum_t"]
         assert enum_type.enum_dict == enum_dict
@@ -496,9 +493,8 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
     assert v.dimensions == ()
     assert list(v.attrs) == []
 
-    if backend == "pyfive":
-        warnings.warn("pyfive tests ignore var_len_str")
-    else:
+    if backend != "pyfive":
+        # pyfive tests ignore var_len_str
         v = ds["var_len_str"]
         assert h5py.check_dtype(vlen=v.dtype) is str
         if getattr(ds, "decode_vlen_strings", True):
@@ -522,9 +518,8 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py')
     assert ds["/subgroup/y_var"].shape == (10,)
     assert ds["/subgroup"].dimensions["y"].size == 10
 
-    if backend == "pyfive":
-        warnings.warn("pyfive tests ignore enum_t and enum_var")
-    else:
+    if backend != "pyfive":
+        # pyfive tests ignore enum_t and enum_var
         enum_dict = dict(one=1, two=2, three=3, missing=255)
         enum_type = ds.enumtypes["enum_t"]
         assert enum_type.enum_dict == enum_dict
