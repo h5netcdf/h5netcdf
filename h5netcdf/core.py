@@ -1754,7 +1754,13 @@ class File(Group):
 
     @property
     def backend(self) -> str:
-        """The HDF5 backend."""
+        """The HDF5 backend.
+
+        Returns either "h5py" (the backend is h5py, built on the HDF5
+        C library) or "pyfive" (the backend is pyfive, which is pure
+        Python).
+
+        """
         return self._backend
 
     def flush(self):
