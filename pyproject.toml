@@ -42,7 +42,7 @@ repository = "https://github.com/h5netcdf/h5netcdf"
 changelog = "https://github.com/h5netcdf/h5netcdf/blob/main/CHANGELOG.rst"
 
 [project.optional-dependencies]
-test = ["netCDF4", "pytest"]
+test = ["netCDF4", "pytest", "pyfive>=0.5.0"]
 
 [tool.setuptools.dynamic]
 readme = { file = ["README.rst"]}

@@ -1,12 +1,11 @@
 # For details on how netCDF4 builds on HDF5:
 # https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec
-import os.path
+import os
 import warnings
 import weakref
 from collections import ChainMap, Counter, OrderedDict, defaultdict
 from collections.abc import Mapping
 
-import h5py
 import numpy as np
 from packaging import version
 
@@ -16,11 +15,25 @@ from .dimensions import Dimension, Dimensions
 from .utils import Frozen
 
 try:
+    import h5py
+except ImportError:
+    no_h5py = True
+else:
+    no_h5py = False
+
+try:
     import h5pyd
 except ImportError:
     no_h5pyd = True
 else:
     no_h5pyd = False
+
+try:
+    import pyfive
+except ImportError:
+    no_pyfive = True
+else:
+    no_pyfive = False
 
 
 NOT_A_VARIABLE = b"This is a netCDF dimension but not a netCDF variable."
@@ -108,11 +121,49 @@ def _expanded_indexer(key, ndim):
     return key[k1] + res_dims + key[k2]
 
 
+def _parse_backend(backend, mode):
+    """Parse the 'backend' keyword to File.__init__.
+
+    Parameters
+    ----------
+    backend : str
+        The backend parameter.
+
+    mode : "r", "r+", "a", "w"
+        A valid file access mode. Defaults to "r".
+
+    Returns
+    -------
+    backend: str
+        The backend end that is going to used. If the input backend is
+        None, then a vlaue of the H5NETCDF_BACKEND environment
+        variable is used.
+
+    """
+    if backend is None:
+        backend = os.environ.get("H5NETCDF_BACKEND", "h5py")
+
+    if backend not in ("pyfive", "h5py"):
+        raise ValueError(
+            f"Unknown backend {backend!r} - valid options are: "
+            "None, 'pyfive', 'h5py'"
+        )
+
+    if backend == "pyfive" and no_pyfive:
+        raise ImportError("No module named 'pyfive', backend not available")
+
+    if backend == "h5py" and no_h5py:
+        raise ImportError("No module named 'h5py', backend not available")
+
+    return backend
+
+
 class BaseObject:
     def __init__(self, parent, name):
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
+        self._backend = getattr(parent, "_backend", None)
 
     @property
     def _parent(self):
@@ -474,11 +525,13 @@ class BaseVariable(BaseObject):
         """
         # this is really painful as we have to iterate over all types
         # and check equality
-        usertype = self._parent._get_usertype_dict(self._h5type_identifier)
-        if usertype is not None:
-            for tid in usertype.values():
-                if self._h5datatype == tid._h5datatype:
-                    return tid
+        if self._backend not in (None, "pyfive"):
+            usertype = self._parent._get_usertype_dict(self._h5type_identifier)
+            if usertype is not None:
+                for tid in usertype.values():
+                    if self._h5datatype == tid._h5datatype:
+                        return tid
+
         return self.dtype
 
     def _get_padding(self, key):
@@ -532,7 +585,11 @@ class BaseVariable(BaseObject):
         if getattr(self._root, "decode_vlen_strings", False):
             string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
             if string_info and string_info.length is None:
-                return self._h5ds.asstr()[key]
+                if self._backend == "pyfive":
+                    # pyfive backend has already dealt with strings
+                    return self._h5ds[key]
+                else:
+                    return self._h5ds.asstr()[key]
 
         # get padding
         padding = self._get_padding(key)
@@ -893,7 +950,34 @@ class Group(Mapping):
         if self._root._phony_dims_mode is not None:
             phony_dims = Counter()
 
-        for k, v in self._h5group.items():
+        skip_unsupported_hdf5_features = getattr(
+            parent, "skip_unsupported_hdf5_features", False
+        )
+        backend = getattr(parent, "backend", None)
+
+        for k in self._h5group:
+            if backend == "pyfive":
+                # Some backends might have unsupported HDF5
+                # features. Either skip over them, or fail.
+                try:
+                    v = self._h5group[k]
+                except Exception as e:
+                    if skip_unsupported_hdf5_features:
+                        warnings.warn(
+                            f"{backend} backend: Skipping unsupported type "
+                            "of HDF5 variable or dimension {k!r}"
+                        )
+                        continue
+
+                    e.add_note(
+                        f"{backend} backend: Found unsupported type of HDF5 "
+                        f"variable or dimension {k!r}. Consider setting "
+                        "skip_unsupported_hdf5_features=True"
+                    )
+                    raise e
+            else:
+                v = self._h5group[k]
+
             if isinstance(v, self._root._h5py.Group):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
@@ -901,6 +985,11 @@ class Group(Mapping):
             elif isinstance(v, self._root._h5py.Datatype):
                 # add usertypes (enum, vlen, compound)
                 self._add_usertype(v)
+            # this is just for now, reminding the user that the file contains
+            # data which can't be accessed atm
+            elif v is None:
+                msg = f"{backend!r} backend: Found unsupported type {k!r}"
+                warnings.warn(msg, UserWarning, stacklevel=2)
             else:
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
                     # add dimension and retrieve size
@@ -1442,7 +1531,16 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, **kwargs):
+    def __init__(
+        self,
+        path,
+        mode="r",
+        invalid_netcdf=False,
+        phony_dims=None,
+        backend=None,
+        skip_unsupported_hdf5_features=False,
+        **kwargs,
+    ):
         """NetCDF4 file constructor.
 
         Parameters
@@ -1462,6 +1560,16 @@ class File(Group):
         phony_dims: 'sort', 'access'
             See :ref:`phony dims` for more details.
 
+        backend: 'pyfive','h5py' or None
+            The default backend is h5py (backend=None, or backend=h5py), but
+            for reading data, the pure python pyfive backend is available.
+
+        skip_unsupported_hdf5_features: bool
+            If True, then skip over types of HDF5 variables or
+            dimensions that are not supported by the backend. If False
+            (the default) then an exception is raised when such a
+            feature is found in the file.
+
         track_order: bool
             Corresponds to the h5py.File `track_order` parameter. Unless
             specified, the library will choose a default that enhances
@@ -1471,10 +1579,13 @@ class File(Group):
             append to a file. If an older version of h5py is detected, this
             parameter will be set to False by default to work around a bug in
             h5py limiting the number of attributes for a given variable.
+            Ignored when for the 'pyfive' backend.
 
         **kwargs:
-            Additional keyword arguments to be passed to the ``h5py.File``
-            constructor.
+            Additional keyword arguments to be passed to the backend
+            file constructor, which is ``h5py.File`` for the 'h5py'
+            backend (the default), or ``pyfive.File`` for the 'pyfive'
+            backend.
 
         Notes
         -----
@@ -1488,6 +1599,7 @@ class File(Group):
         If an h5py File object is passed in, closing the h5netcdf wrapper will
         not close the h5py File. In other cases, closing the h5netcdf File object
         does close the underlying file.
+
         """
         # 2022/01/09
         # netCDF4 wants the track_order parameter to be true
@@ -1506,69 +1618,95 @@ class File(Group):
 
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         self._close_h5file = True
-        try:
-            if isinstance(path, str):
-                if kwargs.get("driver") == "h5pyd" or (
-                    path.startswith(("http://", "https://", "hdf5://"))
-                    and "driver" not in kwargs
-                ):
-                    if no_h5pyd:
-                        raise ImportError(
-                            "No module named 'h5pyd'. h5pyd is required for "
-                            f"opening urls: {path}"
+        self._skip_unsupported_hdf5_features = bool(skip_unsupported_hdf5_features)
+
+        backend = _parse_backend(backend, mode)
+        self._backend = backend
+
+        if backend == "pyfive":
+            self._h5py = pyfive
+            try:
+                # We can ignore track_order because pyfive read-only
+                self.__h5file = self._h5py.File(path, mode, **kwargs)
+                self._preexisting_file = True
+            except OSError:
+                # pyfive is readonly, we need to raise this error
+                self._closed = True
+                raise
+            except Exception:
+                self._closed = True
+                raise
+            else:
+                self._closed = False
+
+        else:
+            try:
+                if isinstance(path, str):
+                    if (
+                        kwargs.get("driver") == "h5pyd"
+                        or kwargs.get("backend") == "h5pyd"
+                        or (
+                            path.startswith(("http://", "https://", "hdf5://"))
+                            and "driver" not in kwargs
                         )
-                    self._preexisting_file = mode in {"r", "r+", "a"}
-                    # remap "a" -> "r+" to check file existence
-                    # fallback to "w" if not
-                    _mode = mode
-                    if mode == "a":
-                        mode = "r+"
-                    self._h5py = h5pyd
-                    try:
-                        self.__h5file = self._h5py.File(
-                            path, mode, track_order=track_order, **kwargs
-                        )
-                        self._preexisting_file = mode != "w"
-                    except OSError:
-                        # if file does not exist, create it
-                        if _mode == "a":
-                            mode = "w"
+                    ):
+                        if no_h5pyd:
+                            raise ImportError(
+                                "No module named 'h5pyd'. h5pyd is required for "
+                                f"opening urls: {path}"
+                            )
+                        self._preexisting_file = mode in {"r", "r+", "a"}
+                        # remap "a" -> "r+" to check file existence
+                        # fallback to "w" if not
+                        _mode = mode
+                        if mode == "a":
+                            mode = "r+"
+                        self._h5py = h5pyd
+                        try:
                             self.__h5file = self._h5py.File(
                                 path, mode, track_order=track_order, **kwargs
                             )
-                            self._preexisting_file = False
-                            msg = (
-                                "Append mode for h5pyd now probes with 'r+' first and "
-                                "only falls back to 'w' if the file is missing.\n"
-                                "To silence this warning use 'r+' (open-existing) or 'w' "
-                                "(create-new) directly."
-                            )
-                            warnings.warn(msg, UserWarning, stacklevel=2)
-                        else:
-                            raise
-                else:
-                    self._preexisting_file = os.path.exists(path) and mode != "w"
+                            self._preexisting_file = mode != "w"
+                        except OSError:
+                            # if file does not exist, create it
+                            if _mode == "a":
+                                mode = "w"
+                                self.__h5file = self._h5py.File(
+                                    path, mode, track_order=track_order, **kwargs
+                                )
+                                self._preexisting_file = False
+                                msg = (
+                                    "Append mode for h5pyd now probes with 'r+' first and "
+                                    "only falls back to 'w' if the file is missing.\n"
+                                    "To silence this warning use 'r+' (open-existing) or 'w' "
+                                    "(create-new) directly."
+                                )
+                                warnings.warn(msg, UserWarning, stacklevel=2)
+                            else:
+                                raise
+                    else:
+                        self._preexisting_file = os.path.exists(path) and mode != "w"
+                        self._h5py = h5py
+                        self.__h5file = self._h5py.File(
+                            path, mode, track_order=track_order, **kwargs
+                        )
+                elif isinstance(path, h5py.File):
+                    self._preexisting_file = mode in {"r", "r+", "a"}
+                    self._h5py = h5py
+                    self.__h5file = path
+                    # h5py File passed in: let the caller decide when to close it
+                    self._close_h5file = False
+                else:  # file-like object
+                    self._preexisting_file = mode in {"r", "r+", "a"}
                     self._h5py = h5py
                     self.__h5file = self._h5py.File(
                         path, mode, track_order=track_order, **kwargs
                     )
-            elif isinstance(path, h5py.File):
-                self._preexisting_file = mode in {"r", "r+", "a"}
-                self._h5py = h5py
-                self.__h5file = path
-                # h5py File passed in: let the caller decide when to close it
-                self._close_h5file = False
-            else:  # file-like object
-                self._preexisting_file = mode in {"r", "r+", "a"}
-                self._h5py = h5py
-                self.__h5file = self._h5py.File(
-                    path, mode, track_order=track_order, **kwargs
-                )
-        except Exception:
-            self._closed = True
-            raise
-        else:
-            self._closed = False
+            except Exception:
+                self._closed = True
+                raise
+            else:
+                self._closed = False
 
         self._filename = self._h5file.filename
         self._mode = mode
@@ -1663,6 +1801,29 @@ class File(Group):
     def _root(self):
         return self
 
+    @property
+    def backend(self) -> str:
+        """The HDF5 backend.
+
+        Returns either "h5py" (the backend is h5py, built on the HDF5
+        C library) or "pyfive" (the backend is pyfive, which is pure
+        Python).
+
+        """
+        return self._backend
+
+    @property
+    def skip_unsupported_hdf5_features(self) -> bool:
+        """Whether to skip unsupported HDF5 variable or dimension types.
+
+        If True, then types of HDF5 variables or dimensions that are
+        not supported by the backend are skipped over. If False (the
+        default) then an exception is raised when such a feature is
+        found in the file.
+
+        """
+        return self._skip_unsupported_hdf5_features
+
     def flush(self):
         if self._writable:
             # only write `_NCProperties` in newly created files
@@ -1723,7 +1884,9 @@ class File(Group):
         if self._closed:
             return f"<Closed {self._cls_name}>"
         header = (
-            f"<{self._cls_name} {os.path.basename(self.filename)!r} (mode {self.mode})>"
+            f"<{self._cls_name} "
+            f"{os.path.basename(self.filename)!r} "
+            f"(mode {self.mode}, backend {self.backend})>"
         )
         return "\n".join([header] + self._repr_body())
 
