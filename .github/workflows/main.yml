@@ -60,7 +60,8 @@ jobs:
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy=${{ matrix.numpy-version }}
-          pyfive
+    - name: Install pyfive from kmuehlbauer GitHub
+      run: python -m pip install git+https://github.com/kmuehlbauer/pyfive.git@handle-not-implemented
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -96,7 +97,8 @@ jobs:
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy=${{ matrix.numpy-version }}
-          pyfive
+    - name: Install pyfive from kmuehlbauer GitHub
+      run: python -m pip install git+https://github.com/kmuehlbauer/pyfive.git@handle-not-implemented
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
