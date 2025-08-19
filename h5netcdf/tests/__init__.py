@@ -32,7 +32,7 @@ def _importorskip(
 
 has_h5py, requires_h5py = _importorskip("h5py")
 has_h5pyd, requires_h5pyd = _importorskip("h5pyd")
-has_hsds, _ = _importorskip("h5sd")
+has_hsds, _ = _importorskip("hsds")
 has_h5py_ge_3_7_0, requires_h5py_ge_3_7_0 = _importorskip("h5py", minversion="3.7.0")
 has_netCDF4, requires_netCDF4 = _importorskip("netCDF4")
 has_netCDF4_ge_1_7_0, requires_netCDF4_ge_1_7_0 = _importorskip(
