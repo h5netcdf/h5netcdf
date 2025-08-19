@@ -136,17 +136,17 @@ def _parse_backend(backend, mode):
     -------
     backend: str
         The backend end that is going to used. If the input backend is
-        None, then a vlaue of the H5NETCDF_BACKEND environment
+        None, then a value of the H5NETCDF_BACKEND environment
         variable is used.
 
     """
     if backend is None:
         backend = os.environ.get("H5NETCDF_BACKEND", "h5py")
 
-    if backend not in ("pyfive", "h5py"):
+    if backend not in ("pyfive", "h5py", "h5pyd"):
         raise ValueError(
             f"Unknown backend {backend!r} - valid options are: "
-            "None, 'pyfive', 'h5py'"
+            "None, 'pyfive', 'h5py', 'h5pyd'"
         )
 
     if backend == "pyfive" and no_pyfive:
@@ -154,6 +154,9 @@ def _parse_backend(backend, mode):
 
     if backend == "h5py" and no_h5py:
         raise ImportError("No module named 'h5py', backend not available")
+
+    if backend == "h5pyd" and no_h5pyd:
+        raise ImportError("No module named 'h5pyd', backend not available")
 
     return backend
 
