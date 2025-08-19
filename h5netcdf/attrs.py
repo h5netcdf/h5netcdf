@@ -1,5 +1,5 @@
-from collections.abc import MutableMapping
 from collections import namedtuple
+from collections.abc import MutableMapping
 
 import numpy as np
 
@@ -17,7 +17,7 @@ _HIDDEN_ATTRS = frozenset(
 )
 
 # Local version of h5py.h5t.string_info
-_string_info = namedtuple('string_info', ['encoding', 'length'])
+_string_info = namedtuple("string_info", ["encoding", "length"])
 
 
 class Attributes(MutableMapping):
@@ -54,16 +54,16 @@ class Attributes(MutableMapping):
         # vlen strings are already decoded -> only decode fixed length strings
         # see https://github.com/h5netcdf/h5netcdf/issues/116
         # netcdf4-python returns string arrays as lists, we do as well
-        if hasattr(attr, 'dtype'):
+        if hasattr(attr, "dtype"):
             string_info = self._h5py.check_string_dtype(attr.dtype)
         else:
             # A pyfive attribute could be a str or bytes object, which
             # does not have a dtype, so we can't use the
             # 'check_string_dtype' method in this case.
             if isinstance(attr, str):
-                string_info = _string_info('utf-8', None)
+                string_info = _string_info("utf-8", None)
             elif isinstance(attr, bytes):
-                string_info = _string_info('ascii', None)
+                string_info = _string_info("ascii", None)
             else:
                 string_info = None
 
