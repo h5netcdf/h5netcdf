@@ -254,6 +254,7 @@ jobs:
           pandas
           pip
           pytest
+          pytest-asyncio
           pytest-mypy-plugins
           wheel
           numpy=${{ matrix.numpy-version }}
