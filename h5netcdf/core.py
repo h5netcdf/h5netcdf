@@ -1541,7 +1541,7 @@ class File(Group):
         invalid_netcdf=False,
         phony_dims=None,
         backend=None,
-        skip_unsupported_hdf5_features=False,
+        skip_unsupported_hdf5_features=True,
         **kwargs,
     ):
         """NetCDF4 file constructor.
