@@ -15,21 +15,21 @@ from .dimensions import Dimension, Dimensions
 from .utils import Frozen
 
 try:
-    import h5py
+    import h5py  # noqa
 except ImportError:
     no_h5py = True
 else:
     no_h5py = False
 
 try:
-    import h5pyd
+    import h5pyd  # noqa
 except ImportError:
     no_h5pyd = True
 else:
     no_h5pyd = False
 
 try:
-    import pyfive
+    import pyfive  # noqa
 except ImportError:
     no_pyfive = True
 else:
@@ -581,9 +581,10 @@ class BaseVariable(BaseObject):
             # fix boolean indexing for affected versions
             # https://github.com/h5py/h5py/pull/2079
             # https://github.com/h5netcdf/h5netcdf/pull/125/
-            h5py_version = version.parse(h5py.__version__)
-            if version.parse("3.0.0") <= h5py_version < version.parse("3.7.0"):
-                key = _transform_1d_boolean_indexers(key)
+            if self._root._h5py.__name__ == "h5py":
+                h5py_version = version.parse(self._root._h5py.__version__)
+                if version.parse("3.0.0") <= h5py_version < version.parse("3.7.0"):
+                    key = _transform_1d_boolean_indexers(key)
 
         if getattr(self._root, "decode_vlen_strings", False):
             string_info = self._root._h5py.check_string_dtype(self._h5ds.dtype)
@@ -953,32 +954,35 @@ class Group(Mapping):
         if self._root._phony_dims_mode is not None:
             phony_dims = Counter()
 
-        skip_unsupported_hdf5_features = self._root.skip_unsupported_hdf5_features
-        backend = self._root.backend
-
         for k in self._h5group:
-            if backend == "pyfive":
+            if self._root.backend == "pyfive":
                 # Some backends might have unsupported HDF5
                 # features. Either skip over them, or fail.
+                unsupported = self._root._unsupported_hdf5_features
+                # warnings.filterwarnings("error", message=r"^\w+\s+datatype class not supported\.$", category=UserWarning,)
                 try:
                     v = self._h5group[k]
-                except Exception as e:
-                    if skip_unsupported_hdf5_features:
-                        warnings.warn(
-                            f"{backend} backend: Skipping unsupported type "
-                            "of HDF5 variable or dimension {k!r}"
-                        )
-                        continue
-
-                    e.add_note(
-                        f"{backend} backend: Found unsupported type of HDF5 "
-                        f"variable or dimension {k!r}. Consider setting "
-                        "skip_unsupported_hdf5_features=True"
+                except NotImplementedError as e:
+                    msg = (
+                        f"{self._root.backend} backend: Skipping unsupported type "
+                        f"of HDF5 variable or dimension {k!r}."
                     )
-                    raise e
+                    if unsupported == "warn":
+                        warnings.warn(msg)
+                    elif unsupported == "error":
+                        msg2 = (
+                            "Consider setting unsupported_hdf5_features='skip' or"
+                            "unsupported_hdf5_features='warn'."
+                        )
+                        e.add_note(" ".join(msg, msg2))
+                        raise e
+                    continue
+                else:
+                    # probably unsupported DataType
+                    if v is None:
+                        continue
             else:
                 v = self._h5group[k]
-
             if isinstance(v, self._root._h5py.Group):
                 # add to the groups collection if this is a h5py(d) Group
                 # instance
@@ -986,11 +990,6 @@ class Group(Mapping):
             elif isinstance(v, self._root._h5py.Datatype):
                 # add usertypes (enum, vlen, compound)
                 self._add_usertype(v)
-            # this is just for now, reminding the user that the file contains
-            # data which can't be accessed atm
-            elif v is None:
-                msg = f"{backend!r} backend: Found unsupported type {k!r}"
-                warnings.warn(msg, UserWarning, stacklevel=2)
             else:
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
                     # add dimension and retrieve size
@@ -1539,7 +1538,6 @@ class File(Group):
         invalid_netcdf=False,
         phony_dims=None,
         backend=None,
-        skip_unsupported_hdf5_features=True,
         **kwargs,
     ):
         """NetCDF4 file constructor.
@@ -1565,11 +1563,11 @@ class File(Group):
             The default backend is h5py (backend=None, or backend=h5py), but
             for reading data, the pure python pyfive backend is available.
 
-        skip_unsupported_hdf5_features: bool
-            If True, then skip over types of HDF5 variables or
-            dimensions that are not supported by the backend. If False
-            (the default) then an exception is raised when such a
-            feature is found in the file.
+        unsupported_hdf5_features: str
+            How h5netcdf handles a pyfive's unsupported hdf5_features
+            'skip': skip, no warning
+            'warn': skip, with warning
+            'error' raise an exception
 
         track_order: bool
             Corresponds to the h5py.File `track_order` parameter. Unless
@@ -1602,6 +1600,8 @@ class File(Group):
         does close the underlying file.
 
         """
+        self._backend = _parse_backend(backend, mode)
+
         # 2022/01/09
         # netCDF4 wants the track_order parameter to be true
         # through this might be getting relaxed in a more recent version of the
@@ -1614,26 +1614,26 @@ class File(Group):
         # with netcdf4-c and generally, keeping track of how things were added
         # to the dataset.
         # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
-        track_order_default = version.parse(h5py.__version__) >= version.parse("3.7.0")
-        track_order = kwargs.pop("track_order", track_order_default)
+        track_order = None
+        if self._backend == "h5py":
+            import h5py
+
+            track_order_default = version.parse(h5py.__version__) >= version.parse(
+                "3.7.0"
+            )
+            track_order = kwargs.pop("track_order", track_order_default)
 
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         self._close_h5file = True
-        self._skip_unsupported_hdf5_features = bool(skip_unsupported_hdf5_features)
+        self._unsupported_hdf5_features = kwargs.pop("unsupported_hdf5_features", None)
 
-        backend = _parse_backend(backend, mode)
-        self._backend = backend
-
-        if backend == "pyfive":
+        if self._backend == "pyfive":
+            if self._unsupported_hdf5_features is None:
+                self._unsupported_hdf5_features == "error"
             self._h5py = pyfive
             try:
-                # We can ignore track_order because pyfive is read-only
-                self.__h5file = self._h5py.File(path, mode, **kwargs)
-                self._preexisting_file = True
-            except OSError:
-                # pyfive is readonly, we need to raise this error
-                self._closed = True
-                raise
+                # pyfive is read-only, we can ignore anything related to writing
+                self.__h5file = self._h5py.File(path, mode)
             except Exception:
                 self._closed = True
                 raise
@@ -1645,7 +1645,7 @@ class File(Group):
                 if isinstance(path, str):
                     if (
                         kwargs.get("driver") == "h5pyd"
-                        or kwargs.get("backend") == "h5pyd"
+                        or self._backend == "h5pyd"
                         or (
                             path.startswith(("http://", "https://", "hdf5://"))
                             and "driver" not in kwargs
@@ -1813,17 +1813,16 @@ class File(Group):
         """
         return self._backend
 
-    @property
-    def skip_unsupported_hdf5_features(self) -> bool:
-        """Whether to skip unsupported HDF5 variable or dimension types.
-
-        If True, then types of HDF5 variables or dimensions that are
-        not supported by the backend are skipped over. If False (the
-        default) then an exception is raised when such a feature is
-        found in the file.
-
-        """
-        return self._skip_unsupported_hdf5_features
+    # @property
+    # def unsupported_hdf5_features(self) -> str:
+    #     """Whether to skip, warn or raise on unsupported HDF5 variable or dimension types.
+    #
+    #     'skip': skip, no warning
+    #     'warn': skip, with warning
+    #     'error' raise an exception
+    #
+    #     """
+    #     return self._unsupported_hdf5_features
 
     def flush(self):
         if self._writable:

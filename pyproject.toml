@@ -29,9 +29,10 @@ classifiers=[
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
 ]
-dependencies = ["h5py", "packaging"]
+dependencies = ["packaging"]
 
 dynamic = ["version", "readme"]
 
@@ -42,7 +43,10 @@ repository = "https://github.com/h5netcdf/h5netcdf"
 changelog = "https://github.com/h5netcdf/h5netcdf/blob/main/CHANGELOG.rst"
 
 [project.optional-dependencies]
-test = ["netCDF4", "pytest", "pyfive>=0.5.0"]
+h5py = ["h5py"]
+pyfive = ["pyfive>=0.5.0"]
+h5pyd = ["h5pyd"]
+test = ["h5py", "netCDF4", "pyfive>=0.5.0", "pytest"]
 
 [tool.setuptools.dynamic]
 readme = { file = ["README.rst"]}

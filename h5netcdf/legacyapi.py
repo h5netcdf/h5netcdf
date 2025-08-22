@@ -1,6 +1,6 @@
 import sys
 
-import h5py
+# import h5py
 import numpy as np
 
 from . import core
@@ -106,7 +106,7 @@ class Variable(core.BaseVariable, HasAttributesMixin):
     def dtype(self):
         """Return netCDF4.Variable numpy dtype."""
         dt = self._h5ds.dtype
-        if h5py.check_dtype(vlen=dt) is str:
+        if self._root._h5py.check_dtype(vlen=dt) is str:
             return str
         return dt
 
@@ -220,7 +220,7 @@ class Group(core.Group, HasAttributesMixin):
             shuffle = False
 
         if datatype is str:
-            datatype = h5py.special_dtype(vlen=str)
+            datatype = self._root._h5py.special_dtype(vlen=str)
 
         kwds = {}
         if zlib:

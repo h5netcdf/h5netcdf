@@ -166,9 +166,6 @@ _vlen_string = "foo"
 
 
 def is_h5py_char_working(tmp_netcdf, name):
-    # import h5py
-    # import h5pyd
-    print("QQ:", tmp_netcdf)
     if isinstance(tmp_netcdf, (str, io.BufferedRandom, io.BytesIO)):
         h5 = get_hdf5_module(tmp_netcdf)
         # https://github.com/Unidata/netcdf-c/issues/298
@@ -310,10 +307,8 @@ def write_h5netcdf(tmp_netcdf, compression="gzip"):
 
 
 def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend="h5py"):
-    print("backend1:", backend)
     if read_module is legacyapi:
         ds = read_module.Dataset(tmp_netcdf, "r", backend=backend)
-        print("backend2:", ds._h5py)
         assert backend == ds.backend
     else:
         ds = read_module.Dataset(tmp_netcdf, "r")
@@ -449,7 +444,6 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend="h5py"):
 
 
 def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py"):
-    print("QQ2:", tmp_netcdf)
     remote_file = isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5)
     ds = h5netcdf.File(tmp_netcdf, "r", **decode_vlen_strings, backend=backend)
     assert ds.name == "/"
@@ -618,11 +612,6 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py")
 
 def test_roundtrip_local(tmp_local_netcdf, wmod, rmod, bmod, decode_vlen):
     # test matrix is created in conftest.py from available modules
-    print("tmp_netcdf:", tmp_local_netcdf)
-    print("write_module:", wmod)
-    print("read_module:", rmod)
-    print("backend_module:", bmod)
-    print("decode_vlen:", decode_vlen)
     if wmod.__name__ in ["netCDF4", "h5netcdf.legacyapi"]:
         write_legacy_netcdf(tmp_local_netcdf, wmod)
     else:
@@ -1620,8 +1609,6 @@ def create_h5netcdf_dimensions(ds, idx):
 
 
 def check_netcdf_dimensions(tmp_netcdf, write_module, read_module, backend):
-    print("read_module:", read_module.__name__)
-    print("backend:", backend)
     open_kwargs = {}
     if read_module.__name__ in ["h5netcdf.legacyapi", "netCDF4"]:
         opener = read_module.Dataset
@@ -1631,7 +1618,6 @@ def check_netcdf_dimensions(tmp_netcdf, write_module, read_module, backend):
         open_kwargs.update(backend=backend)
     with opener(tmp_netcdf, "r", **open_kwargs) as ds:
         if backend is not None:
-            print("XX:", ds._h5py)
             assert ds._h5py.__name__ == backend
         for i, grp in enumerate(["dimtest0", "dimtest1"]):
             g = ds.groups[grp]
@@ -2366,7 +2352,6 @@ def test_vlen_string_dataset_fillvalue(tmp_local_netcdf, decode_vlen_strings, ba
     ) as ds:
         assert ds._h5py.__name__ == backend
         decode_vlen = decode_vlen_strings["decode_vlen_strings"] or backend == "pyfive"
-        print(decode_vlen)
         fvalue0 = fill_value0 if decode_vlen else fill_value0.encode("utf-8")
         fvalue1 = fill_value1 if decode_vlen else fill_value1.encode("utf-8")
         assert ds["x0"][0] == fvalue0
@@ -2792,6 +2777,7 @@ def test_vltype_creation(tmp_local_or_remote_netcdf, netcdf_write_module, dtype)
             assert vlen_type.name == "vlen_t"
 
 
+@requires_netCDF4
 def test_compoundtype_creation(tmp_local_or_remote_netcdf, netcdf_write_module):
     # compound type is created with array of chars
     compound = np.dtype(
