@@ -953,10 +953,8 @@ class Group(Mapping):
         if self._root._phony_dims_mode is not None:
             phony_dims = Counter()
 
-        skip_unsupported_hdf5_features = getattr(
-            parent, "skip_unsupported_hdf5_features", False
-        )
-        backend = getattr(parent, "backend", None)
+        skip_unsupported_hdf5_features = self._root.skip_unsupported_hdf5_features
+        backend = self._root.backend
 
         for k in self._h5group:
             if backend == "pyfive":
