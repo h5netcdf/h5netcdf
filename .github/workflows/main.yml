@@ -60,6 +60,7 @@ jobs:
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy=${{ matrix.numpy-version }}
+          pyfive>=0.5.1
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -95,6 +96,7 @@ jobs:
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy=${{ matrix.numpy-version }}
+          pyfive>=0.5.1
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -250,6 +252,7 @@ jobs:
           pandas
           pip
           pytest
+          pytest-asyncio
           pytest-mypy-plugins
           wheel
           numpy=${{ matrix.numpy-version }}
