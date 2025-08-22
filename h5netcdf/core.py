@@ -121,7 +121,7 @@ def _expanded_indexer(key, ndim):
     return key[k1] + res_dims + key[k2]
 
 
-def _parse_backend(backend, mode):
+def _parse_backend(backend):
     """Parse the 'backend' keyword to File.__init__.
 
     Parameters
@@ -129,13 +129,10 @@ def _parse_backend(backend, mode):
     backend : str
         The backend parameter.
 
-    mode : "r", "r+", "a", "w"
-        A valid file access mode. Defaults to "r".
-
     Returns
     -------
     backend: str
-        The backend end that is going to used. If the input backend is
+        The backend that is going to be used. If the input backend is
         None, then a value of the H5NETCDF_BACKEND environment
         variable is used.
 
@@ -166,7 +163,6 @@ class BaseObject:
         self._parent_ref = weakref.ref(parent)
         self._root_ref = weakref.ref(parent._root)
         self._h5path = _join_h5paths(parent.name, name)
-        self._backend = getattr(parent, "_backend", None)
 
     @property
     def _parent(self):
@@ -181,6 +177,10 @@ class BaseObject:
         # Always refer to the root file and store not h5py object
         # subclasses:
         return self._root._h5file[self._h5path]
+
+    @property
+    def _backend(self):
+        return self._root._backend
 
     @property
     def name(self):
@@ -581,7 +581,7 @@ class BaseVariable(BaseObject):
             # fix boolean indexing for affected versions
             # https://github.com/h5py/h5py/pull/2079
             # https://github.com/h5netcdf/h5netcdf/pull/125/
-            if self._root._h5py.__name__ == "h5py":
+            if self._backend == "h5py":
                 h5py_version = version.parse(self._root._h5py.__version__)
                 if version.parse("3.0.0") <= h5py_version < version.parse("3.7.0"):
                     key = _transform_1d_boolean_indexers(key)
@@ -955,7 +955,7 @@ class Group(Mapping):
             phony_dims = Counter()
 
         for k in self._h5group:
-            if self._root.backend == "pyfive":
+            if self._root._backend == "pyfive":
                 # Some backends might have unsupported HDF5
                 # features. Either skip over them, or fail.
                 unsupported = self._root._unsupported_hdf5_features
@@ -1039,7 +1039,7 @@ class Group(Mapping):
 
     @property
     def _track_order(self):
-        if self._root._h5py.__name__ == "h5pyd":
+        if self._root._backend == "h5pyd":
             return False
         # TODO: make a suggestion to upstream to create a property
         # for files to get if they track the order
@@ -1559,12 +1559,12 @@ class File(Group):
         phony_dims: 'sort', 'access'
             See :ref:`phony dims` for more details.
 
-        backend: 'pyfive', 'h5py' or None
-            The default backend is h5py (backend=None, or backend=h5py), but
+        backend: 'h5py', 'h5pyd', 'pyfive' or None
+            The default backend is h5py (backend=None, or backend='h5py'), but
             for reading data, the pure python pyfive backend is available.
 
         unsupported_hdf5_features: str
-            How h5netcdf handles a pyfive's unsupported hdf5_features
+            How h5netcdf handles pyfive's unsupported hdf5_features
             'skip': skip, no warning
             'warn': skip, with warning
             'error' raise an exception
@@ -1578,7 +1578,7 @@ class File(Group):
             append to a file. If an older version of h5py is detected, this
             parameter will be set to False by default to work around a bug in
             h5py limiting the number of attributes for a given variable.
-            Ignored when for the 'pyfive' backend.
+            Ignored for the 'pyfive' backend.
 
         **kwargs:
             Additional keyword arguments to be passed to the backend
@@ -1600,7 +1600,7 @@ class File(Group):
         does close the underlying file.
 
         """
-        self._backend = _parse_backend(backend, mode)
+        self._backend = _parse_backend(backend)
 
         # 2022/01/09
         # netCDF4 wants the track_order parameter to be true
@@ -1807,22 +1807,11 @@ class File(Group):
         """The HDF5 backend.
 
         Returns either "h5py" (the backend is h5py, built on the HDF5
-        C library) or "pyfive" (the backend is pyfive, which is pure
-        Python).
+        C library), "h5pyd" (python library for HDF REST API) or
+        "pyfive" (the backend is pyfive, which is pure Python).
 
         """
         return self._backend
-
-    # @property
-    # def unsupported_hdf5_features(self) -> str:
-    #     """Whether to skip, warn or raise on unsupported HDF5 variable or dimension types.
-    #
-    #     'skip': skip, no warning
-    #     'warn': skip, with warning
-    #     'error' raise an exception
-    #
-    #     """
-    #     return self._unsupported_hdf5_features
 
     def flush(self):
         if self._writable:

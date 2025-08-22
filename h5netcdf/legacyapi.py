@@ -1,6 +1,5 @@
 import sys
 
-# import h5py
 import numpy as np
 
 from . import core
