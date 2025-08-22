@@ -1561,7 +1561,7 @@ class File(Group):
         phony_dims: 'sort', 'access'
             See :ref:`phony dims` for more details.
 
-        backend: 'pyfive','h5py' or None
+        backend: 'pyfive', 'h5py' or None
             The default backend is h5py (backend=None, or backend=h5py), but
             for reading data, the pure python pyfive backend is available.
 
