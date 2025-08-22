@@ -44,9 +44,9 @@ changelog = "https://github.com/h5netcdf/h5netcdf/blob/main/CHANGELOG.rst"
 
 [project.optional-dependencies]
 h5py = ["h5py"]
-pyfive = ["pyfive>=0.5.0"]
+pyfive = ["pyfive>=0.5.1"]
 h5pyd = ["h5pyd"]
-test = ["h5py", "netCDF4", "pyfive>=0.5.0", "pytest"]
+test = ["h5py", "netCDF4", "pyfive>=0.5.1", "pytest"]
 
 [tool.setuptools.dynamic]
 readme = { file = ["README.rst"]}
