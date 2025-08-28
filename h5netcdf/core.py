@@ -121,11 +121,12 @@ def _expanded_indexer(key, ndim):
     return key[k1] + res_dims + key[k2]
 
 
-def _parse_backend(backend):
+def _parse_backend(path, backend, **kwargs):
     """Parse the 'backend' keyword to File.__init__.
 
     Parameters
     ----------
+    path : path-like
     backend : str
         The backend parameter.
 
@@ -137,25 +138,77 @@ def _parse_backend(backend):
         variable is used.
 
     """
-    if backend is None:
-        backend = os.environ.get("H5NETCDF_BACKEND", "h5py")
-
-    if backend not in ("pyfive", "h5py", "h5pyd"):
+    is_remote = path.startswith(("http", "hdf5:")) if isinstance(path, str) else False
+    driver = kwargs.get("driver")
+    if backend not in (None, "pyfive", "h5py", "h5pyd"):
         raise ValueError(
             f"Unknown backend {backend!r} - valid options are: "
-            "None, 'pyfive', 'h5py', 'h5pyd'"
+            "'pyfive', 'h5py', 'h5pyd'"
         )
 
-    if backend == "pyfive" and no_pyfive:
-        raise ImportError("No module named 'pyfive', backend not available")
+    if driver == "h5pyd" and backend not in ["pyfive", "h5py"]:
+        msg = "Specifying driver='h5pyd' is deprecated, please use backend='h5pyd' instead."
+        warnings.warn(msg, DeprecationWarning)
+        backend, driver = "h5pyd", None
 
-    if backend == "h5py" and no_h5py:
-        raise ImportError("No module named 'h5py', backend not available")
+    if driver is not None and backend not in [None, "h5py"]:
+        msg = f"driver={driver!r} only works with 'h5py' backend, but given backend={backend}."
+        raise ValueError(msg)
 
-    if backend == "h5pyd" and no_h5pyd:
-        raise ImportError("No module named 'h5pyd', backend not available")
+    if is_remote and backend is None and driver is None:
+        backend = "h5pyd"
+
+    backend = backend or os.environ.get("H5NETCDF_BACKEND", "h5py")
+
+    no_backend = {
+        "pyfive": no_pyfive,
+        "h5py": no_h5py,
+        "h5pyd": no_h5pyd,
+    }
+    if no_backend.get(backend, False):
+        raise ImportError(f"No module named {backend}, backend not available")
 
     return backend
+
+
+def _get_track_order(backend):
+    """
+    In h5netcdf version 0.12.0 and earlier, order tracking was disabled in
+    HDF5 file. As this is a requirement for the current netCDF4 standard,
+    it has been enabled without deprecation as of version 0.13.0 (:issue:`128`).
+
+    Datasets created with h5netcdf version 0.12.0 that are opened with
+    newer versions of h5netcdf will continue to disable order tracker.
+
+    If an h5py File object is passed in, closing the h5netcdf wrapper will
+    not close the h5py File. In other cases, closing the h5netcdf File object
+    does close the underlying file.
+
+    """
+    # 2022/01/09
+    # netCDF4 wants the track_order parameter to be true
+    # through this might be getting relaxed in a more recent version of the
+    # standard
+    # https://github.com/Unidata/netcdf-c/issues/2054
+    # https://github.com/h5netcdf/h5netcdf/issues/128
+    # h5py versions less than 3.7.0 had a bug that limited the number of
+    # attributes when track_order was set to true by default.
+    # However, setting track_order to True helps with compatibility
+    # with netcdf4-c and generally, keeping track of how things were added
+    # to the dataset.
+    # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
+    if backend == "h5py":
+        import h5py
+
+        track_order = version.parse(h5py.__version__) >= version.parse("3.7.0")
+    elif backend == "h5pyd":
+        import h5pyd
+
+        track_order = version.parse(h5pyd.__version__) >= version.parse("0.21.0")
+    else:
+        track_order = None
+
+    return track_order
 
 
 class BaseObject:
@@ -971,10 +1024,10 @@ class Group(Mapping):
                         warnings.warn(msg)
                     elif unsupported == "error":
                         msg2 = (
-                            "Consider setting unsupported_hdf5_features='skip' or"
+                            "Consider setting unsupported_hdf5_features='skip' or "
                             "unsupported_hdf5_features='warn'."
                         )
-                        e.add_note(" ".join(msg, msg2))
+                        e.add_note(" ".join((msg, msg2)))
                         raise e
                     continue
                 else:
@@ -1040,7 +1093,8 @@ class Group(Mapping):
     @property
     def _track_order(self):
         if self._root._backend == "h5pyd":
-            return False
+            return self._h5group.track_order
+
         # TODO: make a suggestion to upstream to create a property
         # for files to get if they track the order
         # As of version 3.6.0 this property did not exist
@@ -1530,6 +1584,66 @@ class Group(Mapping):
         return cmptype
 
 
+def _open_pyfive(path, mode):
+    import pyfive
+
+    try:
+        h5file = pyfive.File(path, mode)
+    except Exception:
+        raise
+    else:
+        return h5file
+
+
+def _open_h5pyd(path, mode, **kwargs):
+    original_mode = mode
+    if mode != "r":
+        kwargs.setdefault("track_order", _get_track_order("h5pyd"))
+    if mode == "a":
+        mode = "r+"  # probe for existing before creating
+    try:
+        h5file = h5pyd.File(path, mode, **kwargs)
+    except OSError:
+        if original_mode == "a":
+            msg = (
+                "Append mode for h5pyd now probes with 'r+' first and "
+                "only falls back to 'w' if the file is missing.\n"
+                "To silence this warning use 'r+' (open-existing) or 'w' "
+                "(create-new) directly."
+            )
+            warnings.warn(msg, UserWarning, stacklevel=2)
+
+            try:
+                h5file = h5pyd.File(path, "w", **kwargs)
+            except Exception:
+                raise
+            else:
+                return h5file, False
+        raise
+    else:
+        return h5file, (mode != "w")
+
+
+def _open_h5py(path, mode, **kwargs):
+    if mode != "r":
+        kwargs.setdefault("track_order", _get_track_order("h5py"))
+    try:
+        if isinstance(path, str):
+            exists = path.startswith(("http", "s3://")) or (
+                os.path.exists(path) and mode != "w"
+            )
+            h5file = h5py.File(path, mode, **kwargs)
+            return h5file, exists, True
+        elif isinstance(path, h5py.File):
+            # already-open file
+            return path, (mode in {"r", "r+", "a"}), False
+        else:  # file-like object
+            h5file = h5py.File(path, mode, **kwargs)
+            return h5file, (mode in {"r", "r+", "a"}), True
+    except Exception:
+        raise
+
+
 class File(Group):
     def __init__(
         self,
@@ -1600,114 +1714,35 @@ class File(Group):
         does close the underlying file.
 
         """
-        self._backend = _parse_backend(backend)
-
-        # 2022/01/09
-        # netCDF4 wants the track_order parameter to be true
-        # through this might be getting relaxed in a more recent version of the
-        # standard
-        # https://github.com/Unidata/netcdf-c/issues/2054
-        # https://github.com/h5netcdf/h5netcdf/issues/128
-        # h5py versions less than 3.7.0 had a bug that limited the number of
-        # attributes when track_order was set to true by default.
-        # However, setting track_order to True helps with compatibility
-        # with netcdf4-c and generally, keeping track of how things were added
-        # to the dataset.
-        # https://github.com/h5netcdf/h5netcdf/issues/136#issuecomment-1017457067
-        track_order = None
-        if self._backend == "h5py":
-            import h5py
-
-            track_order_default = version.parse(h5py.__version__) >= version.parse(
-                "3.7.0"
-            )
-            track_order = kwargs.pop("track_order", track_order_default)
-
+        self._backend = _parse_backend(path, backend, **kwargs)
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         self._close_h5file = True
-        self._unsupported_hdf5_features = kwargs.pop("unsupported_hdf5_features", None)
+        self._preexisting_file = True
 
-        if self._backend == "pyfive":
-            if self._unsupported_hdf5_features is None:
-                self._unsupported_hdf5_features == "error"
-            self._h5py = pyfive
-            try:
-                # pyfive is read-only, we can ignore anything related to writing
-                self.__h5file = self._h5py.File(path, mode)
-            except Exception:
-                self._closed = True
-                raise
-            else:
-                self._closed = False
+        try:
+            if self.backend == "pyfive":
+                self._unsupported_hdf5_features = kwargs.pop(
+                    "unsupported_hdf5_features",
+                    os.environ.get("PYFIVE_UNSUPPORTED_FEATURE", "error"),
+                )
+                self._h5py = pyfive
+                self.__h5file = _open_pyfive(path, mode)
+            elif self.backend == "h5pyd":
+                self._h5py = h5pyd
+                self.__h5file, self._preexisting_file = _open_h5pyd(
+                    path, mode, **kwargs
+                )
+            else:  # default h5py
+                self._h5py = h5py
+                self.__h5file, self._preexisting_file, self._close_h5file = _open_h5py(
+                    path, mode, **kwargs
+                )
 
+        except Exception:
+            self._closed = True
+            raise
         else:
-            try:
-                if isinstance(path, str):
-                    if (
-                        kwargs.get("driver") == "h5pyd"
-                        or self._backend == "h5pyd"
-                        or (
-                            path.startswith(("http://", "https://", "hdf5://"))
-                            and "driver" not in kwargs
-                        )
-                    ):
-                        if no_h5pyd:
-                            raise ImportError(
-                                "No module named 'h5pyd'. h5pyd is required for "
-                                f"opening urls: {path}"
-                            )
-                        self._preexisting_file = mode in {"r", "r+", "a"}
-                        # remap "a" -> "r+" to check file existence
-                        # fallback to "w" if not
-                        _mode = mode
-                        if mode == "a":
-                            mode = "r+"
-                        self._h5py = h5pyd
-                        try:
-                            self.__h5file = self._h5py.File(
-                                path, mode, track_order=track_order, **kwargs
-                            )
-                            self._preexisting_file = mode != "w"
-                        except OSError:
-                            # if file does not exist, create it
-                            if _mode == "a":
-                                mode = "w"
-                                self.__h5file = self._h5py.File(
-                                    path, mode, track_order=track_order, **kwargs
-                                )
-                                self._preexisting_file = False
-                                msg = (
-                                    "Append mode for h5pyd now probes with 'r+' first and "
-                                    "only falls back to 'w' if the file is missing.\n"
-                                    "To silence this warning use 'r+' (open-existing) or 'w' "
-                                    "(create-new) directly."
-                                )
-                                warnings.warn(msg, UserWarning, stacklevel=2)
-                            else:
-                                raise
-                    else:
-                        self._preexisting_file = os.path.exists(path) and mode != "w"
-                        self._h5py = h5py
-                        self.__h5file = self._h5py.File(
-                            path, mode, track_order=track_order, **kwargs
-                        )
-                elif isinstance(path, h5py.File):
-                    self._preexisting_file = mode in {"r", "r+", "a"}
-                    self._h5py = h5py
-                    self.__h5file = path
-                    # h5py File passed in: let the caller decide when to close it
-                    self._close_h5file = False
-                else:  # file-like object
-                    self._preexisting_file = mode in {"r", "r+", "a"}
-                    self._h5py = h5py
-                    self.__h5file = self._h5py.File(
-                        path, mode, track_order=track_order, **kwargs
-                    )
-            except Exception:
-                self._closed = True
-                raise
-            else:
-                self._closed = False
+            self._closed = False
 
         self._filename = self._h5file.filename
         self._mode = mode
