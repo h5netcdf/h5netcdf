@@ -1003,22 +1003,22 @@ def test_create_variable_matching_saved_dimension(
         )
         dimlen = f"{dim[0].size:10}"
         name = (
-            np.strings.decode(f["y"].dims[0][0].attrs["NAME"])
+            f["y"].dims[0][0].attrs["NAME"].decode()
             if read_backend == "pyfive"
-            else f["y"].dims[0].keys()
+            else f["y"].dims[0].keys()[0]
         )
-        assert name == [NOT_A_VARIABLE.decode("ascii") + dimlen]
+        assert name == NOT_A_VARIABLE.decode("ascii") + dimlen
 
     with h5netcdf.File(tmp_backend_netcdf, "a", backend=write_backend) as f:
         f.create_variable("x", data=[0, 1], dimensions=("x",))
 
     with h5.File(tmp_backend_netcdf, "r") as f:
         name = (
-            np.strings.decode(f["y"].dims[0][0].attrs["NAME"])
+            f["y"].dims[0][0].attrs["NAME"].decode()
             if read_backend == "pyfive"
-            else f["y"].dims[0].keys()
+            else f["y"].dims[0].keys()[0]
         )
-        assert name == ["x"]
+        assert name == "x"
 
 
 def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
