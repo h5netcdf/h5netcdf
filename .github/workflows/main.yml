@@ -269,7 +269,7 @@ jobs:
 
     - name: Test with pytest - pyfive backend
       run: |
-        H5NETCDF_READ_BACKEND=pyfive
+        export H5NETCDF_READ_BACKEND=pyfive
         python -m pytest -v --durations=0 -k "H5NetCDF"
 
   build_4:
