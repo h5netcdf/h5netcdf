@@ -504,38 +504,6 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py")
     ds.close()
 
 
-# def roundtrip_legacy_netcdf(tmp_netcdf, read_module, write_module, backend):
-#     write_legacy_netcdf(tmp_netcdf, write_module)
-#     read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend)
-
-
-# roundtrip - local
-# write - module / backend      read - module / backend
-#   h5netcdf-h5py               h5netcdf-h5py
-#                               legacyapi-h5py
-#                               h5netcdf-pyfive
-#                               legacyapi-pyfive
-#                               netCDF4
-#
-#   legacyapi-h5py              h5netcdf-h5py
-#                               legacyapi-h5py
-#                               h5netcdf-pyfive
-#                               legacyapi-pyfive
-#                               netCDF4
-#
-#   netCDF4                     h5netcdf-h5py
-#                               legacyapi-h5py
-#                               h5netcdf-pyfive
-#                               legacyapi-pyfive
-#                               netCDF4
-#
-# roundtrip - remote
-#   h5netcdf-h5pyd              h5netcdf-h5pyd
-#                               legacyapi-h5pyd
-#   legacyapi-h5pyd             h5netcdf-h5pyd
-#                               legacyapi-h5pyd
-
-
 def test_roundtrip_local(tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkeypatch):
     # test matrix is created in conftest.py from available modules
     if wmod.__name__ in ["netCDF4", "h5netcdf.legacyapi"]:

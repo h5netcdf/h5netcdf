@@ -263,8 +263,13 @@ jobs:
       run: |
         python -m pip install --no-deps --ignore-installed --no-cache-dir -vvv \
           git+https://github.com/h5netcdf/h5netcdf.git@${{ github.ref }}
-    - name: Test with pytest
+    - name: Test with pytest - h5py backend
       run: |
+        python -m pytest -v --durations=0 -k "H5NetCDF"
+
+    - name: Test with pytest - pyfive backend
+      run: |
+        H5NETCDF_READ_BACKEND=pyfive
         python -m pytest -v --durations=0 -k "H5NetCDF"
 
   build_4:

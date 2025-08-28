@@ -121,12 +121,13 @@ def _expanded_indexer(key, ndim):
     return key[k1] + res_dims + key[k2]
 
 
-def _parse_backend(path, backend, **kwargs):
+def _parse_backend(path, mode, backend, **kwargs):
     """Parse the 'backend' keyword to File.__init__.
 
     Parameters
     ----------
     path : path-like
+    mode : str
     backend : str
         The backend parameter.
 
@@ -140,6 +141,7 @@ def _parse_backend(path, backend, **kwargs):
     """
     is_remote = path.startswith(("http", "hdf5:")) if isinstance(path, str) else False
     driver = kwargs.get("driver")
+    print(is_remote, driver, mode, backend)
     if backend not in (None, "pyfive", "h5py", "h5pyd"):
         raise ValueError(
             f"Unknown backend {backend!r} - valid options are: "
@@ -151,14 +153,20 @@ def _parse_backend(path, backend, **kwargs):
         warnings.warn(msg, DeprecationWarning)
         backend, driver = "h5pyd", None
 
-    if driver is not None and backend not in [None, "h5py"]:
-        msg = f"driver={driver!r} only works with 'h5py' backend, but given backend={backend}."
-        raise ValueError(msg)
+    if driver is not None:
+        if backend not in [None, "h5py"]:
+            msg = f"driver={driver!r} only works with 'h5py' backend, but given backend={backend}."
+            raise ValueError(msg)
+        else:
+            backend = "h5py"
 
     if is_remote and backend is None and driver is None:
         backend = "h5pyd"
 
-    backend = backend or os.environ.get("H5NETCDF_BACKEND", "h5py")
+    if backend is None:
+        read_backend = os.environ.get("H5NETCDF_READ_BACKEND", "h5py")
+        write_backend = os.environ.get("H5NETCDF_WRITE_BACKEND", "h5py")
+        backend = read_backend if mode == "r" else write_backend
 
     no_backend = {
         "pyfive": no_pyfive,
@@ -1714,7 +1722,7 @@ class File(Group):
         does close the underlying file.
 
         """
-        self._backend = _parse_backend(path, backend, **kwargs)
+        self._backend = _parse_backend(path, mode, backend, **kwargs)
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         self._close_h5file = True
         self._preexisting_file = True
