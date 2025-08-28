@@ -141,7 +141,6 @@ def _parse_backend(path, mode, backend, **kwargs):
     """
     is_remote = path.startswith(("http", "hdf5:")) if isinstance(path, str) else False
     driver = kwargs.get("driver")
-    print(is_remote, driver, mode, backend)
     if backend not in (None, "pyfive", "h5py", "h5pyd"):
         raise ValueError(
             f"Unknown backend {backend!r} - valid options are: "
