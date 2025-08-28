@@ -271,6 +271,7 @@ jobs:
     - name: Test with pytest - pyfive backend
       run: |
         export H5NETCDF_READ_BACKEND=pyfive
+        export PYFIVE_UNSUPPORTED_FEATURE=warn
         python -m pytest -v --durations=0 -k "H5NetCDF"
       continue-on-error: true
 
