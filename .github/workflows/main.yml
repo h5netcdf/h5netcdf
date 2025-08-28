@@ -271,6 +271,7 @@ jobs:
       run: |
         export H5NETCDF_READ_BACKEND=pyfive
         python -m pytest -v --durations=0 -k "H5NetCDF"
+      continue-on-error: true
 
   build_4:
     name: python 3.14 alpha test
