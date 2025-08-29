@@ -232,6 +232,7 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13"]
         numpy-version: ["2"]
+        backend: ["h5py", "pyfive"]
     steps:
     - uses: actions/checkout@v5
       with:
@@ -264,16 +265,15 @@ jobs:
       run: |
         python -m pip install --no-deps --ignore-installed --no-cache-dir -vvv \
           git+https://github.com/h5netcdf/h5netcdf.git@${{ github.ref }}
-    - name: Test with pytest - h5py backend
+    - name: Set env vars for pyfive
+      if: matrix.backend == 'pyfive'
       run: |
-        python -m pytest -v --durations=0 -k "H5NetCDF"
+        echo "H5NETCDF_READ_BACKEND=pyfive" >> $GITHUB_ENV
+        echo "PYFIVE_UNSUPPORTED_FEATURE=warn" >> $GITHUB_ENV
 
-    - name: Test with pytest - pyfive backend
+    - name: Test with pytest
       run: |
-        export H5NETCDF_READ_BACKEND=pyfive
-        export PYFIVE_UNSUPPORTED_FEATURE=warn
         python -m pytest -v --durations=0 -k "H5NetCDF"
-      continue-on-error: true
 
   build_4:
     name: python 3.14 alpha test
