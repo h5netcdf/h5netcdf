@@ -5,6 +5,10 @@ Development Version (unreleased):
 
 - Fix unintentional changes in test suite (:pull:`277`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Support pyfive as an alternative backend ({pull}`273`).
+  By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
+  <https://github.com/davidhassell>`_, `Valeriu Predoi
+  <https://github.com/valeriupredoi>`_, `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `Stephan Hoyer <https://github.com/shoyer>`_
 
 Version 1.6.4 (August 5th, 2025):
 
