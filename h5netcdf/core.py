@@ -344,6 +344,7 @@ class BaseVariable(BaseObject):
             [self._parent._all_dimensions[d]._dimid for d in dims],
             "int32",
         )
+
         if len(coord_ids) > 1:
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
@@ -412,6 +413,9 @@ class BaseVariable(BaseObject):
                 value = fillvalue
             else:
                 value = self.dtype.type(fillvalue)
+
+        if self._root._format == "NETCDF4_CLASSIC":
+            value = np.atleast_1d(value)
 
         self.attrs["_FillValue"] = value
 
@@ -585,7 +589,7 @@ class BaseVariable(BaseObject):
     def attrs(self):
         """Return variable attributes."""
         return Attributes(
-            self._h5ds.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
+            self._h5ds.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py, format=self._root._format
         )
 
     _cls_name = "h5netcdf.Variable"
@@ -1352,7 +1356,7 @@ class Group(Mapping):
     @property
     def attrs(self):
         return Attributes(
-            self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
+            self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py, self._root._format
         )
 
     _cls_name = "h5netcdf.Group"
@@ -1658,8 +1662,9 @@ class File(Group):
             description = "boolean"
         elif self._h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
-        elif dtype in [int, np.int64] and self._format == "NETCDF4_CLASSIC":
-            description = "64-bit integer (CLASSIC format)"
+        elif dtype in [int, np.int64, np.uint64, np.uint32, np.uint16, np.uint8] and self._format == \
+                "NETCDF4_CLASSIC":
+            description = f"{dtype} (CLASSIC)"
         else:
             description = None
 

@@ -1,5 +1,6 @@
 from collections.abc import Mapping
-
+import numpy as np
+import h5py
 
 class CompatibilityError(Exception):
     """Raised when using features that are not part of the NetCDF4 API."""
@@ -28,3 +29,18 @@ class Frozen(Mapping):
 
     def __repr__(self):
         return f"{type(self).__name__}({self._mapping!r})"
+
+
+def write_classic_string_attr(gid, name, value):
+    """Write a string attribute to an HDF5 object with control over the strpad."""
+    # Convert to bytes
+    if isinstance(value, str):
+        value = value.encode("utf-8")
+
+    tid = h5py.h5t.C_S1.copy()
+    tid.set_size(len(value))
+    tid.set_strpad(h5py.h5t.STR_NULLTERM)
+    sid = h5py.h5s.create(h5py.h5s.SCALAR)
+    value = np.array(np.bytes_(value))
+    aid = h5py.h5a.create(gid, name.encode(), tid, sid)
+    aid.write(value, mtype=aid.get_type())

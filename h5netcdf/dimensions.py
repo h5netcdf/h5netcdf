@@ -84,6 +84,7 @@ class Dimension:
         self._h5path = _join_h5paths(parent.name, name)
         self._name = name
         self._size = 0 if size is None else size
+
         if self._phony:
             self._root._phony_dim_count += 1
         else:

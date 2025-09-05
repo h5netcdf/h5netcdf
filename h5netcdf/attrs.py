@@ -1,6 +1,7 @@
 from collections.abc import MutableMapping
-
 import numpy as np
+from .utils import write_classic_string_attr
+
 
 _HIDDEN_ATTRS = frozenset(
     [
@@ -17,10 +18,11 @@ _HIDDEN_ATTRS = frozenset(
 
 
 class Attributes(MutableMapping):
-    def __init__(self, h5attrs, check_dtype, h5py_pckg):
+    def __init__(self, h5attrs, check_dtype, h5py_pckg, format="NETCDF4"):
         self._h5attrs = h5attrs
         self._check_dtype = check_dtype
         self._h5py = h5py_pckg
+        self._format = format
 
     def __getitem__(self, key):
         if key in _HIDDEN_ATTRS:
@@ -83,7 +85,14 @@ class Attributes(MutableMapping):
             dtype = np.asarray(value).dtype
 
         self._check_dtype(dtype)
-        self._h5attrs[key] = value
+
+        if self._format == "NETCDF4_CLASSIC":
+            if dtype.kind in ["S", "U"]:
+                write_classic_string_attr(self._h5attrs._id, key, value)
+            else:
+                self._h5attrs[key] = np.atleast_1d(value)
+        else:
+            self._h5attrs[key] = value
 
     def __delitem__(self, key):
         del self._h5attrs[key]

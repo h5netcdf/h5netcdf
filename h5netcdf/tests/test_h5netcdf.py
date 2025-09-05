@@ -92,16 +92,17 @@ def get_hdf5_module(resource):
 def h5dump(fn: str):
     """Call h5dump on an h5netcdf file."""
     import subprocess
+    import re
 
     out = subprocess.run(
-        ["h5dump", "-A", "-B", fn], check=False, capture_output=True
+        ["h5dump", "-A", fn], check=False, capture_output=True
     ).stdout.decode()
 
-    # Strip first and last line
-    # HDF5 "file" {
-    # ...
-    # }
-    return "\n".join(out.splitlines()[1:-1])
+    # Strip non-deterministic components
+    out = re.sub(r'DATASET [0-9]+ "', 'DATASET XXXX "', out)
+
+    return out
+
 
     #
     # @requires_netCDF4
