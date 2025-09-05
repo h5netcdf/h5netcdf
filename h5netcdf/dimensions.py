@@ -1,7 +1,7 @@
 import weakref
 from collections import OrderedDict
 from collections.abc import MutableMapping
-
+from .utils import CompatibilityError
 import numpy as np
 
 
@@ -23,8 +23,14 @@ class Dimensions(MutableMapping):
             raise RuntimeError("H5NetCDF: Write to read only")
         if name in self._objects:
             raise ValueError(f"dimension {name!r} already exists")
+        if size in [0, None] and self.unlimited() and self._group._format == "NETCDF4_CLASSIC":
+            raise CompatibilityError("Only one unlimited dimension allowed in the NETCDF4_CLASSIC format.")
 
         self._objects[name] = Dimension(self._group, name, size, create_h5ds=True)
+
+    def unlimited(self):
+        """Return a tuple of unlimited dimensions."""
+        return tuple(dim for dim in self._objects.values() if dim.isunlimited())
 
     def add_phony(self, name, size):
         self._objects[name] = Dimension(

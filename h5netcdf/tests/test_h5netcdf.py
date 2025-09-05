@@ -76,6 +76,11 @@ def netcdf_write_module(request):
     return request.param
 
 
+@pytest.fixture(params=["NETCDF4", "NETCDF4_CLASSIC"])
+def format(request):
+    return dict(format=request.param)
+
+
 def get_hdf5_module(resource):
     """Return the correct h5py module based on the input resource."""
     if isinstance(resource, str) and resource.startswith(remote_h5):
@@ -83,6 +88,37 @@ def get_hdf5_module(resource):
     else:
         return h5py
 
+
+def h5dump(fn: str):
+    """Call h5dump on an h5netcdf file."""
+    import subprocess
+
+    out = subprocess.run(
+        ["h5dump", "-A", "-B", fn], check=False, capture_output=True
+    ).stdout.decode()
+
+    # Strip first and last line
+    # HDF5 "file" {
+    # ...
+    # }
+    return "\n".join(out.splitlines()[1:-1])
+
+    #
+    # @requires_netCDF4
+    # def test_h5dump(self, tmp_path) -> None:
+    #     data = create_test_data()
+    #
+    #     # Dump the representation of the netCDF4-generated file
+    #     fn = tmp_path / "netcdf4.nc"
+    #     data.to_netcdf(fn, engine="netcdf4", format=self.file_format)
+    #     expected = _h5dump(fn)
+    #
+    #     # Dump the representation of the h5netcdf-generated file
+    #     fn = tmp_path / "h5netcdf.nc"
+    #     data.to_netcdf(fn, engine=self.engine, format=self.file_format)
+    #     actual = _h5dump(fn)
+    #
+    #     assert expected == actual
 
 def string_to_char(arr):
     """Like nc4.stringtochar, but faster and more flexible."""
@@ -133,22 +169,27 @@ def is_h5py_char_working(tmp_netcdf, name):
             raise
 
 
-def write_legacy_netcdf(tmp_netcdf, write_module):
-    ds = write_module.Dataset(tmp_netcdf, "w")
-    ds.setncattr("global", 42)
+def write_legacy_netcdf(tmp_netcdf, write_module, format="NETCDF4"):
+    ds = write_module.Dataset(tmp_netcdf, mode="w", format=format)
+    intf = np.int64 if format == "NETCDF4" else np.int32
+
+    ds.setncattr("global", intf(42))
     ds.other_attr = "yes"
     ds.createDimension("x", 4)
     ds.createDimension("y", 5)
     ds.createDimension("z", 6)
-    ds.createDimension("empty", 0)
     ds.createDimension("string3", 3)
     ds.createDimension("unlimited", None)
+
+    if format == "NETCDF4":
+        # In the CLASSIC format, only one unlimited dimension is allowed
+        ds.createDimension("empty", 0)
 
     v = ds.createVariable("foo", float, ("x", "y"), chunksizes=(4, 5), zlib=True)
     v[...] = 1
     v.setncattr("units", "meters")
 
-    v = ds.createVariable("y", int, ("y",), fill_value=-1)
+    v = ds.createVariable("y", intf, ("y",), fill_value=intf(-1))
     v[:4] = np.arange(4)
 
     v = ds.createVariable("z", "S1", ("z", "string3"), fill_value=b"X")
@@ -158,7 +199,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     v[...] = 2.0
 
     # test creating a scalar with compression option (with should be ignored)
-    v = ds.createVariable("intscalar", np.int64, (), zlib=6, fill_value=None)
+    v = ds.createVariable("intscalar", intf, (), zlib=6, fill_value=None)
     v[...] = 2
 
     v = ds.createVariable("foo_unlimited", float, ("x", "unlimited"))
@@ -170,37 +211,57 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ):
         ds.createVariable("boolean", np.bool_, ("x"))
 
-    g = ds.createGroup("subgroup")
-    v = g.createVariable("subvar", np.int32, ("x",))
-    v[...] = np.arange(4.0)
-
-    g.createDimension("y", 10)
-    g.createVariable("y_var", float, ("y",))
-
     ds.createDimension("mismatched_dim", 1)
-    ds.createVariable("mismatched_dim", int, ())
+    ds.createVariable("mismatched_dim", intf, ())
 
-    v = ds.createVariable("var_len_str", str, ("x"))
-    v[0] = "foo"
+    if format == "NETCDF4":
+        g = ds.createGroup("subgroup")
+        v = g.createVariable("subvar", np.int32, ("x",))
+        v[...] = np.arange(4.0)
 
-    enum_dict = dict(one=1, two=2, three=3, missing=255)
-    enum_type = ds.createEnumType(np.uint8, "enum_t", enum_dict)
-    v = ds.createVariable(
-        "enum_var",
-        enum_type,
-        ("x",),
-        fill_value=enum_dict["missing"],
-    )
-    v[0:3] = [1, 2, 3]
+        g.createDimension("y", 10)
+        g.createVariable("y_var", float, ("y",))
+
+        v = ds.createVariable("var_len_str", str, ("x"))
+        v[0] = "foo"
+
+        enum_dict = dict(one=1, two=2, three=3, missing=255)
+        enum_type = ds.createEnumType(np.uint8, "enum_t", enum_dict)
+        v = ds.createVariable(
+            "enum_var",
+            enum_type,
+            ("x",),
+            fill_value=enum_dict["missing"],
+        )
+        v[0:3] = [1, 2, 3]
 
     ds.close()
 
 
-def write_h5netcdf(tmp_netcdf, compression="gzip"):
-    ds = h5netcdf.File(tmp_netcdf, "w")
-    ds.attrs["global"] = 42
+def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
+    ds = h5netcdf.File(tmp_netcdf, mode="w", format=format)
+    intf = np.int64 if format == "NETCDF4" else np.int32
+    ds.attrs["global"] = intf(42)
     ds.attrs["other_attr"] = "yes"
-    ds.dimensions = {"x": 4, "y": 5, "z": 6, "empty": 0, "unlimited": None}
+
+    if format == "NETCDF4_CLASSIC":
+        with raises(CompatibilityError):
+            ds.dimensions = {"x": 4, "y": 5, "z": 6, "unlimited": None, "empty": 0}
+
+    ds.dimensions = {"x": 4, "y": 5, "z": 6, "unlimited": None}
+
+    if format == "NETCDF4":
+        ds.dimensions["empty"] = 0
+
+    if format == "NETCDF4_CLASSIC":
+        with raises(CompatibilityError):
+            ds.dimensions["empty"] = 0
+
+        with raises(CompatibilityError):
+            ds.attrs["int64_attr"] = 42
+
+        # with raises(CompatibilityError):
+        #     ds.create_variable("mismatched_dim", (), dtype=intf)
 
     v = ds.create_variable(
         "foo", ("x", "y"), float, chunks=(4, 5), compression=compression, shuffle=True
@@ -210,14 +271,14 @@ def write_h5netcdf(tmp_netcdf, compression="gzip"):
 
     remote_file = isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5)
     if not remote_file:
-        v = ds.create_variable("y", ("y",), int, fillvalue=-1)
+        v = ds.create_variable("y", ("y",), intf, fillvalue=intf(-1))
         v[:4] = np.arange(4)
 
     v = ds.create_variable("z", ("z", "string3"), data=_char_array, fillvalue=b"X")
 
     v = ds.create_variable("scalar", data=np.float32(2.0))
 
-    v = ds.create_variable("intscalar", data=np.int64(2))
+    v = ds.create_variable("intscalar", data=intf(2))
 
     v = ds.create_variable("foo_unlimited", ("x", "unlimited"), float)
     v[...] = 1
@@ -225,36 +286,45 @@ def write_h5netcdf(tmp_netcdf, compression="gzip"):
     with raises((h5netcdf.CompatibilityError, TypeError)):
         ds.create_variable("boolean", data=True)
 
-    g = ds.create_group("subgroup")
-    v = g.create_variable("subvar", ("x",), np.int32)
-    v[...] = np.arange(4.0)
-    with raises(AttributeError):
-        v.attrs["_Netcdf4Dimid"] = -1
-
-    g.dimensions["y"] = 10
-    g.create_variable("y_var", ("y",), float)
-    g.flush()
-
     ds.dimensions["mismatched_dim"] = 1
-    ds.create_variable("mismatched_dim", dtype=int)
+    ds.create_variable("mismatched_dim", dtype=intf)
     ds.flush()
 
-    dt = h5py.special_dtype(vlen=str)
-    v = ds.create_variable("var_len_str", ("x",), dtype=dt)
-    v[0] = _vlen_string
+    if format == "NETCDF4":
+        g = ds.create_group("subgroup")
+        v = g.create_variable("subvar", ("x",), np.int32)
+        v[...] = np.arange(4.0)
+        with raises(AttributeError):
+            v.attrs["_Netcdf4Dimid"] = -1
 
-    enum_dict = dict(one=1, two=2, three=3, missing=255)
-    enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict)
-    v = ds.create_variable(
-        "enum_var", ("x",), dtype=enum_type, fillvalue=enum_dict["missing"]
-    )
-    v[0:3] = [1, 2, 3]
+        g.dimensions["y"] = 10
+        g.create_variable("y_var", ("y",), float)
+        g.flush()
+
+        dt = h5py.special_dtype(vlen=str)
+        v = ds.create_variable("var_len_str", ("x",), dtype=dt)
+        v[0] = _vlen_string
+
+        enum_dict = dict(one=1, two=2, three=3, missing=255)
+        enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict)
+        v = ds.create_variable(
+            "enum_var", ("x",), dtype=enum_type, fillvalue=enum_dict["missing"]
+        )
+        v[0:3] = [1, 2, 3]
 
     ds.close()
 
 
 def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     ds = read_module.Dataset(tmp_netcdf, "r")
+
+    if read_module is netCDF4:
+        format = ds.data_model
+    else:
+        format = ds._format
+
+    intf = np.int64 if format == "NETCDF4" else np.int32
+
     assert ds.ncattrs() == ["global", "other_attr"]
     assert ds.getncattr("global") == 42
     if write_module is not netCDF4:
@@ -262,52 +332,57 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
         assert ds.other_attr == "yes"
     with raises(AttributeError, match="not found"):
         ds.does_not_exist
-    assert set(ds.dimensions) == {
+    dimensions = {
         "x",
         "y",
         "z",
-        "empty",
         "string3",
         "mismatched_dim",
         "unlimited",
     }
-    assert set(ds.variables) == {
-        "enum_var",
+    variables = {
         "foo",
         "y",
         "z",
         "intscalar",
         "scalar",
-        "var_len_str",
-        "mismatched_dim",
         "foo_unlimited",
+        "mismatched_dim",
     }
+    if format == "NETCDF4":
+        dimensions |= {"empty"}
+        variables |= {"enum_var", "var_len_str", }
 
-    assert set(ds.enumtypes) == {"enum_t"}
+    assert set(ds.dimensions) == dimensions
+    assert set(ds.variables) == variables
 
-    assert set(ds.groups) == {"subgroup"}
-    assert ds.parent is None
-    v = ds.variables["foo"]
-    assert array_equal(v, np.ones((4, 5)))
-    assert v.dtype == float
-    assert v.dimensions == ("x", "y")
-    assert v.ndim == 2
-    assert v.ncattrs() == ["units"]
-    if write_module is not netCDF4:
-        assert v.getncattr("units") == "meters"
-    assert tuple(v.chunking()) == (4, 5)
+    if format == "NETCDF4":
+        assert set(ds.enumtypes) == {"enum_t"}
 
-    # check for dict items separately
-    # see https://github.com/h5netcdf/h5netcdf/issues/171
-    filters = v.filters()
-    assert filters["complevel"] == 4
-    assert filters["fletcher32"] is False
-    assert filters["shuffle"] is True
-    assert filters["zlib"] is True
+        assert set(ds.groups) == {"subgroup"}
+        assert ds.parent is None
+        v = ds.variables["foo"]
+        assert array_equal(v, np.ones((4, 5)))
+        assert v.dtype == float
+        assert v.dimensions == ("x", "y")
+        assert v.ndim == 2
+        assert v.ncattrs() == ["units"]
+
+        if write_module is not netCDF4:
+            assert v.getncattr("units") == "meters"
+        assert tuple(v.chunking()) == (4, 5)
+
+        # check for dict items separately
+        # see https://github.com/h5netcdf/h5netcdf/issues/171
+        filters = v.filters()
+        assert filters["complevel"] == 4
+        assert filters["fletcher32"] is False
+        assert filters["shuffle"] is True
+        assert filters["zlib"] is True
 
     v = ds.variables["y"]
     assert array_equal(v, np.r_[np.arange(4), [-1]])
-    assert v.dtype == int
+    assert v.dtype == intf
     assert v.dimensions == ("y",)
     assert v.ndim == 1
     assert v.ncattrs() == ["_FillValue"]
@@ -347,32 +422,33 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 
     v = ds.variables["intscalar"]
     assert array_equal(v, np.array(2))
-    assert v.dtype == "int64"
+    assert v.dtype == intf
     assert v.ndim == 0
     assert v.dimensions == ()
     assert v.ncattrs() == []
 
-    v = ds.variables["var_len_str"]
-    assert v.dtype == str
-    assert v[0] == _vlen_string
+    if format == "NETCDF4":
+        v = ds.variables["var_len_str"]
+        assert v.dtype == str
+        assert v[0] == _vlen_string
 
-    v = ds.groups["subgroup"].variables["subvar"]
-    assert ds.groups["subgroup"].parent is ds
-    assert array_equal(v, np.arange(4.0))
-    assert v.dtype == "int32"
-    assert v.ndim == 1
-    assert v.dimensions == ("x",)
-    assert v.ncattrs() == []
+        v = ds.groups["subgroup"].variables["subvar"]
+        assert ds.groups["subgroup"].parent is ds
+        assert array_equal(v, np.arange(4.0))
+        assert v.dtype == "int32"
+        assert v.ndim == 1
+        assert v.dimensions == ("x",)
+        assert v.ncattrs() == []
 
-    v = ds.groups["subgroup"].variables["y_var"]
-    assert v.shape == (10,)
-    assert "y" in ds.groups["subgroup"].dimensions
+        v = ds.groups["subgroup"].variables["y_var"]
+        assert v.shape == (10,)
+        assert "y" in ds.groups["subgroup"].dimensions
 
-    enum_dict = dict(one=1, two=2, three=3, missing=255)
-    enum_type = ds.enumtypes["enum_t"]
-    assert enum_type.enum_dict == enum_dict
-    v = ds.variables["enum_var"]
-    assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
+        enum_dict = dict(one=1, two=2, three=3, missing=255)
+        enum_type = ds.enumtypes["enum_t"]
+        assert enum_type.enum_dict == enum_dict
+        v = ds.variables["enum_var"]
+        assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
 
     ds.close()
 
@@ -380,37 +456,42 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     remote_file = isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5)
     ds = h5netcdf.File(tmp_netcdf, "r", **decode_vlen_strings)
+    format = ds._format
+    intf = np.int64 if format == "NETCDF4" else np.int32
+
     assert ds.name == "/"
     assert list(ds.attrs) == ["global", "other_attr"]
     assert ds.attrs["global"] == 42
     if write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs["other_attr"] == "yes"
-    assert set(ds.dimensions) == {
+    dimensions = {
         "x",
         "y",
         "z",
-        "empty",
         "string3",
         "mismatched_dim",
         "unlimited",
     }
     variables = {
-        "enum_var",
         "foo",
         "z",
         "intscalar",
         "scalar",
-        "var_len_str",
-        "mismatched_dim",
         "foo_unlimited",
+        "mismatched_dim",
     }
     # fix current failure of hsds/h5pyd
     if not remote_file:
         variables |= {"y"}
+
+    if format == "NETCDF4":
+        dimensions |= {"empty"}
+        variables |= {"enum_var", "var_len_str"}
+
+    assert set(ds.dimensions) == dimensions
     assert set(ds.variables) == variables
 
-    assert set(ds.groups) == {"subgroup"}
     assert ds.parent is None
 
     v = ds["foo"]
@@ -432,7 +513,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     if not remote_file:
         v = ds["y"]
         assert array_equal(v, np.r_[np.arange(4), [-1]])
-        assert v.dtype == int
+        assert v.dtype == intf
         assert v.dimensions == ("y",)
         assert v.ndim == 1
         assert list(v.attrs) == ["_FillValue"]
@@ -466,45 +547,48 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
 
     v = ds.variables["intscalar"]
     assert array_equal(v, np.array(2))
-    assert v.dtype == "int64"
+    assert v.dtype == intf
     assert v.ndim == 0
     assert v.dimensions == ()
     assert list(v.attrs) == []
 
-    v = ds["var_len_str"]
-    assert h5py.check_dtype(vlen=v.dtype) is str
-    if getattr(ds, "decode_vlen_strings", True):
-        assert v[0] == _vlen_string
-    else:
-        assert v[0] == _vlen_string.encode("utf_8")
+    if format == "NETCDF4":
+        assert set(ds.groups) == {"subgroup"}
 
-    v = ds["/subgroup/subvar"]
-    assert v is ds["subgroup"]["subvar"]
-    assert v is ds["subgroup/subvar"]
-    assert v is ds["subgroup"]["/subgroup/subvar"]
-    assert v.name == "/subgroup/subvar"
-    assert ds["subgroup"].name == "/subgroup"
-    assert ds["subgroup"].parent is ds
-    assert array_equal(v, np.arange(4.0))
-    assert v.dtype == "int32"
-    assert v.ndim == 1
-    assert v.dimensions == ("x",)
-    assert list(v.attrs) == []
+        v = ds["var_len_str"]
+        assert h5py.check_dtype(vlen=v.dtype) is str
+        if getattr(ds, "decode_vlen_strings", True):
+            assert v[0] == _vlen_string
+        else:
+            assert v[0] == _vlen_string.encode("utf_8")
 
-    assert ds["/subgroup/y_var"].shape == (10,)
-    assert ds["/subgroup"].dimensions["y"].size == 10
+        v = ds["/subgroup/subvar"]
+        assert v is ds["subgroup"]["subvar"]
+        assert v is ds["subgroup/subvar"]
+        assert v is ds["subgroup"]["/subgroup/subvar"]
+        assert v.name == "/subgroup/subvar"
+        assert ds["subgroup"].name == "/subgroup"
+        assert ds["subgroup"].parent is ds
+        assert array_equal(v, np.arange(4.0))
+        assert v.dtype == "int32"
+        assert v.ndim == 1
+        assert v.dimensions == ("x",)
+        assert list(v.attrs) == []
 
-    enum_dict = dict(one=1, two=2, three=3, missing=255)
-    enum_type = ds.enumtypes["enum_t"]
-    assert enum_type.enum_dict == enum_dict
-    v = ds.variables["enum_var"]
-    assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
+        assert ds["/subgroup/y_var"].shape == (10,)
+        assert ds["/subgroup"].dimensions["y"].size == 10
+
+        enum_dict = dict(one=1, two=2, three=3, missing=255)
+        enum_type = ds.enumtypes["enum_t"]
+        assert enum_type.enum_dict == enum_dict
+        v = ds.variables["enum_var"]
+        assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
 
     ds.close()
 
 
-def roundtrip_legacy_netcdf(tmp_netcdf, read_module, write_module):
-    write_legacy_netcdf(tmp_netcdf, write_module)
+def roundtrip_legacy_netcdf(tmp_netcdf, read_module, write_module, format="NETCDF4"):
+    write_legacy_netcdf(tmp_netcdf, write_module, format)
     read_legacy_netcdf(tmp_netcdf, read_module, write_module)
 
 
@@ -525,13 +609,13 @@ def test_write_h5netcdf_read_legacyapi(tmp_local_netcdf):
     read_legacy_netcdf(tmp_local_netcdf, legacyapi, h5netcdf)
 
 
-def test_write_h5netcdf_read_netCDF4(tmp_local_netcdf):
-    write_h5netcdf(tmp_local_netcdf)
+def test_write_h5netcdf_read_netCDF4(tmp_local_netcdf, format):
+    write_h5netcdf(tmp_local_netcdf, **format)
     read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf)
 
 
-def test_roundtrip_h5netcdf(tmp_local_or_remote_netcdf, decode_vlen_strings):
-    write_h5netcdf(tmp_local_or_remote_netcdf)
+def test_roundtrip_h5netcdf(tmp_local_or_remote_netcdf, decode_vlen_strings, format):
+    write_h5netcdf(tmp_local_or_remote_netcdf, **format)
     read_h5netcdf(tmp_local_or_remote_netcdf, h5netcdf, decode_vlen_strings)
 
 
@@ -540,8 +624,8 @@ def test_write_compression_as_zlib(tmp_local_netcdf):
     read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf)
 
 
-def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):
-    write_legacy_netcdf(tmp_local_netcdf, netCDF4)
+def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings, format):
+    write_legacy_netcdf(tmp_local_netcdf, netCDF4, **format)
     read_h5netcdf(tmp_local_netcdf, netCDF4, decode_vlen_strings)
 
 
@@ -2838,3 +2922,12 @@ def test_raise_on_closed_file(tmp_local_netcdf):
         match=f"I/O operation on <Closed h5netcdf.File>: '{tmp_local_netcdf}'",
     ):
         print(v[:])
+
+def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf):
+    write_legacy_netcdf(tmp_local_netcdf, netCDF4, format="NETCDF4_CLASSIC")
+    expected = h5dump(tmp_local_netcdf)
+
+    write_legacy_netcdf(tmp_local_netcdf, legacyapi, format="NETCDF4_CLASSIC")
+    actual = h5dump(tmp_local_netcdf)
+
+    assert actual == expected

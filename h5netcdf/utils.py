@@ -1,6 +1,10 @@
 from collections.abc import Mapping
 
 
+class CompatibilityError(Exception):
+    """Raised when using features that are not part of the NetCDF4 API."""
+
+
 class Frozen(Mapping):
     """Wrapper around an object implementing the mapping interface to make it
     immutable. If you really want to modify the mapping, the mutable version is
