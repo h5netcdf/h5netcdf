@@ -983,7 +983,7 @@ class Group(Mapping):
             unlimited_dims = list(filter(lambda s: s in [None, 0], value.values()))
             if len(unlimited_dims) > 1:
                 raise CompatibilityError(
-                    "NETCDF4_CLASSIC format only allows one unlimited dimension"
+                    "NETCDF4_CLASSIC format only allows one unlimited dimension."
                 )
 
         for k, v in self._all_dimensions.maps[0].items():
@@ -1229,7 +1229,6 @@ class Group(Mapping):
 
             if self._root._format == "NETCDF4_CLASSIC" and len(dimensions) == 0:
                 raise CompatibilityError(
-                    "NETCDF4_CLASSIC format does not allow variables without dimensions."
                     "NETCDF4_CLASSIC format does not allow variables without dimensions."
                 )
 

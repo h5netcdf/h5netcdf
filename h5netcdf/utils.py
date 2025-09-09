@@ -42,5 +42,7 @@ def write_classic_string_attr(gid, name, value):
     tid.set_strpad(h5py.h5t.STR_NULLTERM)
     sid = h5py.h5s.create(h5py.h5s.SCALAR)
     value = np.array(np.bytes_(value))
+    if h5py.h5a.exists(gid, name.encode()):
+        h5py.h5a.delete(gid, name.encode())
     aid = h5py.h5a.create(gid, name.encode(), tid, sid)
     aid.write(value, mtype=aid.get_type())

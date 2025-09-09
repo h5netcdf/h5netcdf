@@ -5,6 +5,8 @@ Development Version (unreleased):
 
 - Fix unintentional changes in test suite (:pull:`277`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Add the `format` argument to `h5netcdf.File` and partial support for the `NETCDF4_CLASSIC` format (:issue:`280`, :pull:``).
+  By `David Huard <https://github.com/huard>`_
 
 Version 1.6.4 (August 5th, 2025):
 
