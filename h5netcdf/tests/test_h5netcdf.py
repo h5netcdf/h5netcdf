@@ -2283,7 +2283,7 @@ def test_vlen_string_dataset_fillvalue(tmp_local_netcdf, decode_vlen_strings):
 )
 def test_ros3():
     fname = (
-        "https://www.unidata.ucar.edu/software/netcdf/examples/OMI-Aura_L2-example.nc"
+        "https://archive.unidata.ucar.edu/software/netcdf/examples/OMI-Aura_L2-example.nc"
     )
     f = h5netcdf.File(fname, "r", driver="ros3")
     assert "Temperature" in list(f)
