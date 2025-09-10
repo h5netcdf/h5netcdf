@@ -88,7 +88,7 @@ class Attributes(MutableMapping):
         self._check_dtype(dtype)
 
         if self._format == "NETCDF4_CLASSIC":
-            if dtype.kind in ["S", "U"]:
+            if dtype.kind in ["S", "U"] and self._h5py.__name__ == "h5py":
                 write_classic_string_attr(self._h5attrs._id, key, value)
             else:
                 self._h5attrs[key] = np.atleast_1d(value)
