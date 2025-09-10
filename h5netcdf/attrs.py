@@ -1,7 +1,8 @@
 from collections.abc import MutableMapping
-import numpy as np
-from .utils import write_classic_string_attr
 
+import numpy as np
+
+from .utils import write_classic_string_attr
 
 _HIDDEN_ATTRS = frozenset(
     [

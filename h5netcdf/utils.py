@@ -1,6 +1,8 @@
 from collections.abc import Mapping
-import numpy as np
+
 import h5py
+import numpy as np
+
 
 class CompatibilityError(Exception):
     """Raised when using features that are not part of the NetCDF4 API."""

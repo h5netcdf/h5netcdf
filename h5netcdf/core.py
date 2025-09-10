@@ -13,7 +13,7 @@ from packaging import version
 from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
-from .utils import Frozen, CompatibilityError
+from .utils import CompatibilityError, Frozen
 
 try:
     import h5pyd
@@ -589,7 +589,10 @@ class BaseVariable(BaseObject):
     def attrs(self):
         """Return variable attributes."""
         return Attributes(
-            self._h5ds.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py, format=self._root._format
+            self._h5ds.attrs,
+            self._root._check_valid_netcdf_dtype,
+            self._root._h5py,
+            format=self._root._format,
         )
 
     _cls_name = "h5netcdf.Variable"
@@ -1355,7 +1358,10 @@ class Group(Mapping):
     @property
     def attrs(self):
         return Attributes(
-            self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py, self._root._format
+            self._h5group.attrs,
+            self._root._check_valid_netcdf_dtype,
+            self._root._h5py,
+            self._root._format,
         )
 
     _cls_name = "h5netcdf.Group"
@@ -1454,7 +1460,15 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(self, path, mode="r", format="NETCDF4", invalid_netcdf=False, phony_dims=None, **kwargs):
+    def __init__(
+        self,
+        path,
+        mode="r",
+        format="NETCDF4",
+        invalid_netcdf=False,
+        phony_dims=None,
+        **kwargs,
+    ):
         """NetCDF4 file constructor.
 
         Parameters
@@ -1587,7 +1601,11 @@ class File(Group):
             self._closed = False
 
         if self._preexisting_file:
-            format = "NETCDF4_CLASSIC" if self._h5file.attrs.get("_nc3_strict") else "NETCDF4"
+            format = (
+                "NETCDF4_CLASSIC"
+                if self._h5file.attrs.get("_nc3_strict")
+                else "NETCDF4"
+            )
 
         self._filename = self._h5file.filename
         self._mode = mode
@@ -1661,8 +1679,10 @@ class File(Group):
             description = "boolean"
         elif self._h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
-        elif dtype in [int, np.int64, np.uint64, np.uint32, np.uint16, np.uint8] and self._format == \
-                "NETCDF4_CLASSIC":
+        elif (
+            dtype in [int, np.int64, np.uint64, np.uint32, np.uint16, np.uint8]
+            and self._format == "NETCDF4_CLASSIC"
+        ):
             description = f"{dtype} (CLASSIC)"
         else:
             description = None

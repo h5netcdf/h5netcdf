@@ -91,8 +91,8 @@ def get_hdf5_module(resource):
 
 def h5dump(fn: str):
     """Call h5dump on an h5netcdf file."""
-    import subprocess
     import re
+    import subprocess
 
     out = subprocess.run(
         ["h5dump", "-A", fn], check=False, capture_output=True
@@ -229,7 +229,10 @@ def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
     ds.attrs["other_attr"] = "yes"
 
     if format == "NETCDF4_CLASSIC":
-        with raises(CompatibilityError, match="NETCDF4_CLASSIC format only allows one unlimited dimension."):
+        with raises(
+            CompatibilityError,
+            match="NETCDF4_CLASSIC format only allows one unlimited dimension.",
+        ):
             ds.dimensions = {"x": 4, "y": 5, "z": 6, "unlimited": None, "empty": 0}
 
     ds.dimensions = {"x": 4, "y": 5, "z": 6, "unlimited": None}
@@ -238,7 +241,10 @@ def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
         ds.dimensions["empty"] = 0
 
     if format == "NETCDF4_CLASSIC":
-        with raises(CompatibilityError, match="Only one unlimited dimension allowed in the NETCDF4_CLASSIC format."):
+        with raises(
+            CompatibilityError,
+            match="Only one unlimited dimension allowed in the NETCDF4_CLASSIC format.",
+        ):
             ds.dimensions["empty"] = 0
 
         with raises(CompatibilityError, match=r"int64 \(CLASSIC\) dtypes"):
@@ -332,7 +338,10 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     }
     if format == "NETCDF4":
         dimensions |= {"empty"}
-        variables |= {"enum_var", "var_len_str", }
+        variables |= {
+            "enum_var",
+            "var_len_str",
+        }
 
     assert set(ds.dimensions) == dimensions
     assert set(ds.variables) == variables
@@ -2902,10 +2911,12 @@ def test_raise_on_closed_file(tmp_local_netcdf):
     ):
         print(v[:])
 
-@pytest.mark.xfail(reason="netCDF4 and h5netcdf still have slight differences in output")
+
+@pytest.mark.xfail(
+    reason="netCDF4 and h5netcdf still have slight differences in output"
+)
 def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf):
-    """Check that the generated file is identical to netCDF4 by comparing h5dump output.
-    """
+    """Check that the generated file is identical to netCDF4 by comparing h5dump output."""
     write_legacy_netcdf(tmp_local_netcdf, netCDF4, format="NETCDF4_CLASSIC")
     expected = h5dump(tmp_local_netcdf)
 
@@ -2921,6 +2932,8 @@ def test_is_classic(tmp_local_netcdf):
 
     write_h5netcdf(tmp_local_netcdf, format="NETCDF4_CLASSIC")
 
-    out = subprocess.run(["ncdump", "-k", tmp_local_netcdf], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out = subprocess.run(
+        ["ncdump", "-k", tmp_local_netcdf],
+        capture_output=True
+    )
     assert out.stdout.decode().strip() == "netCDF-4 classic model"
-
