@@ -2932,8 +2932,5 @@ def test_is_classic(tmp_local_netcdf):
 
     write_h5netcdf(tmp_local_netcdf, format="NETCDF4_CLASSIC")
 
-    out = subprocess.run(
-        ["ncdump", "-k", tmp_local_netcdf],
-        capture_output=True
-    )
+    out = subprocess.run(["ncdump", "-k", tmp_local_netcdf], capture_output=True)
     assert out.stdout.decode().strip() == "netCDF-4 classic model"
