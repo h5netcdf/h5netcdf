@@ -203,10 +203,8 @@ class Dimension:
             )
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
-        # need special handling for size in case of scalar and tuple
+        # need special handling for size in case of tuple
         size = self._size
-        if not size:
-            size = 1
         if isinstance(size, tuple):
             size = size[0]
         dimlen = bytes(f"{size:10}", "ascii")

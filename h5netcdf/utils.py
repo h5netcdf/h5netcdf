@@ -48,3 +48,21 @@ def write_classic_string_attr(gid, name, value):
         h5py.h5a.delete(gid, name.encode())
     aid = h5py.h5a.create(gid, name.encode(), tid, sid)
     aid.write(value, mtype=aid.get_type())
+
+
+def write_classic_string_dataset(gid, name, value, shape):
+    """Write a string dataset to an HDF5 object with control over the strpad."""
+    # Todo: This function need to be re-checked!
+    # Convert to bytes
+    if isinstance(value, str):
+        value = value.encode("utf-8")
+
+    tid = h5py.h5t.C_S1.copy()
+    tid.set_strpad(h5py.h5t.STR_NULLTERM)
+    if len(shape) <= 1:
+        sid = h5py.h5s.create(h5py.h5s.SCALAR)
+    else:
+        sid = h5py.h5s.create_simple(shape)
+    value = np.array(np.bytes_(value))
+    did = h5py.h5d.create(gid, name.encode(), tid, sid)
+    did.write(h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=did.get_type())

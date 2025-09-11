@@ -13,7 +13,12 @@ from packaging import version
 from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
-from .utils import CompatibilityError, Frozen
+from .utils import (
+    CompatibilityError,
+    Frozen,
+    write_classic_string_attr,
+    write_classic_string_dataset,
+)
 
 try:
     import h5pyd
@@ -344,8 +349,9 @@ class BaseVariable(BaseObject):
             [self._parent._all_dimensions[d]._dimid for d in dims],
             "int32",
         )
-
-        if len(coord_ids) > 1:
+        # add _Netcdf4Coordinates for multi-dimensional coordinate variables
+        # or for (one-dimensional) dimension coordinates
+        if len(coord_ids) > 1 or self.name.split("/")[-1] in dims:
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
     def _ensure_dim_id(self):
@@ -372,8 +378,13 @@ class BaseVariable(BaseObject):
                     if v.ndim == self.ndim:
                         new_max = max(v.shape[i], self._h5ds.shape[i])
                     elif v.ndim == 0:
-                        # for scalars we take the current dimension size (check in all dimensions
+                        # for scalar values we take the current dimension size
+                        # (check in all dimensions)
                         new_max = self._parent._all_dimensions[dim].size
+                        # but for compatibility with netcdf4-python/netcdf-c
+                        # we set at least 1
+                        if new_max == 0:
+                            new_max = 1
                     else:
                         raise IndexError("shape of data does not conform to slice")
                 else:
@@ -381,7 +392,10 @@ class BaseVariable(BaseObject):
                 # resize unlimited dimension if needed but no other variables
                 # this is in line with `netcdf4-python` which only resizes
                 # the dimension and this variable
-                if self._parent._all_dimensions[dim].size < new_max:
+                if (
+                    self._parent._all_dimensions[dim].size < new_max
+                    and self._root._format == "NETCDF4"
+                ):
                     self._parent.resize_dimension(dim, new_max)
                 new_shape += (new_max,)
             else:
@@ -1124,16 +1138,24 @@ class Group(Mapping):
         # fill value handling
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
 
-        # create hdf5 variable
-        self._h5group.create_dataset(
-            h5name,
-            shape,
-            dtype=dtype,
-            data=data,
-            chunks=chunks,
-            fillvalue=h5fillvalue,
-            **kwargs,
-        )
+        # for classif format string types write with low level API
+        if (
+            self._root._format == "NETCDF4_CLASSIC"
+            and np.dtype(dtype).kind in ["S", "U"]
+            and self._h5py.__name__ == "h5py"
+        ):
+            write_classic_string_dataset(self._h5group._id, h5name, data, shape)
+        else:
+            # create hdf5 variable
+            self._h5group.create_dataset(
+                h5name,
+                shape,
+                dtype=dtype,
+                data=data,
+                chunks=chunks,
+                fillvalue=h5fillvalue,
+                **kwargs,
+            )
 
         # create variable class instance
         variable = self._variable_cls(self, h5name, dimensions)
@@ -1148,6 +1170,8 @@ class Group(Mapping):
             self._all_dimensions[name]._create_scale()
             if refs is not None:
                 self._all_dimensions[name]._attach_scale(refs)
+                # re-attach coords, if needed
+                variable._attach_coords()
 
         # In case of data variables attach dim_scales and coords.
         if name in self.variables and h5name not in self._dimensions:
@@ -1718,12 +1742,17 @@ class File(Group):
                     f"hdf5={self._h5py.version.hdf5_version},"
                     f"{self._h5py.__name__}={self._h5py.__version__}"
                 )
-                self.attrs._h5attrs["_NCProperties"] = np.array(
-                    _NC_PROPERTIES,
-                    dtype=self._h5py.string_dtype(
-                        encoding="ascii", length=len(_NC_PROPERTIES)
-                    ),
-                )
+                if self._format == "NETCDF4_CLASSIC" and self._h5py.__name__ == "h5py":
+                    write_classic_string_attr(
+                        self.attrs._h5attrs._id, "_NCProperties", _NC_PROPERTIES
+                    )
+                else:
+                    self.attrs._h5attrs["_NCProperties"] = np.array(
+                        _NC_PROPERTIES,
+                        dtype=self._h5py.string_dtype(
+                            encoding="ascii", length=len(_NC_PROPERTIES)
+                        ),
+                    )
                 if self._format == "NETCDF4_CLASSIC":
                     self.attrs._h5attrs["_nc3_strict"] = np.array(1, np.int32)
 
