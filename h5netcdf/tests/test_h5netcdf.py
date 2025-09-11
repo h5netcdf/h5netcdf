@@ -196,7 +196,11 @@ def write_legacy_netcdf(tmp_netcdf, write_module):
     ds.close()
 
 
-def write_h5netcdf(tmp_netcdf, compression="gzip"):
+def write_h5netcdf(tmp_netcdf, compression="gzip", pyfive=False):
+    """
+    Test file written does not include enum variables or variable length
+    strings if pyfive is True
+    """
     ds = h5netcdf.File(tmp_netcdf, "w")
     ds.attrs["global"] = 42
     ds.attrs["other_attr"] = "yes"
@@ -239,22 +243,26 @@ def write_h5netcdf(tmp_netcdf, compression="gzip"):
     ds.create_variable("mismatched_dim", dtype=int)
     ds.flush()
 
-    dt = h5py.special_dtype(vlen=str)
-    v = ds.create_variable("var_len_str", ("x",), dtype=dt)
-    v[0] = _vlen_string
+    if not pyfive:
+        dt = h5py.special_dtype(vlen=str)
+        v = ds.create_variable("var_len_str", ("x",), dtype=dt)
+        v[0] = _vlen_string
 
-    enum_dict = dict(one=1, two=2, three=3, missing=255)
-    enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict)
-    v = ds.create_variable(
-        "enum_var", ("x",), dtype=enum_type, fillvalue=enum_dict["missing"]
-    )
-    v[0:3] = [1, 2, 3]
+        enum_dict = dict(one=1, two=2, three=3, missing=255)
+        enum_type = ds.create_enumtype(np.uint8, "enum_t", enum_dict)
+        v = ds.create_variable(
+            "enum_var", ("x",), dtype=enum_type, fillvalue=enum_dict["missing"]
+        )
+        v[0:3] = [1, 2, 3]
 
     ds.close()
 
 
-def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
-    ds = read_module.Dataset(tmp_netcdf, "r")
+def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend=None):
+    if read_module is legacyapi:
+        ds = read_module.Dataset(tmp_netcdf, "r", backend=backend)
+    else:
+        ds = read_module.Dataset(tmp_netcdf, "r")
     assert ds.ncattrs() == ["global", "other_attr"]
     assert ds.getncattr("global") == 42
     if write_module is not netCDF4:
@@ -271,7 +279,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
         "mismatched_dim",
         "unlimited",
     }
-    assert set(ds.variables) == {
+    variables = {
         "enum_var",
         "foo",
         "y",
@@ -282,8 +290,13 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
         "mismatched_dim",
         "foo_unlimited",
     }
+    if backend == "pyfive":
+        assert set(ds.variables) == variables - {'enum_var', 'var_len_str'}
+    else:
+        assert set(ds.variables) == variables
 
-    assert set(ds.enumtypes) == {"enum_t"}
+    if backend != "pyfive":
+        assert set(ds.enumtypes) == {"enum_t"}
 
     assert set(ds.groups) == {"subgroup"}
     assert ds.parent is None
@@ -352,9 +365,11 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.dimensions == ()
     assert v.ncattrs() == []
 
-    v = ds.variables["var_len_str"]
-    assert v.dtype == str
-    assert v[0] == _vlen_string
+    if backend != "pyfive":
+        # pyfive tests ignore var_len_str
+        v = ds.variables["var_len_str"]
+        assert v.dtype == str
+        assert v[0] == _vlen_string
 
     v = ds.groups["subgroup"].variables["subvar"]
     assert ds.groups["subgroup"].parent is ds
@@ -368,24 +383,27 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.shape == (10,)
     assert "y" in ds.groups["subgroup"].dimensions
 
-    enum_dict = dict(one=1, two=2, three=3, missing=255)
-    enum_type = ds.enumtypes["enum_t"]
-    assert enum_type.enum_dict == enum_dict
-    v = ds.variables["enum_var"]
-    assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
+    if backend != "pyfive":
+        # pyfive tests ignore enum_t and enum_var"
+        enum_dict = dict(one=1, two=2, three=3, missing=255)
+        enum_type = ds.enumtypes["enum_t"]
+        assert enum_type.enum_dict == enum_dict
+        v = ds.variables["enum_var"]
+        assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
 
     ds.close()
 
 
-def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
+def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend='h5py'):
     remote_file = isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5)
-    ds = h5netcdf.File(tmp_netcdf, "r", **decode_vlen_strings)
+    ds = h5netcdf.File(tmp_netcdf, "r", **decode_vlen_strings, backend=backend)
     assert ds.name == "/"
     assert list(ds.attrs) == ["global", "other_attr"]
     assert ds.attrs["global"] == 42
     if write_module is not netCDF4:
         # skip for now: https://github.com/Unidata/netcdf4-python/issues/388
         assert ds.attrs["other_attr"] == "yes"
+
     assert set(ds.dimensions) == {
         "x",
         "y",
@@ -405,10 +423,14 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
         "mismatched_dim",
         "foo_unlimited",
     }
+
     # fix current failure of hsds/h5pyd
     if not remote_file:
         variables |= {"y"}
-    assert set(ds.variables) == variables
+    if backend == "pyfive":
+        assert set(ds.variables) == variables - {'enum_var', 'var_len_str'}
+    else:
+        assert set(ds.variables) == variables
 
     assert set(ds.groups) == {"subgroup"}
     assert ds.parent is None
@@ -446,7 +468,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     ds.close()
 
     if is_h5py_char_working(tmp_netcdf, "z"):
-        ds = h5netcdf.File(tmp_netcdf, "r")
+        ds = h5netcdf.File(tmp_netcdf, "r", backend=backend)
         v = ds["z"]
         assert array_equal(v, _char_array)
         assert v.dtype == "S1"
@@ -455,7 +477,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
         assert list(v.attrs) == ["_FillValue"]
         assert v.attrs["_FillValue"] == b"X"
     else:
-        ds = h5netcdf.File(tmp_netcdf, "r", **decode_vlen_strings)
+        ds = h5netcdf.File(tmp_netcdf, "r", **decode_vlen_strings, backend=backend)
 
     v = ds["scalar"]
     assert array_equal(v, np.array(2.0))
@@ -471,12 +493,14 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     assert v.dimensions == ()
     assert list(v.attrs) == []
 
-    v = ds["var_len_str"]
-    assert h5py.check_dtype(vlen=v.dtype) is str
-    if getattr(ds, "decode_vlen_strings", True):
-        assert v[0] == _vlen_string
-    else:
-        assert v[0] == _vlen_string.encode("utf_8")
+    if backend != "pyfive":
+        # pyfive tests ignore var_len_str
+        v = ds["var_len_str"]
+        assert h5py.check_dtype(vlen=v.dtype) is str
+        if getattr(ds, "decode_vlen_strings", True):
+            assert v[0] == _vlen_string
+        else:
+            assert v[0] == _vlen_string.encode("utf_8")
 
     v = ds["/subgroup/subvar"]
     assert v is ds["subgroup"]["subvar"]
@@ -494,11 +518,13 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     assert ds["/subgroup/y_var"].shape == (10,)
     assert ds["/subgroup"].dimensions["y"].size == 10
 
-    enum_dict = dict(one=1, two=2, three=3, missing=255)
-    enum_type = ds.enumtypes["enum_t"]
-    assert enum_type.enum_dict == enum_dict
-    v = ds.variables["enum_var"]
-    assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
+    if backend != "pyfive":
+        # pyfive tests ignore enum_t and enum_var
+        enum_dict = dict(one=1, two=2, three=3, missing=255)
+        enum_type = ds.enumtypes["enum_t"]
+        assert enum_type.enum_dict == enum_dict
+        v = ds.variables["enum_var"]
+        assert array_equal(v, np.ma.masked_equal([1, 2, 3, 255], 255))
 
     ds.close()
 
@@ -557,6 +583,25 @@ def test_fileobj(decode_vlen_strings):
     fileobj = io.BytesIO()
     write_h5netcdf(fileobj)
     read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings)
+
+def test_fileobj_pyfive(decode_vlen_strings):
+    fileobj = io.BytesIO()
+    write_h5netcdf(fileobj, pyfive=True)
+    read_h5netcdf(fileobj, h5netcdf, decode_vlen_strings, backend="pyfive")
+
+def test_fileobj_pyfive_legacyapi():
+    fileobj = io.BytesIO()
+    write_h5netcdf(fileobj, pyfive=True)
+    read_legacy_netcdf(fileobj, legacyapi, legacyapi,  backend="pyfive")
+
+def test_h5py_file_obj(tmp_local_netcdf, decode_vlen_strings):
+    with h5py.File(tmp_local_netcdf, "w") as h5py_f:
+        write_h5netcdf(h5py_f)
+        read_h5netcdf(h5py_f, h5netcdf, decode_vlen_strings)
+
+        # The h5py File object should still be open & usable, although the
+        # h5netcdf file object has been closed.
+        assert isinstance(h5py_f["foo"], h5py.Dataset)
 
 
 def test_h5py_file_obj(tmp_local_netcdf, decode_vlen_strings):
@@ -2018,8 +2063,8 @@ def test_dimensions_in_parent_groups(tmpdir):
             assert repr(ds0["group00"]["test"]) == repr(ds1["group00"]["test"])
             assert repr(ds0["group00"]["x"]) == repr(ds1["group00"]["x"])
 
-
-def test_array_attributes(tmp_local_netcdf):
+@pytest.mark.parametrize("backend", [None, "pyfive"])
+def test_array_attributes(tmp_local_netcdf, backend):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
         dt = h5py.string_dtype("utf-8")
         unicode = "unicodé"
@@ -2073,7 +2118,7 @@ def test_array_attributes(tmp_local_netcdf):
         ds.attrs["empty_list"] = []
         ds.attrs["empty_array"] = np.array([])
 
-    with h5netcdf.File(tmp_local_netcdf, mode="r") as ds:
+    with h5netcdf.File(tmp_local_netcdf, mode="r", backend=backend) as ds:
         assert ds.attrs["unicode"] == unicode
         assert ds.attrs["unicode_0dim"] == unicode
         assert ds.attrs["unicode_1dim"] == unicode
@@ -2117,7 +2162,7 @@ def test_array_attributes(tmp_local_netcdf):
         np.testing.assert_equal(ds.attrs["empty_list"], np.array([]))
         np.testing.assert_equal(ds.attrs["empty_array"], np.array([]))
 
-    with legacyapi.Dataset(tmp_local_netcdf, mode="r") as ds:
+    with legacyapi.Dataset(tmp_local_netcdf, mode="r", backend=backend) as ds:
         assert ds.unicode == unicode
         assert ds.unicode_0dim == unicode
         assert ds.unicode_1dim == unicode
