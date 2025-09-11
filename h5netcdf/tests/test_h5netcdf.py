@@ -101,6 +101,14 @@ def h5dump(fn: str):
     # Strip non-deterministic components
     out = re.sub(r'DATASET [0-9]+ "', 'DATASET XXXX "', out)
 
+    # Strip the _NCProperties header, which includes software versions which won't match.
+    out = re.sub(
+        r'ATTRIBUTE "_NCProperties" {.*}',
+        'ATTRIBUTE "_NCProperties" { ... }',
+        out,
+        flags=re.DOTALL,
+    )
+
     return out
 
 
@@ -2912,9 +2920,6 @@ def test_raise_on_closed_file(tmp_local_netcdf):
         print(v[:])
 
 
-@pytest.mark.xfail(
-    reason="netCDF4 and h5netcdf still have slight differences in output"
-)
 def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf):
     """Check that the generated file is identical to netCDF4 by comparing h5dump output."""
     write_legacy_netcdf(tmp_local_netcdf, netCDF4, format="NETCDF4_CLASSIC")
