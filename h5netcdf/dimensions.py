@@ -180,7 +180,7 @@ class Dimension:
         """Return dimension scale references"""
         return list(self._h5ds.attrs.get("REFERENCE_LIST", []))
 
-    def _create_scale(self):
+    def _create_scale(self, dimid=None):
         """Create dimension scale for this dimension"""
         if self._name not in self._parent._h5group:
             kwargs = {}
@@ -194,7 +194,10 @@ class Dimension:
                 dtype=">f4",
                 **kwargs,
             )
-        self._h5ds.attrs["_Netcdf4Dimid"] = np.array(self._dimid, dtype=np.int32)
+        # fallback to init-time dimid
+        if dimid is None:
+            dimid = self._dimid
+        self._h5ds.attrs["_Netcdf4Dimid"] = np.array(dimid, dtype=np.int32)
 
         if len(self._h5ds.shape) > 1:
             dims = self._parent._variables[self._name].dimensions

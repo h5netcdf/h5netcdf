@@ -58,11 +58,13 @@ def write_classic_string_dataset(gid, name, value, shape):
         value = value.encode("utf-8")
 
     tid = h5py.h5t.C_S1.copy()
+    tid.set_size(1)
     tid.set_strpad(h5py.h5t.STR_NULLTERM)
     if len(shape) <= 1:
         sid = h5py.h5s.create(h5py.h5s.SCALAR)
     else:
         sid = h5py.h5s.create_simple(shape)
-    value = np.array(np.bytes_(value))
     did = h5py.h5d.create(gid, name.encode(), tid, sid)
-    did.write(h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=did.get_type())
+    if value is not None:
+        value = np.array(np.bytes_(value))
+        did.write(h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=did.get_type())

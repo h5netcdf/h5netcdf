@@ -350,8 +350,10 @@ class BaseVariable(BaseObject):
             "int32",
         )
         # add _Netcdf4Coordinates for multi-dimensional coordinate variables
-        # or for (one-dimensional) dimension coordinates
-        if len(coord_ids) > 1 or self.name.split("/")[-1] in dims:
+        # or for (one-dimensional) classic format dimension coordinates
+        if len(coord_ids) > 1 or (
+            len(coord_ids) == 1 and self._root._format == "NETCDF4_CLASSIC"
+        ):
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
     def _ensure_dim_id(self):
@@ -597,7 +599,17 @@ class BaseVariable(BaseObject):
         ):
             self._h5ds[key] = value.view(view)
         else:
-            self._h5ds[key] = value
+            # write with low-level API for CLASSIC format
+            if (
+                self._root._format == "NETCDF4_CLASSIC"
+                and self.dtype.kind in ["S", "U"]
+                and self._root._h5py.__name__ == "h5py"
+            ):
+                self._h5ds.id.write(
+                    h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=self._h5ds.id.get_type()
+                )
+            else:
+                self._h5ds[key] = value
 
     @property
     def attrs(self):
@@ -1128,8 +1140,10 @@ class Group(Mapping):
         # dimension scale without a corresponding variable.
         # Keep the references, to re-attach later
         refs = None
+        dimid = None
         if h5name in self._dimensions and h5name in self._h5group:
             refs = self._dimensions[name]._scale_refs
+            dimid = self._dimensions[name]._h5ds.attrs.get("_Netcdf4Dimid", None)
             self._dimensions[name]._detach_scale()
             del self._h5group[name]
 
@@ -1138,11 +1152,11 @@ class Group(Mapping):
         # fill value handling
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
 
-        # for classif format string types write with low level API
+        # for classic format string types write with low level API
         if (
             self._root._format == "NETCDF4_CLASSIC"
             and np.dtype(dtype).kind in ["S", "U"]
-            and self._h5py.__name__ == "h5py"
+            and self._root._h5py.__name__ == "h5py"
         ):
             write_classic_string_dataset(self._h5group._id, h5name, data, shape)
         else:
@@ -1167,10 +1181,12 @@ class Group(Mapping):
 
         # Re-create dim-scale and re-attach references to coordinate variable.
         if name in self._all_dimensions and h5name in self._h5group:
-            self._all_dimensions[name]._create_scale()
+            if dimid is not None:
+                self._all_dimensions[name]._create_scale(dimid=dimid)
             if refs is not None:
                 self._all_dimensions[name]._attach_scale(refs)
-                # re-attach coords, if needed
+            # re-attach coords, needed for NETCDF4_CLASSIC
+            if self._root._format == "NETCDF4_CLASSIC":
                 variable._attach_coords()
 
         # In case of data variables attach dim_scales and coords.
