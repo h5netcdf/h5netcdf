@@ -286,7 +286,7 @@ jobs:
     - name: Install local dependencies
       run: |
         sudo apt-get -y update
-        sudo apt-get -y install libhdf5-dev libnetcdf-dev netcdf-bin
+        sudo apt-get -y install libhdf5-dev libnetcdf-dev netcdf-bin hdf5-tools
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
