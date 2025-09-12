@@ -2920,6 +2920,58 @@ def test_raise_on_closed_file(tmp_local_netcdf):
         print(v[:])
 
 
+# From netcdf4-python/test/test_stringarr.py
+def write_legacy_string_array(tmp_netcdf, write_module, format):
+    def generateString(
+        length, alphabet=string.ascii_letters + string.digits + string.punctuation
+    ):
+        return "".join([random.choice(alphabet) for i in range(length)])
+
+    ds = write_module.Dataset(tmp_netcdf, mode="w", format=format)
+
+    n2 = 20
+    nchar = 12
+    nrecs = 4
+    data = np.empty((nrecs, n2), "S" + repr(nchar))
+    for nrec in range(nrecs):
+        for n in range(n2):
+            data[nrec, n] = generateString(nchar)
+
+    ds.createDimension("n1", None)
+    ds.createDimension("n2", n2)
+    ds.createDimension("nchar", nchar)
+
+    v = ds.createVariable("strings", "S1", ("n1", "n2", "nchar"))
+    v2 = ds.createVariable("strings2", "S1", ("n1", "n2", "nchar"))
+    # if _Encoding set, string array should automatically be converted
+    # to a char array and vice-versan
+    v2._Encoding = "ascii"
+    v3 = ds.createVariable("strings3", "S1", ("n1", "n2", "nchar"))
+    v3._Encoding = "ascii"
+    for nrec in range(nrecs):
+        datac = netCDF4.stringtochar(data, encoding="ascii")
+        v[nrec] = datac[nrec]
+    v2[:-1] = data[:-1]
+    v2[-1] = data[-1]
+    v2[-1, -1] = data[-1, -1]  # write single element
+    v2[-1, -1] = data[-1, -1].tobytes()  # write single python string
+    # _Encoding should be ignored if an array of characters is specified
+    v3[:] = netCDF4.stringtochar(data, encoding="ascii")
+    ds.close()
+
+
+@pytest.mark.xfail()
+def test_dump_string_array(tmp_local_netcdf):
+    fmt = "NETCDF4_CLASSIC"
+    write_legacy_string_array(tmp_local_netcdf, netCDF4, format=fmt)
+    expected = h5dump(tmp_local_netcdf)
+
+    write_legacy_string_array(tmp_local_netcdf, legacyapi, format=fmt)
+    actual = h5dump(tmp_local_netcdf)
+
+    assert actual == expected
+
+
 def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf):
     """Check that the generated file is identical to netCDF4 by comparing h5dump output."""
     write_legacy_netcdf(tmp_local_netcdf, netCDF4, format="NETCDF4_CLASSIC")

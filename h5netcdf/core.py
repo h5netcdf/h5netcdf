@@ -366,13 +366,23 @@ class BaseVariable(BaseObject):
                 self._h5ds.attrs["_Netcdf4Dimid"] = dim.attrs["_Netcdf4Dimid"]
 
     def _maybe_resize_dimensions(self, key, value):
-        """Resize according to given (expanded) key with respect to variable dimensions"""
+        """Resize according to given (expanded) key with respect to variable dimensions.
+
+        Parameters
+        ----------
+        key : Tuple[slice]
+            Indexing key
+        value : array-like
+            Values to be written.
+        """
         new_shape = ()
         v = None
         for i, dim in enumerate(self.dimensions):
             # is unlimited dimensions (check in all dimensions)
             if self._parent._all_dimensions[dim].isunlimited():
-                if key[i].stop is None:
+                if (
+                    key[i].stop is None
+                ):  # TODO: Won't this fail if key[i] is an array of ints?
                     # if stop is None, get dimensions from value,
                     # they must match with variable dimension
                     if v is None:

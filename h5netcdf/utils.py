@@ -60,7 +60,7 @@ def write_classic_string_dataset(gid, name, value, shape):
     tid = h5py.h5t.C_S1.copy()
     tid.set_size(1)
     tid.set_strpad(h5py.h5t.STR_NULLTERM)
-    if len(shape) <= 1:
+    if len(shape) == 0:
         sid = h5py.h5s.create(h5py.h5s.SCALAR)
     else:
         sid = h5py.h5s.create_simple(shape)
