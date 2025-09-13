@@ -1168,7 +1168,7 @@ class Group(Mapping):
             and np.dtype(dtype).kind in ["S", "U"]
             and self._root._h5py.__name__ == "h5py"
         ):
-            write_classic_string_dataset(self._h5group._id, h5name, data, shape)
+            write_classic_string_dataset(self._h5group._id, h5name, data, shape, chunks)
         else:
             # create hdf5 variable
             self._h5group.create_dataset(
