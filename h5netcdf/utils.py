@@ -50,7 +50,7 @@ def write_classic_string_attr(gid, name, value):
     aid.write(value, mtype=aid.get_type())
 
 
-def write_classic_string_dataset(gid, name, value, shape):
+def write_classic_string_dataset(gid, name, value, shape, chunks):
     """Write a string dataset to an HDF5 object with control over the strpad."""
     # Todo: This function need to be re-checked!
     # Convert to bytes
@@ -60,11 +60,18 @@ def write_classic_string_dataset(gid, name, value, shape):
     tid = h5py.h5t.C_S1.copy()
     tid.set_size(1)
     tid.set_strpad(h5py.h5t.STR_NULLTERM)
+    kwargs = {}
     if len(shape) == 0:
         sid = h5py.h5s.create(h5py.h5s.SCALAR)
     else:
-        sid = h5py.h5s.create_simple(shape)
-    did = h5py.h5d.create(gid, name.encode(), tid, sid)
+        # for resizing, we need to provide maxshape
+        sid = h5py.h5s.create_simple(shape, (h5py.h5s.UNLIMITED,) + shape[1:])
+        # and we also need to create a chunked dataset
+        dcpl = h5py.h5p.create(h5py.h5p.DATASET_CREATE)
+        # try automatic chunking
+        dcpl.set_chunk(chunks)
+        kwargs["dcpl"] = dcpl
+    did = h5py.h5d.create(gid, name.encode(), tid, sid, **kwargs)
     if value is not None:
         value = np.array(np.bytes_(value))
         did.write(h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=did.get_type())
