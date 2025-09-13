@@ -2960,7 +2960,6 @@ def write_legacy_string_array(tmp_netcdf, write_module, format):
     ds.close()
 
 
-@pytest.mark.xfail()
 def test_dump_string_array(tmp_local_netcdf):
     fmt = "NETCDF4_CLASSIC"
     write_legacy_string_array(tmp_local_netcdf, netCDF4, format=fmt)

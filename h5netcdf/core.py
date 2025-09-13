@@ -615,6 +615,8 @@ class BaseVariable(BaseObject):
                 and self.dtype.kind in ["S", "U"]
                 and self._root._h5py.__name__ == "h5py"
             ):
+                # h5py expects np.ndarray
+                value = np.asanyarray(value)
                 self._h5ds.id.write(
                     h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=self._h5ds.id.get_type()
                 )
