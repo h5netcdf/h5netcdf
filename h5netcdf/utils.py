@@ -1,5 +1,12 @@
 from collections.abc import Mapping
 
+import h5py
+import numpy as np
+
+
+class CompatibilityError(Exception):
+    """Raised when using features that are not part of the NetCDF4 API."""
+
 
 class Frozen(Mapping):
     """Wrapper around an object implementing the mapping interface to make it
@@ -24,3 +31,47 @@ class Frozen(Mapping):
 
     def __repr__(self):
         return f"{type(self).__name__}({self._mapping!r})"
+
+
+def write_classic_string_attr(gid, name, value):
+    """Write a string attribute to an HDF5 object with control over the strpad."""
+    # Convert to bytes
+    if isinstance(value, str):
+        value = value.encode("utf-8")
+
+    tid = h5py.h5t.C_S1.copy()
+    tid.set_size(len(value))
+    tid.set_strpad(h5py.h5t.STR_NULLTERM)
+    sid = h5py.h5s.create(h5py.h5s.SCALAR)
+    value = np.array(np.bytes_(value))
+    if h5py.h5a.exists(gid, name.encode()):
+        h5py.h5a.delete(gid, name.encode())
+    aid = h5py.h5a.create(gid, name.encode(), tid, sid)
+    aid.write(value, mtype=aid.get_type())
+
+
+def write_classic_string_dataset(gid, name, value, shape, chunks):
+    """Write a string dataset to an HDF5 object with control over the strpad."""
+    # Todo: This function need to be re-checked!
+    # Convert to bytes
+    if isinstance(value, str):
+        value = value.encode("utf-8")
+
+    tid = h5py.h5t.C_S1.copy()
+    tid.set_size(1)
+    tid.set_strpad(h5py.h5t.STR_NULLTERM)
+    kwargs = {}
+    if len(shape) == 0:
+        sid = h5py.h5s.create(h5py.h5s.SCALAR)
+    else:
+        # for resizing, we need to provide maxshape
+        sid = h5py.h5s.create_simple(shape, (h5py.h5s.UNLIMITED,) + shape[1:])
+        # and we also need to create a chunked dataset
+        dcpl = h5py.h5p.create(h5py.h5p.DATASET_CREATE)
+        # try automatic chunking
+        dcpl.set_chunk(chunks)
+        kwargs["dcpl"] = dcpl
+    did = h5py.h5d.create(gid, name.encode(), tid, sid, **kwargs)
+    if value is not None:
+        value = np.array(np.bytes_(value))
+        did.write(h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=did.get_type())
