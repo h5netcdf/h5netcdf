@@ -64,13 +64,18 @@ def write_classic_string_dataset(gid, name, value, shape, chunks):
     if len(shape) == 0:
         sid = h5py.h5s.create(h5py.h5s.SCALAR)
     else:
-        # for resizing, we need to provide maxshape
-        sid = h5py.h5s.create_simple(shape, (h5py.h5s.UNLIMITED,) + shape[1:])
-        # and we also need to create a chunked dataset
-        dcpl = h5py.h5p.create(h5py.h5p.DATASET_CREATE)
-        # try automatic chunking
-        dcpl.set_chunk(chunks)
-        kwargs["dcpl"] = dcpl
+        if chunks is not None:
+            # for resizing, we need to provide maxshape
+            # with unlimited as the first dimension
+            maxshape = (h5py.h5s.UNLIMITED,) + shape[1:]
+            # and we also need to create a chunked dataset
+            dcpl = h5py.h5p.create(h5py.h5p.DATASET_CREATE)
+            # try automatic chunking
+            dcpl.set_chunk(chunks)
+            kwargs["dcpl"] = dcpl
+        else:
+            maxshape = shape
+        sid = h5py.h5s.create_simple(shape, maxshape)
     did = h5py.h5d.create(gid, name.encode(), tid, sid, **kwargs)
     if value is not None:
         value = np.array(np.bytes_(value))
