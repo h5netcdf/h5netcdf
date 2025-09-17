@@ -99,7 +99,7 @@ def h5dump(fn: str, strict=False):
     ).stdout.decode()
 
     # Strip non-deterministic components
-    out = re.sub(r'DATASET [0-9]+ "', 'DATASET XXXX "', out)
+    out = re.sub(r"DATASET [0-9]+ ", "DATASET XXXX ", out)
 
     # Strip the _NCProperties header, which includes software versions which won't match.
     pattern = (
