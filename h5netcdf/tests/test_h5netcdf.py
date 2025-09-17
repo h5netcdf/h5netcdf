@@ -103,7 +103,7 @@ def h5dump(fn: str):
 
     # Strip the _NCProperties header, which includes software versions which won't match.
     out = re.sub(
-        r'ATTRIBUTE "_NCProperties" {.*}',
+        r'ATTRIBUTE "_NCProperties" {.*?}',
         'ATTRIBUTE "_NCProperties" { ... }',
         out,
         flags=re.DOTALL,
