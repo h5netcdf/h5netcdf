@@ -115,7 +115,7 @@ def h5dump(fn: str, strict=False):
         flags=re.DOTALL,
     )
 
-    if strict:
+    if not strict:
         out = re.sub(r"STRPAD H5T_STR_NULL(?:TERM|PAD);", "STRPAD { ... };", out)
         out = re.sub(r"CSET H5T_CSET_(?:UTF8|ASCII);", "CSET { ... };", out)
 
