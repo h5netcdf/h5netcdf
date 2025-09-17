@@ -89,7 +89,7 @@ def get_hdf5_module(resource):
         return h5py
 
 
-def h5dump(fn: str):
+def h5dump(fn: str, check_strpad=False):
     """Call h5dump on an h5netcdf file."""
     import re
     import subprocess
@@ -102,12 +102,21 @@ def h5dump(fn: str):
     out = re.sub(r'DATASET [0-9]+ "', 'DATASET XXXX "', out)
 
     # Strip the _NCProperties header, which includes software versions which won't match.
+    pattern = (
+        r'ATTRIBUTE "_NCProperties"'  # match the attribute start
+        r"\s*{"  # opening brace
+        r"(?:[^{}]*{[^{}]*}[^{}]*)*"  # match multiple inner braces
+        r"}"  # closing brace
+    )
     out = re.sub(
-        r'ATTRIBUTE "_NCProperties" {.*?}',
+        pattern,
         'ATTRIBUTE "_NCProperties" { ... }',
         out,
         flags=re.DOTALL,
     )
+
+    if check_strpad:
+        out = re.sub(r"STRPAD H5T_STR_NULL(?:TERM|PAD);", "STRPAD { ... };", out)
 
     return out
 
@@ -2951,33 +2960,47 @@ def write_legacy_string_array(tmp_netcdf, write_module, format):
     for nrec in range(nrecs):
         datac = netCDF4.stringtochar(data, encoding="ascii")
         v[nrec] = datac[nrec]
+    print("XX-shape0:", v2.shape, v2[:-1].shape)
+    print("XX-shape1:", data[:-1].shape)
+    print("data:", data.shape, data[:-1].shape)
     v2[:-1] = data[:-1]
+    print("XX-shape:", v2.shape)
+    if write_module == legacyapi:
+        print("XX:", ds.dimensions["n1"]._h5ds.shape)
+        print("XX:", v2._h5ds.shape)
     v2[-1] = data[-1]
+    if write_module == legacyapi:
+        print("XX1:", ds.dimensions["n1"]._h5ds.shape)
+        print("XX1:", v2._h5ds.shape)
     v2[-1, -1] = data[-1, -1]  # write single element
+    if write_module == legacyapi:
+        print("XX2:", ds.dimensions["n1"]._h5ds.shape)
+        print("XX2:", v2._h5ds.shape)
     v2[-1, -1] = data[-1, -1].tobytes()  # write single python string
     # _Encoding should be ignored if an array of characters is specified
     v3[:] = netCDF4.stringtochar(data, encoding="ascii")
     ds.close()
 
 
-def test_dump_string_array(tmp_local_netcdf):
-    fmt = "NETCDF4_CLASSIC"
-    write_legacy_string_array(tmp_local_netcdf, netCDF4, format=fmt)
-    expected = h5dump(tmp_local_netcdf)
+def test_dump_string_array(tmp_local_netcdf, format):
+    check_strpad = format["format"] == "NETCDF4"
+    write_legacy_string_array(tmp_local_netcdf, netCDF4, **format)
+    expected = h5dump(tmp_local_netcdf, check_strpad=check_strpad)
 
-    write_legacy_string_array(tmp_local_netcdf, legacyapi, format=fmt)
-    actual = h5dump(tmp_local_netcdf)
+    write_legacy_string_array(tmp_local_netcdf, legacyapi, **format)
+    actual = h5dump(tmp_local_netcdf, check_strpad=check_strpad)
 
     assert actual == expected
 
 
-def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf):
+def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf, format):
     """Check that the generated file is identical to netCDF4 by comparing h5dump output."""
-    write_legacy_netcdf(tmp_local_netcdf, netCDF4, format="NETCDF4_CLASSIC")
-    expected = h5dump(tmp_local_netcdf)
+    check_strpad = format["format"] == "NETCDF4"
+    write_legacy_netcdf(tmp_local_netcdf, netCDF4, **format)
+    expected = h5dump(tmp_local_netcdf, check_strpad=check_strpad)
 
-    write_legacy_netcdf(tmp_local_netcdf, legacyapi, format="NETCDF4_CLASSIC")
-    actual = h5dump(tmp_local_netcdf)
+    write_legacy_netcdf(tmp_local_netcdf, legacyapi, **format)
+    actual = h5dump(tmp_local_netcdf, check_strpad=check_strpad)
 
     assert actual == expected
 

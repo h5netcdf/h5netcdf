@@ -17,6 +17,14 @@ _HIDDEN_ATTRS = frozenset(
     ]
 )
 
+_NETCDF4_ATTRS = frozenset(
+    [
+        "_Encoding",
+        "units",
+        # "_FillValue",
+    ]
+)
+
 
 class Attributes(MutableMapping):
     def __init__(self, h5attrs, check_dtype, h5py_pckg, format="NETCDF4"):
@@ -85,15 +93,41 @@ class Attributes(MutableMapping):
         else:
             dtype = np.asarray(value).dtype
 
+        print("attr:", key)
+        print("DTYPE:", dtype)
+        print("value:", value, type(value))  # , np.atleast_1d(value))
+
         self._check_dtype(dtype)
 
-        if self._format == "NETCDF4_CLASSIC":
+        if (
+            key in _NETCDF4_ATTRS
+            and dtype.kind in ["S", "U"]
+            and self._h5py.__name__ == "h5py"
+        ):
+            print("string attr:", dtype.kind, key, value)
+            write_classic_string_attr(self._h5attrs._id, key, value)
+
+        # always for CLASSIC mode or special NETCDF4 attributes
+        elif self._format == "NETCDF4_CLASSIC":
             if dtype.kind in ["S", "U"] and self._h5py.__name__ == "h5py":
+                print("string attr:", dtype.kind, key, value)
                 write_classic_string_attr(self._h5attrs._id, key, value)
             else:
+                print("before error check")
                 self._h5attrs[key] = np.atleast_1d(value)
         else:
+            # write non string scalars as simple dataspace as NETCDF4 is doing
+            if np.isscalar(value) and dtype.kind not in ["S", "U"]:
+                value = np.atleast_1d(value)
+            # if isinstance(value, str):
+            # value = value.encode()
+            # dtype = self._h5py.string_dtype(encoding="ascii", length=len(value))
+            # print("ZZ", value, np.isscalar(value))
+            # self._h5attrs.create(key, value, dtype=dtype)
+            # write_classic_string_attr(self._h5attrs._id, key, value)
+            # else:
             self._h5attrs[key] = value
+            # self._h5attrs.create(key, value, None, np.array(value).dtype)
 
     def __delitem__(self, key):
         del self._h5attrs[key]
