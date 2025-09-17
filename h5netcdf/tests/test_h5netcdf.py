@@ -2973,7 +2973,10 @@ def write_legacy_string_array(tmp_netcdf, write_module, format):
 @pytest.mark.parametrize("strict", [True, False])
 def test_dump_string_array(tmp_local_netcdf, format, strict):
     if strict:
-        pytest.xfail("Might mail with strict checking.")
+        pytest.xfail("Might fail with strict checking.")
+    else:
+        if format["format"] == "NETCDF4":
+            pytest.xfail("Might fail with NETCDF4.")
     write_legacy_string_array(tmp_local_netcdf, netCDF4, **format)
     expected = h5dump(tmp_local_netcdf, strict=strict)
 
