@@ -1127,7 +1127,7 @@ class Group(Mapping):
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
 
         # create hdf5 variable
-        if isinstance(dtype, EnumType):
+        if self._root._h5py.__name__ == "h5py" and isinstance(dtype, EnumType):
             # use low level API for creating ENUMS
             _create_enum_dataset(self, h5name, shape, dtype, h5fillvalue)
         else:
