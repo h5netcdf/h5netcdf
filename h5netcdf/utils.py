@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 
+import h5py
 import numpy as np
 
 
@@ -38,19 +39,15 @@ def _create_enum_dataset(group, name, shape, enum_type, fillvalue=None):
     enum_type: h5netcdf EnumType
     fillvalue : optional scalar fill value
     """
-    _h5py = group._root._h5py
-
     # copy from existing committed type
     enum_tid = enum_type._h5ds.id.copy()
-    space = _h5py.h5s.create_simple(shape)
+    space = h5py.h5s.create_simple(shape)
 
-    dcpl = _h5py.h5p.create(_h5py.h5p.DATASET_CREATE)
+    dcpl = h5py.h5p.create(h5py.h5p.DATASET_CREATE)
     if fillvalue is not None:
         dcpl.set_fill_value(np.array(fillvalue, dtype=enum_type.dtype))
 
-    _h5py.h5d.create(
-        group._h5group.id, name.encode("ascii"), enum_tid, space, dcpl=dcpl
-    )
+    h5py.h5d.create(group._h5group.id, name.encode("ascii"), enum_tid, space, dcpl=dcpl)
     enum_tid.close()
 
 
@@ -62,24 +59,21 @@ def _create_enum_dataset_attribute(ds, name, value, enum_type):
     name     : str, dataset name
     enum_type: h5netcdf EnumType
     """
-    _h5py = ds._root._h5py
-
     tid = enum_type._h5ds.id.copy()
-    space = _h5py.h5s.create_simple((1,))
+    space = h5py.h5s.create_simple((1,))
 
-    aid = _h5py.h5a.create(ds._h5ds.id, name.encode("ascii"), tid, space)
+    aid = h5py.h5a.create(ds._h5ds.id, name.encode("ascii"), tid, space)
     aid.write(value, mtype=aid.get_type())
 
 
-def _make_enum_tid(obj, enum_dict, basetype):
+def _make_enum_tid(enum_dict, basetype):
     """
-    group    : h5netcdf object
     enum_dict: dict, with Enum field/value pairs
     basetype: np.dtype, basetype of the enum
     """
     items = sorted(enum_dict.items(), key=lambda kv: kv[1])  # sort by value
-    base_tid = obj._root._h5py.h5t.py_create(np.dtype(basetype))
-    tid = obj._root._h5py.h5t.enum_create(base_tid)
+    base_tid = h5py.h5t.py_create(np.dtype(basetype))
+    tid = h5py.h5t.enum_create(base_tid)
     for name, val in items:
         tid.enum_insert(name.encode("utf-8"), int(val))
     return tid
@@ -94,7 +88,7 @@ def _commit_enum_type(group, name, enum_dict, basetype):
     enum_dict: dict, with Enum field/value pairs
     basetype: np.dtype, basetype of the enum
     """
-    tid = _make_enum_tid(group, enum_dict, basetype)
+    tid = _make_enum_tid(enum_dict, basetype)
     tid.commit(group._h5group.id, name.encode("ascii"))
     tid.close()
 
