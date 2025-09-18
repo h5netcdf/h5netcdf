@@ -18,6 +18,9 @@ from .utils import (
     Frozen,
     write_classic_string_attr,
     write_classic_string_dataset,
+    _commit_enum_type,
+    _create_enum_dataset,
+    _create_enum_dataset_attribute,
 )
 
 try:
@@ -437,8 +440,15 @@ class BaseVariable(BaseObject):
                 string_info
                 and string_info.length is not None
                 and string_info.length > 1
-            ) or enum_info:
+            ):
                 value = fillvalue
+            elif enum_info:
+                value = fillvalue
+                if self._root._h5py.__name__ == "h5py":
+                    _create_enum_dataset_attribute(
+                        self, "_FillValue", value, self.datatype
+                    )
+                    return
             else:
                 value = self.dtype.type(fillvalue)
 
@@ -1185,8 +1195,10 @@ class Group(Mapping):
             and self._root._h5py.__name__ == "h5py"
         ):
             write_classic_string_dataset(self._h5group._id, h5name, data, shape, chunks)
+        elif self._root._h5py.__name__ == "h5py" and isinstance(dtype, EnumType):
+            # use low level API for creating ENUMS
+            _create_enum_dataset(self, h5name, shape, dtype, h5fillvalue)
         else:
-            # create hdf5 variable
             self._h5group.create_dataset(
                 h5name,
                 shape,
@@ -1483,8 +1495,14 @@ class Group(Mapping):
         enum_dict: dict
             A Python dictionary containing the Enum field/value pairs.
         """
-        et = self._root._h5py.enum_dtype(enum_dict, basetype=datatype)
-        self._h5group[datatype_name] = et
+        # to correspond with netcdf4-python/netcdf-c we need to create
+        # with low level API, to keep enums ordered by value
+        # works only for h5py
+        if self._root._h5py.__name__ == "h5py":
+            _commit_enum_type(self, datatype_name, enum_dict, datatype)
+        else:
+            et = self._root._h5py.enum_dtype(enum_dict, basetype=datatype)
+            self._h5group[datatype_name] = et
         # create enumtype class instance
         enumtype = self._enumtype_cls(self, datatype_name)
         self._enumtypes[datatype_name] = enumtype

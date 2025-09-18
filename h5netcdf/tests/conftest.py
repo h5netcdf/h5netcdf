@@ -6,6 +6,8 @@ from shutil import rmtree
 
 import pytest
 
+from h5netcdf.utils import h5dump as _h5dump
+
 try:
     from h5pyd import Folder
     from hsds.hsds_app import HsdsApp
@@ -81,3 +83,8 @@ def hsds_up():
             pass
 
     rmtree(root_dir, ignore_errors=True)
+
+
+@pytest.fixture
+def h5dump():
+    return _h5dump
