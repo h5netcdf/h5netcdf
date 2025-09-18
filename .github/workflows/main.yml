@@ -233,7 +233,8 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        repository: "pydata/xarray"
+        repository: "Ouranosinc/xarray"
+        ref: "fix_10676"
         fetch-depth: 0
     - name: Install micromamba
       uses: mamba-org/setup-micromamba@v2
@@ -286,7 +287,7 @@ jobs:
     - name: Install local dependencies
       run: |
         sudo apt-get -y update
-        sudo apt-get -y install libhdf5-dev libnetcdf-dev
+        sudo apt-get -y install libhdf5-dev libnetcdf-dev netcdf-bin hdf5-tools
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
