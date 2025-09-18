@@ -89,39 +89,6 @@ def get_hdf5_module(resource):
         return h5py
 
 
-def h5dump(fn: str, strict=False):
-    """Call h5dump on an h5netcdf file."""
-    import re
-    import subprocess
-
-    out = subprocess.run(
-        ["h5dump", "-A", fn], check=False, capture_output=True
-    ).stdout.decode()
-
-    # Strip non-deterministic components
-    out = re.sub(r"DATASET [0-9]+ ", "DATASET XXXX ", out)
-
-    # Strip the _NCProperties header, which includes software versions which won't match.
-    pattern = (
-        r'ATTRIBUTE "_NCProperties"'  # match the attribute start
-        r"\s*{"  # opening brace
-        r"(?:[^{}]*{[^{}]*}[^{}]*)*"  # match multiple inner braces
-        r"}"  # closing brace
-    )
-    out = re.sub(
-        pattern,
-        'ATTRIBUTE "_NCProperties" { ... }',
-        out,
-        flags=re.DOTALL,
-    )
-
-    if not strict:
-        out = re.sub(r"STRPAD H5T_STR_NULL(?:TERM|PAD);", "STRPAD { ... };", out)
-        out = re.sub(r"CSET H5T_CSET_(?:UTF8|ASCII);", "CSET { ... };", out)
-
-    return out
-
-
 def string_to_char(arr):
     """Like nc4.stringtochar, but faster and more flexible."""
     # ensure the array is contiguous
@@ -645,12 +612,12 @@ def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):
 @pytest.mark.parametrize("strict", [True, False])
 @pytest.mark.parametrize("dataset", [None, "enum_var"])
 @pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
-def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf, dataset, h5dump, strict):
+def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf, dataset, h5dump, format, strict):
     """Check that the generated file is identical to netCDF4 by comparing h5dump output."""
-    write_legacy_netcdf(tmp_local_netcdf, netCDF4)
+    write_legacy_netcdf(tmp_local_netcdf, netCDF4, **format)
     expected = h5dump(tmp_local_netcdf, dataset=dataset, strict=strict)
 
-    write_legacy_netcdf(tmp_local_netcdf, legacyapi)
+    write_legacy_netcdf(tmp_local_netcdf, legacyapi, **format)
     actual = h5dump(tmp_local_netcdf, dataset=dataset, strict=strict)
 
     assert actual == expected
@@ -2985,7 +2952,7 @@ def write_legacy_string_array(tmp_netcdf, write_module, format):
 
 
 @pytest.mark.parametrize("strict", [True, False])
-def test_dump_string_array(tmp_local_netcdf, format, strict):
+def test_dump_string_array(tmp_local_netcdf, h5dump, format, strict):
     if strict:
         pytest.xfail("Might fail with strict checking.")
     else:
@@ -2995,20 +2962,6 @@ def test_dump_string_array(tmp_local_netcdf, format, strict):
     expected = h5dump(tmp_local_netcdf, strict=strict)
 
     write_legacy_string_array(tmp_local_netcdf, legacyapi, **format)
-    actual = h5dump(tmp_local_netcdf, strict=strict)
-
-    assert actual == expected
-
-
-@pytest.mark.parametrize("strict", [True, False])
-def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf, format, strict):
-    """Check that the generated file is identical to netCDF4 by comparing h5dump output."""
-    if format["format"] == "NETCDF4":
-        pytest.xfail("Known issue with NETCDF4")
-    write_legacy_netcdf(tmp_local_netcdf, netCDF4, **format)
-    expected = h5dump(tmp_local_netcdf, strict=strict)
-
-    write_legacy_netcdf(tmp_local_netcdf, legacyapi, **format)
     actual = h5dump(tmp_local_netcdf, strict=strict)
 
     assert actual == expected
