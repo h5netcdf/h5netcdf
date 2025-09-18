@@ -550,6 +550,20 @@ def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):
     read_h5netcdf(tmp_local_netcdf, legacyapi, decode_vlen_strings)
 
 
+@pytest.mark.parametrize("strict", [True, False])
+@pytest.mark.parametrize("dataset", [None, "enum_var"])
+@pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
+def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf, dataset, h5dump, strict):
+    """Check that the generated file is identical to netCDF4 by comparing h5dump output."""
+    write_legacy_netcdf(tmp_local_netcdf, netCDF4)
+    expected = h5dump(tmp_local_netcdf, dataset=dataset, strict=strict)
+
+    write_legacy_netcdf(tmp_local_netcdf, legacyapi)
+    actual = h5dump(tmp_local_netcdf, dataset=dataset, strict=strict)
+
+    assert actual == expected
+
+
 def test_fileobj(decode_vlen_strings):
     fileobj = tempfile.TemporaryFile()
     write_h5netcdf(fileobj)

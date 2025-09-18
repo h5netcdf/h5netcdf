@@ -5,6 +5,10 @@ Development Version (unreleased):
 
 - Fix unintentional changes in test suite (:pull:`277`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Create ENUM with low level API to keep order-by-value, add h5dump based tests (:pull:`285`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `David Huard <https://github.com/huard>`_
+
+
 
 Version 1.6.4 (August 5th, 2025):
 
