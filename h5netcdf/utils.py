@@ -30,13 +30,19 @@ class Frozen(Mapping):
 
 
 def _create_enum_dataset(group, name, shape, enum_type, fillvalue=None):
-    """
-    Create a dataset with a transient enum dtype.
+    """Create a dataset with a transient enum dtype.
 
-    group    : h5netcdf.Group
-    name     : str, dataset name
-    shape    : tuple, dataset shape
-    enum_type: h5netcdf EnumType
+    Parameters
+    ----------
+    group : h5netcdf.Group
+    name : str
+        dataset name
+    shape : tuple
+        dataset shape
+    enum_type : h5netcdf.EnumType
+
+    Keyword arguments
+    -----------------
     fillvalue : optional scalar fill value
     """
     # copy from existing committed type
@@ -52,12 +58,14 @@ def _create_enum_dataset(group, name, shape, enum_type, fillvalue=None):
 
 
 def _create_enum_dataset_attribute(ds, name, value, enum_type):
-    """
-    Create an enum attribute at the dataset.
+    """Create an enum attribute at the dataset.
 
-    ds    : h5netcdf.Variable
-    name     : str, dataset name
-    enum_type: h5netcdf EnumType
+    Parameters
+    ----------
+    ds : h5netcdf.Variable
+    name : str
+        dataset name
+    enum_type : h5netcdf.EnumType
     """
     tid = enum_type._h5ds.id.copy()
     space = h5py.h5s.create_simple((1,))
@@ -67,9 +75,14 @@ def _create_enum_dataset_attribute(ds, name, value, enum_type):
 
 
 def _make_enum_tid(enum_dict, basetype):
-    """
-    enum_dict: dict, with Enum field/value pairs
-    basetype: np.dtype, basetype of the enum
+    """Make enum tid
+
+    Parameters
+    ----------
+    enum_dict : dict
+        dictionary with Enum field/value pairs
+    basetype : np.dtype
+        basetype of the enum
     """
     items = sorted(enum_dict.items(), key=lambda kv: kv[1])  # sort by value
     base_tid = h5py.h5t.py_create(np.dtype(basetype))
@@ -80,13 +93,17 @@ def _make_enum_tid(enum_dict, basetype):
 
 
 def _commit_enum_type(group, name, enum_dict, basetype):
-    """
-    Commit an enum type to the given group.
+    """Commit an enum type to the given group.
 
-    group    : h5netcdf.Group
-    name     : str, dataset name
-    enum_dict: dict, with Enum field/value pairs
-    basetype: np.dtype, basetype of the enum
+    Parameters
+    ----------
+    group : h5netcdf.Group
+    name : str
+        dataset name
+    enum_dict : dict
+        dictionary with Enum field/value pairs
+    basetype : np.dtype
+        basetype of the enum
     """
     tid = _make_enum_tid(enum_dict, basetype)
     tid.commit(group._h5group.id, name.encode("ascii"))
