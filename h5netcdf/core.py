@@ -16,11 +16,11 @@ from .dimensions import Dimension, Dimensions
 from .utils import (
     CompatibilityError,
     Frozen,
-    write_classic_string_attr,
-    write_classic_string_dataset,
     _commit_enum_type,
     _create_enum_dataset,
     _create_enum_dataset_attribute,
+    write_classic_string_attr,
+    write_classic_string_dataset,
 )
 
 try:
