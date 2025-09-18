@@ -13,7 +13,12 @@ from packaging import version
 from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
-from .utils import Frozen
+from .utils import (
+    Frozen,
+    _commit_enum_type,
+    _create_enum_dataset,
+    _create_enum_dataset_attribute,
+)
 
 try:
     import h5pyd
@@ -412,8 +417,11 @@ class BaseVariable(BaseObject):
                 string_info
                 and string_info.length is not None
                 and string_info.length > 1
-            ) or enum_info:
+            ):
                 value = fillvalue
+            elif enum_info:
+                value = fillvalue
+                _create_enum_dataset_attribute(self, "_FillValue", value, self.datatype)
             else:
                 value = self.dtype.type(fillvalue)
 
@@ -1115,15 +1123,19 @@ class Group(Mapping):
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
 
         # create hdf5 variable
-        self._h5group.create_dataset(
-            h5name,
-            shape,
-            dtype=dtype,
-            data=data,
-            chunks=chunks,
-            fillvalue=h5fillvalue,
-            **kwargs,
-        )
+        if isinstance(dtype, EnumType):
+            # use low level API for creating ENUMS
+            _create_enum_dataset(self, h5name, shape, dtype, h5fillvalue)
+        else:
+            self._h5group.create_dataset(
+                h5name,
+                shape,
+                dtype=dtype,
+                data=data,
+                chunks=chunks,
+                fillvalue=h5fillvalue,
+                **kwargs,
+            )
 
         # create variable class instance
         variable = self._variable_cls(self, h5name, dimensions)
@@ -1397,8 +1409,9 @@ class Group(Mapping):
         enum_dict: dict
             A Python dictionary containing the Enum field/value pairs.
         """
-        et = self._root._h5py.enum_dtype(enum_dict, basetype=datatype)
-        self._h5group[datatype_name] = et
+        # to correspond with netcdf4-pythin/netcdf-c we need to create
+        # with low level API, to keep enums ordered by value
+        _commit_enum_type(self, datatype_name, enum_dict, datatype)
         # create enumtype class instance
         enumtype = self._enumtype_cls(self, datatype_name)
         self._enumtypes[datatype_name] = enumtype
