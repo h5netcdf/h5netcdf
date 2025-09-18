@@ -421,7 +421,11 @@ class BaseVariable(BaseObject):
                 value = fillvalue
             elif enum_info:
                 value = fillvalue
-                _create_enum_dataset_attribute(self, "_FillValue", value, self.datatype)
+                if self._root._h5py.__name__ == "h5py":
+                    _create_enum_dataset_attribute(
+                        self, "_FillValue", value, self.datatype
+                    )
+                    return
             else:
                 value = self.dtype.type(fillvalue)
 
@@ -1409,9 +1413,14 @@ class Group(Mapping):
         enum_dict: dict
             A Python dictionary containing the Enum field/value pairs.
         """
-        # to correspond with netcdf4-pythin/netcdf-c we need to create
+        # to correspond with netcdf4-python/netcdf-c we need to create
         # with low level API, to keep enums ordered by value
-        _commit_enum_type(self, datatype_name, enum_dict, datatype)
+        # works only for h5py
+        if self._root._h5py.__name__ == "h5py":
+            _commit_enum_type(self, datatype_name, enum_dict, datatype)
+        else:
+            et = self._root._h5py.enum_dtype(enum_dict, basetype=datatype)
+            self._h5group[datatype_name] = et
         # create enumtype class instance
         enumtype = self._enumtype_cls(self, datatype_name)
         self._enumtypes[datatype_name] = enumtype
