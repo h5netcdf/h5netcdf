@@ -2950,16 +2950,16 @@ def write_legacy_string_array(tmp_netcdf, write_module, format):
     v3[:] = netCDF4.stringtochar(data, encoding="ascii")
 
 
-@pytest.mark.parametrize("strict", [True, False])
-@pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
-def test_dump_string_array(tmp_local_netcdf, h5dump, format, strict):
-    write_legacy_string_array(tmp_local_netcdf, netCDF4, **format)
-    expected = h5dump(tmp_local_netcdf, strict=strict)
-
-    write_legacy_string_array(tmp_local_netcdf, legacyapi, **format)
-    actual = h5dump(tmp_local_netcdf, strict=strict)
-
-    assert actual == expected
+# @pytest.mark.parametrize("strict", [True, False])
+# #@pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
+# def test_dump_string_array(tmp_local_netcdf, h5dump, format, strict):
+#     write_legacy_string_array(tmp_local_netcdf, netCDF4, **format)
+#     expected = h5dump(tmp_local_netcdf, strict=strict)
+#
+#     write_legacy_string_array(tmp_local_netcdf, legacyapi, **format)
+#     actual = h5dump(tmp_local_netcdf, strict=strict)
+#
+#     assert actual == expected
 
 
 def maybe_resize_with_broadcasting(tmp_netcdf, write_module):
@@ -2982,7 +2982,8 @@ def maybe_resize_with_broadcasting(tmp_netcdf, write_module):
 
 
 @pytest.mark.parametrize("dataset", [None, "numbers"])
-@pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
+@pytest.mark.parametrize("strict", [True, False])
+# @pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
 def test_dump_maybe_resize_with_broadcasting(tmp_local_netcdf, h5dump, dataset, strict):
     maybe_resize_with_broadcasting(tmp_local_netcdf, netCDF4)
     expected = h5dump(tmp_local_netcdf, strict=strict, dataset=dataset)

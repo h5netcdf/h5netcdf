@@ -19,7 +19,7 @@ from .utils import (
     _commit_enum_type,
     _create_enum_dataset,
     _create_enum_dataset_attribute,
-    write_classic_string_attr,
+    _create_string_attribute,
     write_classic_string_dataset,
 )
 
@@ -1805,7 +1805,7 @@ class File(Group):
                     f"{self._h5py.__name__}={self._h5py.__version__}"
                 )
                 if self._format == "NETCDF4_CLASSIC" and self._h5py.__name__ == "h5py":
-                    write_classic_string_attr(
+                    _create_string_attribute(
                         self.attrs._h5attrs._id, "_NCProperties", _NC_PROPERTIES
                     )
                 else:

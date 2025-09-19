@@ -33,21 +33,21 @@ class Frozen(Mapping):
         return f"{type(self).__name__}({self._mapping!r})"
 
 
-def write_classic_string_attr(gid, name, value):
-    """Write a string attribute to an HDF5 object with control over the strpad."""
-    # Convert to bytes
-    if isinstance(value, str):
-        value = value.encode("utf-8")
-
-    tid = h5py.h5t.C_S1.copy()
-    tid.set_size(len(value))
-    tid.set_strpad(h5py.h5t.STR_NULLTERM)
-    sid = h5py.h5s.create(h5py.h5s.SCALAR)
-    value = np.array(np.bytes_(value))
-    if h5py.h5a.exists(gid, name.encode()):
-        h5py.h5a.delete(gid, name.encode())
-    aid = h5py.h5a.create(gid, name.encode(), tid, sid)
-    aid.write(value, mtype=aid.get_type())
+# def write_classic_string_attr(gid, name, value):
+#     """Write a string attribute to an HDF5 object with control over the strpad."""
+#     # Convert to bytes
+#     if isinstance(value, str):
+#         value = value.encode("utf-8")
+#
+#     tid = h5py.h5t.C_S1.copy()
+#     tid.set_size(len(value))
+#     tid.set_strpad(h5py.h5t.STR_NULLTERM)
+#     sid = h5py.h5s.create(h5py.h5s.SCALAR)
+#     value = np.array(np.bytes_(value))
+#     if h5py.h5a.exists(gid, name.encode()):
+#         h5py.h5a.delete(gid, name.encode())
+#     aid = h5py.h5a.create(gid, name.encode(), tid, sid)
+#     aid.write(value, mtype=aid.get_type())
 
 
 def write_classic_string_dataset(gid, name, value, shape, chunks):
