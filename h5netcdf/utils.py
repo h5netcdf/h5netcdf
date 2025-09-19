@@ -33,8 +33,22 @@ class Frozen(Mapping):
         return f"{type(self).__name__}({self._mapping!r})"
 
 
-def write_classic_string_dataset(gid, name, value, shape, chunks):
-    """Write a string dataset to an HDF5 object with control over the strpad."""
+def _create_classic_string_dataset(gid, name, value, shape, chunks):
+    """Write a string dataset to an HDF5 object with control over the strpad.
+
+    Parameters
+    ----------
+    gid : h5py.h5g.GroupID
+        Group ID where to write the dataset.
+    name : str
+        Dataset name.
+    value : str
+        Dataset contents to be written.
+    shape : tuple
+        Dataset shape.
+    chunks : tuple or None
+        Chunk shape.
+    """
     # Todo: This function need to be re-checked!
     # Convert to bytes
     if isinstance(value, str):
@@ -153,11 +167,12 @@ def _create_string_attribute(gid, name, value):
 
     Parameters
     ----------
-    gid : h5py attrs
+    gid : h5py.h5g.GroupID
+      Group ID where to write the attribute.
     name : str
-        attribute name
+        Attribute name.
     value : str
-        attributes contents to be written
+        Attributes contents to be written.
     """
     # handle charset and encoding
     charset = h5py.h5t.CSET_ASCII

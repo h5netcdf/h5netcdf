@@ -17,10 +17,10 @@ from .utils import (
     CompatibilityError,
     Frozen,
     _commit_enum_type,
+    _create_classic_string_dataset,
     _create_enum_dataset,
     _create_enum_dataset_attribute,
     _create_string_attribute,
-    write_classic_string_dataset,
 )
 
 try:
@@ -1179,7 +1179,9 @@ class Group(Mapping):
             and np.dtype(dtype).kind in ["S", "U"]
             and self._root._h5py.__name__ == "h5py"
         ):
-            write_classic_string_dataset(self._h5group._id, h5name, data, shape, chunks)
+            _create_classic_string_dataset(
+                self._h5group._id, h5name, data, shape, chunks
+            )
         elif self._root._h5py.__name__ == "h5py" and isinstance(dtype, EnumType):
             # use low level API for creating ENUMS
             _create_enum_dataset(self, h5name, shape, dtype, h5fillvalue)
