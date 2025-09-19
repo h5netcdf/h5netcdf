@@ -2911,55 +2911,51 @@ def test_raise_on_closed_file(tmp_local_netcdf):
         print(v[:])
 
 
-# From netcdf4-python/test/test_stringarr.py
 def write_legacy_string_array(tmp_netcdf, write_module, format):
-    def generateString(
-        length, alphabet=string.ascii_letters + string.digits + string.punctuation
-    ):
-        return "".join([random.choice(alphabet) for i in range(length)])
-
     ds = write_module.Dataset(tmp_netcdf, mode="w", format=format)
 
-    n2 = 20
-    nchar = 12
-    nrecs = 4
-    data = np.empty((nrecs, n2), "S" + repr(nchar))
-    for nrec in range(nrecs):
-        for n in range(n2):
-            data[nrec, n] = generateString(nchar)
+    # we do not handle "_Encoding"
+    if write_module == netCDF4:
+        ds.set_auto_chartostring(False)
+
+    data = np.array(
+        [
+            [b"apple ", b"berry ", b"cherry", b"dates ", b"elder "],
+            [b"fig   ", b"grape ", b"honey ", b"iris  ", b"jelly "],
+            [b"kiwi  ", b"lemon ", b"mango ", b"nectar", b"olive "],
+            [b"peach ", b"quince", b"raisin", b"salak ", b"tomat "],
+        ],
+        dtype="S6",
+    )
+
+    data = string_to_char(data)
 
     ds.createDimension("n1", None)
-    ds.createDimension("n2", n2)
-    ds.createDimension("nchar", nchar)
+    ds.createDimension("n2", 5)
+    ds.createDimension("nchar", 6)
 
     v = ds.createVariable("strings", "S1", ("n1", "n2", "nchar"))
-    v2 = ds.createVariable("strings2", "S1", ("n1", "n2", "nchar"))
-    # if _Encoding set, string array should automatically be converted
-    # to a char array and vice-versan
-    v2._Encoding = "ascii"
-    v3 = ds.createVariable("strings3", "S1", ("n1", "n2", "nchar"))
-    v3._Encoding = "ascii"
-    for nrec in range(nrecs):
-        datac = netCDF4.stringtochar(data, encoding="ascii")
-        v[nrec] = datac[nrec]
-    v2[:-1] = data[:-1]
-    v2[-1] = data[-1]
-    v2[-1, -1] = data[-1, -1]  # write single element
-    v2[-1, -1] = data[-1, -1].tobytes()  # write single python string
-    # _Encoding should be ignored if an array of characters is specified
-    v3[:] = netCDF4.stringtochar(data, encoding="ascii")
+
+    # netCDF4 can't resize with incomplete slices and unfitting dimensions
+    if write_module == netCDF4:
+        v[...] = data
+
+    v[:-1] = data[:-1]
+    v[-1] = data[-1]
+    v[-1, -1] = data[-1, -1]
+    ds.close()
 
 
-# @pytest.mark.parametrize("strict", [True, False])
-# #@pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
-# def test_dump_string_array(tmp_local_netcdf, h5dump, format, strict):
-#     write_legacy_string_array(tmp_local_netcdf, netCDF4, **format)
-#     expected = h5dump(tmp_local_netcdf, strict=strict)
-#
-#     write_legacy_string_array(tmp_local_netcdf, legacyapi, **format)
-#     actual = h5dump(tmp_local_netcdf, strict=strict)
-#
-#     assert actual == expected
+@pytest.mark.parametrize("strict", [True, False])
+@pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
+def test_dump_string_array(tmp_local_netcdf, h5dump, format, strict):
+    write_legacy_string_array(tmp_local_netcdf, netCDF4, **format)
+    expected = h5dump(tmp_local_netcdf, strict=strict)
+
+    write_legacy_string_array(tmp_local_netcdf, legacyapi, **format)
+    actual = h5dump(tmp_local_netcdf, strict=strict)
+
+    assert actual == expected
 
 
 def maybe_resize_with_broadcasting(tmp_netcdf, write_module):

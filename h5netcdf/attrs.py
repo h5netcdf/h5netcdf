@@ -106,10 +106,7 @@ class Attributes(MutableMapping):
             _create_string_attribute(self._h5attrs._id, key, value)
         # always for CLASSIC mode or special NETCDF4 attributes
         elif self._format == "NETCDF4_CLASSIC":
-            if dtype.kind in ["S", "U"] and self._h5py.__name__ == "h5py":
-                _create_string_attribute(self._h5attrs._id, key, value)
-            else:
-                self._h5attrs[key] = np.atleast_1d(value) 
+            self._h5attrs[key] = np.atleast_1d(value)
         else:
             # netcdf4-python/netcdf-c writes non-string scalars as simple dataset
             # converting to 1D
