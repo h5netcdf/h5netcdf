@@ -27,7 +27,7 @@ class Dimensions(MutableMapping):
             raise ValueError(f"dimension {name!r} already exists")
         if (
             size in [0, None]
-            and self.unlimited()
+            and self._unlimited()
             and self._group._format == "NETCDF4_CLASSIC"
         ):
             raise CompatibilityError(
@@ -36,7 +36,7 @@ class Dimensions(MutableMapping):
 
         self._objects[name] = Dimension(self._group, name, size, create_h5ds=True)
 
-    def unlimited(self):
+    def _unlimited(self):
         """Return a tuple of unlimited dimensions."""
         return tuple(dim for dim in self._objects.values() if dim.isunlimited())
 
