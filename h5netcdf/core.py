@@ -452,16 +452,6 @@ class BaseVariable(BaseObject):
             else:
                 value = self.dtype.type(fillvalue)
 
-        if hasattr(value, "dtype"):
-            dtype = value.dtype
-        else:
-            dtype = self.dtype
-        if self._root._format == "NETCDF4_CLASSIC":
-            value = np.atleast_1d(np.array(value, dtype=dtype))
-
-        if self._root._format == "NETCDF4" and not isinstance(value, (str, bytes)):
-            value = np.atleast_1d(value)
-
         self.attrs["_FillValue"] = value
 
     @property
@@ -630,12 +620,7 @@ class BaseVariable(BaseObject):
         else:
             # write with low-level API for CLASSIC format
             if (
-                (
-                    # always for CLASSIC format
-                    self._root._format == "NETCDF4_CLASSIC"
-                    # and always if _Encoding == "ascii"
-                    or self.attrs.get("_Encoding", False) == "ascii"
-                )
+                self._root._format == "NETCDF4_CLASSIC"
                 and self.dtype.kind in ["S", "U"]
                 and self._root._h5py.__name__ == "h5py"
             ):
@@ -1441,7 +1426,7 @@ class Group(Mapping):
             self._h5group.attrs,
             self._root._check_valid_netcdf_dtype,
             self._root._h5py,
-            self._root._format,
+            format=self._root._format,
         )
 
     _cls_name = "h5netcdf.Group"

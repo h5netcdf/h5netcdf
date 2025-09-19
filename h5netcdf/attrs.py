@@ -17,14 +17,6 @@ _HIDDEN_ATTRS = frozenset(
     ]
 )
 
-_NETCDF4_ATTRS = frozenset(
-    [
-        "_Encoding",
-        "units",
-        # "_FillValue",
-    ]
-)
-
 
 class Attributes(MutableMapping):
     def __init__(self, h5attrs, check_dtype, h5py_pckg, format="NETCDF4"):
