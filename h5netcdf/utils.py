@@ -65,6 +65,8 @@ def _create_enum_dataset_attribute(ds, name, value, enum_type):
     ds : h5netcdf.Variable
     name : str
         dataset name
+    value : array of ints
+        enum values
     enum_type : h5netcdf.EnumType
     """
     tid = enum_type._h5ds.id.copy()
@@ -108,6 +110,43 @@ def _commit_enum_type(group, name, enum_dict, basetype):
     tid = _make_enum_tid(enum_dict, basetype)
     tid.commit(group._h5group.id, name.encode("ascii"))
     tid.close()
+
+
+def _create_string_attribute(gid, name, value):
+    """Create a string attribute to an HDF5 object with control over the strpad.
+
+    Parameters
+    ----------
+    gid : h5py attrs
+    name : str
+        attribute name
+    value : str
+        attributes contents to be written
+    """
+    # handle charset and encoding
+    charset = h5py.h5t.CSET_ASCII
+    if isinstance(value, str):
+        if not value.isascii():
+            value = value.encode("utf-8")
+            charset = h5py.h5t.CSET_UTF8
+        else:
+            value = value.encode("ascii")
+            charset = h5py.h5t.CSET_ASCII
+
+    # create string type
+    tid = h5py.h5t.C_S1.copy()
+    tid.set_size(len(value))
+    tid.set_strpad(h5py.h5t.STR_NULLTERM)
+    tid.set_cset(charset)
+
+    sid = h5py.h5s.create(h5py.h5s.SCALAR)
+
+    if h5py.h5a.exists(gid, name.encode()):
+        h5py.h5a.delete(gid, name.encode())
+
+    aid = h5py.h5a.create(gid, name.encode(), tid, sid)
+    value = np.array(value)
+    aid.write(value, mtype=aid.get_type())
 
 
 def h5dump(fn: str, dataset=None, strict=False):
