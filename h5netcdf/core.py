@@ -353,7 +353,9 @@ class BaseVariable(BaseObject):
             [self._parent._all_dimensions[d]._dimid for d in dims],
             "int32",
         )
-        if len(coord_ids) > 1:
+        # add _Netcdf4Coordinates for multi-dimensional coordinate variables
+        # or for (one-dimensional) coordinates
+        if len(coord_ids) >= 1:
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
     def _ensure_dim_id(self):
@@ -366,12 +368,21 @@ class BaseVariable(BaseObject):
                 self._h5ds.attrs["_Netcdf4Dimid"] = dim.attrs["_Netcdf4Dimid"]
 
     def _maybe_resize_dimensions(self, key, value):
-        """Resize according to given (expanded) key with respect to variable dimensions"""
+        """Resize according to given (expanded) key with respect to variable dimensions.
+
+        Parameters
+        ----------
+        key : Tuple[slice]
+            Indexing key
+        value : array-like
+            Values to be written.
+        """
         new_shape = ()
-        v = None
+        v = np.asarray(value)
         for i, dim in enumerate(self.dimensions):
             # is unlimited dimensions (check in all dimensions)
             if self._parent._all_dimensions[dim].isunlimited():
+                current_dim_size = len(self._parent._all_dimensions[dim])
                 if key[i].stop is None:
                     # if stop is None, get dimensions from value,
                     # they must match with variable dimension
@@ -380,16 +391,25 @@ class BaseVariable(BaseObject):
                     if v.ndim == self.ndim:
                         new_max = max(v.shape[i], self._h5ds.shape[i])
                     elif v.ndim == 0:
-                        # for scalars we take the current dimension size (check in all dimensions
+                        # for scalar values we take the current dimension size
+                        # (check in all dimensions)
                         new_max = self._parent._all_dimensions[dim].size
+                        # but for compatibility with netcdf4-python/netcdf-c
+                        # we set at least 1
+                        if new_max == 0:
+                            new_max = 1
                     else:
                         raise IndexError("shape of data does not conform to slice")
+                # if slice stop is negative, we need to check the value size
+                elif key[i].stop < 0:
+                    new_max = v.shape[i] - key[i].stop
                 else:
                     new_max = max(key[i].stop, self._h5ds.shape[i])
                 # resize unlimited dimension if needed but no other variables
                 # this is in line with `netcdf4-python` which only resizes
                 # the dimension and this variable
-                if self._parent._all_dimensions[dim].size < new_max:
+                # todo: check above assumptions with latest netcdf4-python/netcdf-c
+                if current_dim_size < new_max and self.name == dim:
                     self._parent.resize_dimension(dim, new_max)
                 new_shape += (new_max,)
             else:
@@ -418,6 +438,10 @@ class BaseVariable(BaseObject):
                 and string_info.length is not None
                 and string_info.length > 1
             ):
+                # fixed length string
+                value = fillvalue
+            elif string_info and string_info.length is None:
+                # variable length string
                 value = fillvalue
             elif enum_info:
                 value = fillvalue
@@ -1116,8 +1140,10 @@ class Group(Mapping):
         # dimension scale without a corresponding variable.
         # Keep the references, to re-attach later
         refs = None
+        dimid = None
         if h5name in self._dimensions and h5name in self._h5group:
             refs = self._dimensions[name]._scale_refs
+            dimid = self._dimensions[name]._h5ds.attrs.get("_Netcdf4Dimid", None)
             self._dimensions[name]._detach_scale()
             del self._h5group[name]
 
@@ -1151,9 +1177,12 @@ class Group(Mapping):
 
         # Re-create dim-scale and re-attach references to coordinate variable.
         if name in self._all_dimensions and h5name in self._h5group:
-            self._all_dimensions[name]._create_scale()
+            if dimid is not None:
+                self._all_dimensions[name]._create_scale(dimid=dimid)
             if refs is not None:
                 self._all_dimensions[name]._attach_scale(refs)
+            # re-attach coords for dimension scales
+            variable._attach_coords()
 
         # In case of data variables attach dim_scales and coords.
         if name in self.variables and h5name not in self._dimensions:
@@ -1162,9 +1191,12 @@ class Group(Mapping):
 
         # This is a bit of a hack, netCDF4 attaches _Netcdf4Dimid to every variable
         # when a variable is first written to, after variable creation.
-        # Here we just attach it to every variable on creation.
-        # Todo: get this consistent with netcdf-c/netcdf4-python
-        variable._ensure_dim_id()
+        # Last known behaviour since netcdf4-python 1.7.2 and netcdf-c 4.9.2
+        if (None in maxshape and maxshape[0] is not None) or (
+            None not in maxshape
+            and len(variable._h5ds.attrs.get("_Netcdf4Coordinates", [])) >= 1
+        ):
+            variable._ensure_dim_id()
 
         # add fillvalue attribute to variable
         if fillvalue is not None:
