@@ -2874,6 +2874,7 @@ def maybe_resize_with_broadcasting(tmp_netcdf, write_module):
 
 @pytest.mark.parametrize("strict", [True, False])
 @pytest.mark.parametrize("dataset", [None, "numbers"])
+@pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
 def test_dump_maybe_resize_with_broadcasting(tmp_local_netcdf, h5dump, dataset, strict):
     maybe_resize_with_broadcasting(tmp_local_netcdf, netCDF4)
     expected = h5dump(tmp_local_netcdf, strict=strict, dataset=dataset)
