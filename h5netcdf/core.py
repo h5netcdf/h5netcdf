@@ -354,9 +354,7 @@ class BaseVariable(BaseObject):
         )
         # add _Netcdf4Coordinates for multi-dimensional coordinate variables
         # or for (one-dimensional) coordinates
-        if len(coord_ids) >= 1:  # or (
-            # len(coord_ids) == 1 and self._root._format == "NETCDF4_CLASSIC"
-            # ):
+        if len(coord_ids) >= 1:
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
     def _ensure_dim_id(self):
@@ -384,9 +382,7 @@ class BaseVariable(BaseObject):
             # is unlimited dimensions (check in all dimensions)
             if self._parent._all_dimensions[dim].isunlimited():
                 current_dim_size = len(self._parent._all_dimensions[dim])
-                if (
-                    key[i].stop is None
-                ):  # TODO: Won't this fail if key[i] is an array of ints?
+                if key[i].stop is None:
                     # if stop is None, get dimensions from value,
                     # they must match with variable dimension
                     if v is None:
@@ -441,6 +437,10 @@ class BaseVariable(BaseObject):
                 and string_info.length is not None
                 and string_info.length > 1
             ):
+                # fixed length string
+                value = fillvalue
+            elif string_info and string_info.length is None:
+                # variable length string
                 value = fillvalue
             elif enum_info:
                 value = fillvalue
@@ -1223,8 +1223,7 @@ class Group(Mapping):
                 self._all_dimensions[name]._create_scale(dimid=dimid)
             if refs is not None:
                 self._all_dimensions[name]._attach_scale(refs)
-            # re-attach coords, needed for NETCDF4_CLASSIC
-            # if self._root._format == "NETCDF4_CLASSIC":
+            # re-attach coords for dimension scales
             variable._attach_coords()
 
         # In case of data variables attach dim_scales and coords.
@@ -1234,10 +1233,11 @@ class Group(Mapping):
 
         # This is a bit of a hack, netCDF4 attaches _Netcdf4Dimid to every variable
         # when a variable is first written to, after variable creation.
-        # Here we just attach it to every variable on creation.
-        # Todo: get this consistent with netcdf-c/netcdf4-python
-        # it seems, we need to add for every non string variable
-        if np.dtype(dtype).kind not in ["U", "S"]:
+        # Last known behaviour since netcdf4-python 1.7.2 and netcdf-c 4.9.2
+        if (None in maxshape and maxshape[0] is not None) or (
+            None not in maxshape
+            and len(variable._h5ds.attrs.get("_Netcdf4Coordinates", [])) >= 1
+        ):
             variable._ensure_dim_id()
 
         # add fillvalue attribute to variable

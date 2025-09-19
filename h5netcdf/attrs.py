@@ -2,7 +2,7 @@ from collections.abc import MutableMapping
 
 import numpy as np
 
-from .utils import write_classic_string_attr
+from .utils import _create_string_attribute
 
 _HIDDEN_ATTRS = frozenset(
     [
@@ -96,21 +96,24 @@ class Attributes(MutableMapping):
         self._check_dtype(dtype)
 
         if (
-            key in _NETCDF4_ATTRS
-            and dtype.kind in ["S", "U"]
+            dtype.kind in {"S", "U"}  # for strings
+            and dtype.metadata is None  # but not special h5py strings
+            and not isinstance(value, (list, self._h5py.Empty))
             and self._h5py.__name__ == "h5py"
         ):
-            write_classic_string_attr(self._h5attrs._id, key, value)
-
+            # create with low level API to get fixed length strings
+            # as netcdf4-python/netcdf-c does
+            _create_string_attribute(self._h5attrs._id, key, value)
         # always for CLASSIC mode or special NETCDF4 attributes
         elif self._format == "NETCDF4_CLASSIC":
             if dtype.kind in ["S", "U"] and self._h5py.__name__ == "h5py":
-                write_classic_string_attr(self._h5attrs._id, key, value)
+                _create_string_attribute(self._h5attrs._id, key, value)
             else:
-                self._h5attrs[key] = np.atleast_1d(value)
+                self._h5attrs[key] = np.atleast_1d(value) 
         else:
-            # write non string scalars as simple dataspace as NETCDF4 is doing
-            if np.isscalar(value) and dtype.kind not in ["S", "U"]:
+            # netcdf4-python/netcdf-c writes non-string scalars as simple dataset
+            # converting to 1D
+            if np.isscalar(value) and dtype.kind not in {"S", "U"}:
                 value = np.atleast_1d(value)
             self._h5attrs[key] = value
 

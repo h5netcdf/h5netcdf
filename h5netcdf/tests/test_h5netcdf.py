@@ -2948,7 +2948,6 @@ def write_legacy_string_array(tmp_netcdf, write_module, format):
     v2[-1, -1] = data[-1, -1].tobytes()  # write single python string
     # _Encoding should be ignored if an array of characters is specified
     v3[:] = netCDF4.stringtochar(data, encoding="ascii")
-    ds.close()
 
 
 @pytest.mark.parametrize("strict", [True, False])
@@ -2959,6 +2958,37 @@ def test_dump_string_array(tmp_local_netcdf, h5dump, format, strict):
 
     write_legacy_string_array(tmp_local_netcdf, legacyapi, **format)
     actual = h5dump(tmp_local_netcdf, strict=strict)
+
+    assert actual == expected
+
+
+def maybe_resize_with_broadcasting(tmp_netcdf, write_module):
+    ds = write_module.Dataset(tmp_netcdf, mode="w")
+    n1, n2, n3 = 4, 5, 6
+    data = np.arange(n1 * n2 * n3).reshape((n1, n2, n3))
+
+    ds.createDimension("n1", None)
+    ds.createDimension("n2", n2)
+    ds.createDimension("n3", n3)
+
+    v = ds.createVariable("numbers", "i4", ("n1", "n2", "n3"))
+    # netcdf4-python doe not handle this, need to write once with full data
+    if write_module == netCDF4:
+        v[:] = data
+    v[:-1] = data[:-1]
+    v[-1] = data[-1]
+    v[-1, -1] = data[-1, -1]
+    ds.close()
+
+
+@pytest.mark.parametrize("dataset", [None, "numbers"])
+@pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
+def test_dump_maybe_resize_with_broadcasting(tmp_local_netcdf, h5dump, dataset, strict):
+    maybe_resize_with_broadcasting(tmp_local_netcdf, netCDF4)
+    expected = h5dump(tmp_local_netcdf, strict=strict, dataset=dataset)
+
+    maybe_resize_with_broadcasting(tmp_local_netcdf, legacyapi)
+    actual = h5dump(tmp_local_netcdf, strict=strict, dataset=dataset)
 
     assert actual == expected
 
