@@ -385,7 +385,7 @@ class BaseVariable(BaseObject):
                 current_dim_size = len(self._parent._all_dimensions[dim])
                 if (
                     key[i].stop is None
-                ):  # TODO: Won't this fail if key[i] is an array of ints?
+                ):
                     # if stop is None, get dimensions from value,
                     # they must match with variable dimension
                     if v is None:

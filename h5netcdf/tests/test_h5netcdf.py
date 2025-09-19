@@ -2862,7 +2862,7 @@ def maybe_resize_with_broadcasting(tmp_netcdf, write_module):
     ds.createDimension("n3", n3)
 
     v = ds.createVariable("numbers", "i4", ("n1", "n2", "n3"))
-    # netcdf4-python
+    # netcdf4-python doe not handle this, need to write once with full data
     if write_module == netCDF4:
         v[:] = data
     v[:-1] = data[:-1]

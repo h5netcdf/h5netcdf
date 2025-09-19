@@ -98,7 +98,7 @@ class Attributes(MutableMapping):
         else:
             # netcdf4-python/netcdf-c writes non-string scalars as simple dataset
             # converting to 1D
-            if np.isscalar(value) and dtype.kind not in ["S", "U"]:
+            if np.isscalar(value) and dtype.kind not in {"S", "U"}:
                 value = np.atleast_1d(value)
             self._h5attrs[key] = value
 
