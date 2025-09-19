@@ -1777,6 +1777,10 @@ class File(Group):
         return None
 
     @property
+    def data_model(self):
+        return self._format
+
+    @property
     def _root(self):
         return self
 

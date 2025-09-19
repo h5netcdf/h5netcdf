@@ -76,11 +76,6 @@ def netcdf_write_module(request):
     return request.param
 
 
-@pytest.fixture(params=["NETCDF4", "NETCDF4_CLASSIC"])
-def format(request):
-    return dict(format=request.param)
-
-
 def get_hdf5_module(resource):
     """Return the correct h5py module based on the input resource."""
     if isinstance(resource, str) and resource.startswith(remote_h5):
@@ -140,7 +135,7 @@ def is_h5py_char_working(tmp_netcdf, name):
 
 def write_legacy_netcdf(tmp_netcdf, write_module, format="NETCDF4"):
     ds = write_module.Dataset(tmp_netcdf, mode="w", format=format)
-    intf = np.int64 if format == "NETCDF4" else np.int32
+    intf = np.int64 if ds.data_model == "NETCDF4" else np.int32
 
     ds.setncattr("global", intf(42))
     ds.other_attr = "yes"
@@ -150,7 +145,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module, format="NETCDF4"):
     ds.createDimension("string3", 3)
     ds.createDimension("unlimited", None)
 
-    if format == "NETCDF4":
+    if ds.data_model == "NETCDF4":
         # In the CLASSIC format, only one unlimited dimension is allowed
         ds.createDimension("empty", 0)
 
@@ -183,7 +178,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module, format="NETCDF4"):
     ds.createDimension("mismatched_dim", 1)
     ds.createVariable("mismatched_dim", intf, ())
 
-    if format == "NETCDF4":
+    if ds.data_model == "NETCDF4":
         g = ds.createGroup("subgroup")
         v = g.createVariable("subvar", np.int32, ("x",))
         v[...] = np.arange(4.0)
@@ -209,11 +204,11 @@ def write_legacy_netcdf(tmp_netcdf, write_module, format="NETCDF4"):
 
 def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
     ds = h5netcdf.File(tmp_netcdf, mode="w", format=format)
-    intf = np.int64 if format == "NETCDF4" else np.int32
+    intf = np.int64 if ds.data_model == "NETCDF4" else np.int32
     ds.attrs["global"] = intf(42)
     ds.attrs["other_attr"] = "yes"
 
-    if format == "NETCDF4_CLASSIC":
+    if ds.data_model == "NETCDF4_CLASSIC":
         with raises(
             CompatibilityError,
             match="NETCDF4_CLASSIC format only allows one unlimited dimension.",
@@ -222,10 +217,10 @@ def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
 
     ds.dimensions = {"x": 4, "y": 5, "z": 6, "unlimited": None}
 
-    if format == "NETCDF4":
+    if ds.data_model == "NETCDF4":
         ds.dimensions["empty"] = 0
 
-    if format == "NETCDF4_CLASSIC":
+    if ds.data_model == "NETCDF4_CLASSIC":
         with raises(
             CompatibilityError,
             match="Only one unlimited dimension allowed in the NETCDF4_CLASSIC format.",
@@ -262,7 +257,7 @@ def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
     ds.create_variable("mismatched_dim", dtype=intf)
     ds.flush()
 
-    if format == "NETCDF4":
+    if ds.data_model == "NETCDF4":
         g = ds.create_group("subgroup")
         v = g.create_variable("subvar", ("x",), np.int32)
         v[...] = np.arange(4.0)
@@ -290,12 +285,7 @@ def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
 def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     ds = read_module.Dataset(tmp_netcdf, "r")
 
-    if read_module is netCDF4:
-        format = ds.data_model
-    else:
-        format = ds._format
-
-    intf = np.int64 if format == "NETCDF4" else np.int32
+    intf = np.int64 if ds.data_model == "NETCDF4" else np.int32
 
     assert ds.ncattrs() == ["global", "other_attr"]
     assert ds.getncattr("global") == 42
@@ -321,7 +311,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
         "foo_unlimited",
         "mismatched_dim",
     }
-    if format == "NETCDF4":
+    if ds.data_model == "NETCDF4":
         dimensions |= {"empty"}
         variables |= {
             "enum_var",
@@ -331,7 +321,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert set(ds.dimensions) == dimensions
     assert set(ds.variables) == variables
 
-    if format == "NETCDF4":
+    if ds.data_model == "NETCDF4":
         assert set(ds.enumtypes) == {"enum_t"}
 
         assert set(ds.groups) == {"subgroup"}
@@ -402,7 +392,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
     assert v.dimensions == ()
     assert v.ncattrs() == []
 
-    if format == "NETCDF4":
+    if ds.data_model == "NETCDF4":
         v = ds.variables["var_len_str"]
         assert v.dtype == str
         assert v[0] == _vlen_string
@@ -431,8 +421,7 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module):
 def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     remote_file = isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5)
     ds = h5netcdf.File(tmp_netcdf, "r", **decode_vlen_strings)
-    format = ds._format
-    intf = np.int64 if format == "NETCDF4" else np.int32
+    intf = np.int64 if ds.data_model == "NETCDF4" else np.int32
 
     assert ds.name == "/"
     assert list(ds.attrs) == ["global", "other_attr"]
@@ -460,7 +449,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     if not remote_file:
         variables |= {"y"}
 
-    if format == "NETCDF4":
+    if ds.data_model == "NETCDF4":
         dimensions |= {"empty"}
         variables |= {"enum_var", "var_len_str"}
 
@@ -527,7 +516,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings):
     assert v.dimensions == ()
     assert list(v.attrs) == []
 
-    if format == "NETCDF4":
+    if ds.data_model == "NETCDF4":
         assert set(ds.groups) == {"subgroup"}
 
         v = ds["var_len_str"]
@@ -584,13 +573,15 @@ def test_write_h5netcdf_read_legacyapi(tmp_local_netcdf):
     read_legacy_netcdf(tmp_local_netcdf, legacyapi, h5netcdf)
 
 
-def test_write_h5netcdf_read_netCDF4(tmp_local_netcdf, format):
-    write_h5netcdf(tmp_local_netcdf, **format)
+def test_write_h5netcdf_read_netCDF4(tmp_local_netcdf, data_model):
+    write_h5netcdf(tmp_local_netcdf, **data_model)
     read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf)
 
 
-def test_roundtrip_h5netcdf(tmp_local_or_remote_netcdf, decode_vlen_strings, format):
-    write_h5netcdf(tmp_local_or_remote_netcdf, **format)
+def test_roundtrip_h5netcdf(
+    tmp_local_or_remote_netcdf, decode_vlen_strings, data_model
+):
+    write_h5netcdf(tmp_local_or_remote_netcdf, **data_model)
     read_h5netcdf(tmp_local_or_remote_netcdf, h5netcdf, decode_vlen_strings)
 
 
@@ -599,8 +590,8 @@ def test_write_compression_as_zlib(tmp_local_netcdf):
     read_legacy_netcdf(tmp_local_netcdf, netCDF4, h5netcdf)
 
 
-def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings, format):
-    write_legacy_netcdf(tmp_local_netcdf, netCDF4, **format)
+def test_write_netCDF4_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings, data_model):
+    write_legacy_netcdf(tmp_local_netcdf, netCDF4, **data_model)
     read_h5netcdf(tmp_local_netcdf, netCDF4, decode_vlen_strings)
 
 
@@ -612,12 +603,14 @@ def test_write_legacyapi_read_h5netcdf(tmp_local_netcdf, decode_vlen_strings):
 @pytest.mark.parametrize("strict", [True, False])
 @pytest.mark.parametrize("dataset", [None, "enum_var"])
 @pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
-def test_dump_netcdf4_vs_h5netcdf(tmp_local_netcdf, dataset, h5dump, format, strict):
+def test_dump_netcdf4_vs_h5netcdf(
+    tmp_local_netcdf, dataset, h5dump, data_model, strict
+):
     """Check that the generated file is identical to netCDF4 by comparing h5dump output."""
-    write_legacy_netcdf(tmp_local_netcdf, netCDF4, **format)
+    write_legacy_netcdf(tmp_local_netcdf, netCDF4, **data_model)
     expected = h5dump(tmp_local_netcdf, dataset=dataset, strict=strict)
 
-    write_legacy_netcdf(tmp_local_netcdf, legacyapi, **format)
+    write_legacy_netcdf(tmp_local_netcdf, legacyapi, **data_model)
     actual = h5dump(tmp_local_netcdf, dataset=dataset, strict=strict)
 
     assert actual == expected
@@ -2948,18 +2941,18 @@ def write_legacy_string_array(tmp_netcdf, write_module, format):
 
 @pytest.mark.parametrize("strict", [True, False])
 @pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
-def test_dump_string_array(tmp_local_netcdf, h5dump, format, strict):
-    write_legacy_string_array(tmp_local_netcdf, netCDF4, **format)
+def test_dump_string_array(tmp_local_netcdf, h5dump, data_model, strict):
+    write_legacy_string_array(tmp_local_netcdf, netCDF4, **data_model)
     expected = h5dump(tmp_local_netcdf, strict=strict)
 
-    write_legacy_string_array(tmp_local_netcdf, legacyapi, **format)
+    write_legacy_string_array(tmp_local_netcdf, legacyapi, **data_model)
     actual = h5dump(tmp_local_netcdf, strict=strict)
 
     assert actual == expected
 
 
-def maybe_resize_with_broadcasting(tmp_netcdf, write_module, format):
-    ds = write_module.Dataset(tmp_netcdf, mode="w", **format)
+def maybe_resize_with_broadcasting(tmp_netcdf, write_module, data_model):
+    ds = write_module.Dataset(tmp_netcdf, mode="w", **data_model)
     n1, n2, n3 = 4, 5, 6
     data = np.arange(n1 * n2 * n3).reshape((n1, n2, n3))
 
@@ -2981,12 +2974,12 @@ def maybe_resize_with_broadcasting(tmp_netcdf, write_module, format):
 @pytest.mark.parametrize("strict", [True, False])
 @pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
 def test_dump_maybe_resize_with_broadcasting(
-    tmp_local_netcdf, format, h5dump, dataset, strict
+    tmp_local_netcdf, data_model, h5dump, dataset, strict
 ):
-    maybe_resize_with_broadcasting(tmp_local_netcdf, netCDF4, format)
+    maybe_resize_with_broadcasting(tmp_local_netcdf, netCDF4, data_model)
     expected = h5dump(tmp_local_netcdf, strict=strict, dataset=dataset)
 
-    maybe_resize_with_broadcasting(tmp_local_netcdf, legacyapi, format)
+    maybe_resize_with_broadcasting(tmp_local_netcdf, legacyapi, data_model)
     actual = h5dump(tmp_local_netcdf, strict=strict, dataset=dataset)
 
     assert actual == expected
