@@ -2958,8 +2958,8 @@ def test_dump_string_array(tmp_local_netcdf, h5dump, format, strict):
     assert actual == expected
 
 
-def maybe_resize_with_broadcasting(tmp_netcdf, write_module):
-    ds = write_module.Dataset(tmp_netcdf, mode="w")
+def maybe_resize_with_broadcasting(tmp_netcdf, write_module, format):
+    ds = write_module.Dataset(tmp_netcdf, mode="w", **format)
     n1, n2, n3 = 4, 5, 6
     data = np.arange(n1 * n2 * n3).reshape((n1, n2, n3))
 
@@ -2979,12 +2979,14 @@ def maybe_resize_with_broadcasting(tmp_netcdf, write_module):
 
 @pytest.mark.parametrize("dataset", [None, "numbers"])
 @pytest.mark.parametrize("strict", [True, False])
-# @pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
-def test_dump_maybe_resize_with_broadcasting(tmp_local_netcdf, h5dump, dataset, strict):
-    maybe_resize_with_broadcasting(tmp_local_netcdf, netCDF4)
+@pytest.mark.xfail(reason="Differences between netcdf4/h5netcdf")
+def test_dump_maybe_resize_with_broadcasting(
+    tmp_local_netcdf, format, h5dump, dataset, strict
+):
+    maybe_resize_with_broadcasting(tmp_local_netcdf, netCDF4, format)
     expected = h5dump(tmp_local_netcdf, strict=strict, dataset=dataset)
 
-    maybe_resize_with_broadcasting(tmp_local_netcdf, legacyapi)
+    maybe_resize_with_broadcasting(tmp_local_netcdf, legacyapi, format)
     actual = h5dump(tmp_local_netcdf, strict=strict, dataset=dataset)
 
     assert actual == expected
