@@ -1173,6 +1173,7 @@ class Group(Mapping):
         # fill value handling
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
 
+        # create hdf5 variable
         # for classic format string types write with low level API
         if (
             self._root._format == "NETCDF4_CLASSIC"
