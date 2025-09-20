@@ -49,11 +49,6 @@ def _create_classic_string_dataset(gid, name, value, shape, chunks):
     chunks : tuple or None
         Chunk shape.
     """
-    # Todo: This function need to be re-checked!
-    # Convert to bytes
-    if isinstance(value, str):
-        value = value.encode("utf-8")
-
     tid = h5py.h5t.C_S1.copy()
     tid.set_size(1)
     tid.set_strpad(h5py.h5t.STR_NULLTERM)

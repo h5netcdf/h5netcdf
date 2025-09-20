@@ -64,10 +64,10 @@ Usage
 -----
 
 h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
-reproduce most of the features of the netCDF interface, with the notable
-exception of support for operations that rename or delete existing objects.
-We simply haven't gotten around to implementing this yet. Patches
-would be very welcome.
+reproduce most of the features of the netCDF interface, including the ability
+to write NETCDF4 and NETCDF4_CLASSIC formatted files. Support for operations
+that rename or delete existing objects is still missing, and patches would be
+very welcome.
 
 New API
 ~~~~~~~
