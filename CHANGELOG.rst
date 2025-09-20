@@ -10,6 +10,8 @@ Development Version (unreleased):
 - Fix interoperability issues between netcdf4/h5netcdf, namely resizing variables using partial slices, 
 creating string attributes with NULLTERM, proper attachment of _Netcdf4Coordinates and _Netcdf4Dimid as well as special string type fillvalues (:pull:`286`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `David Huard <https://github.com/huard>`_
+- Add the `format` argument to `h5netcdf.File` and partial support for the `NETCDF4_CLASSIC` format (:issue:`280`, :pull:``).
+  By `David Huard <https://github.com/huard>`_
 
 Version 1.6.4 (August 5th, 2025):
 

@@ -4,6 +4,10 @@ import h5py
 import numpy as np
 
 
+class CompatibilityError(Exception):
+    """Raised when using features that are not part of the NetCDF4 API."""
+
+
 class Frozen(Mapping):
     """Wrapper around an object implementing the mapping interface to make it
     immutable. If you really want to modify the mapping, the mutable version is
@@ -27,6 +31,47 @@ class Frozen(Mapping):
 
     def __repr__(self):
         return f"{type(self).__name__}({self._mapping!r})"
+
+
+def _create_classic_string_dataset(gid, name, value, shape, chunks):
+    """Write a string dataset to an HDF5 object with control over the strpad.
+
+    Parameters
+    ----------
+    gid : h5py.h5g.GroupID
+        Group ID where to write the dataset.
+    name : str
+        Dataset name.
+    value : str
+        Dataset contents to be written.
+    shape : tuple
+        Dataset shape.
+    chunks : tuple or None
+        Chunk shape.
+    """
+    tid = h5py.h5t.C_S1.copy()
+    tid.set_size(1)
+    tid.set_strpad(h5py.h5t.STR_NULLTERM)
+    kwargs = {}
+    if len(shape) == 0:
+        sid = h5py.h5s.create(h5py.h5s.SCALAR)
+    else:
+        if chunks is not None:
+            # for resizing, we need to provide maxshape
+            # with unlimited as the first dimension
+            maxshape = (h5py.h5s.UNLIMITED,) + shape[1:]
+            # and we also need to create a chunked dataset
+            dcpl = h5py.h5p.create(h5py.h5p.DATASET_CREATE)
+            # try automatic chunking
+            dcpl.set_chunk(chunks)
+            kwargs["dcpl"] = dcpl
+        else:
+            maxshape = shape
+        sid = h5py.h5s.create_simple(shape, maxshape)
+    did = h5py.h5d.create(gid, name.encode(), tid, sid, **kwargs)
+    if value is not None:
+        value = np.array(np.bytes_(value))
+        did.write(h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=did.get_type())
 
 
 def _create_enum_dataset(group, name, shape, enum_type, fillvalue=None):
@@ -117,11 +162,12 @@ def _create_string_attribute(gid, name, value):
 
     Parameters
     ----------
-    gid : h5py attrs
+    gid : h5py.h5g.GroupID
+      Group ID where to write the attribute.
     name : str
-        attribute name
+        Attribute name.
     value : str
-        attributes contents to be written
+        Attributes contents to be written.
     """
     # handle charset and encoding
     charset = h5py.h5t.CSET_ASCII

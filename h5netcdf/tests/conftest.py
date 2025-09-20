@@ -88,3 +88,8 @@ def hsds_up():
 @pytest.fixture
 def h5dump():
     return _h5dump
+
+
+@pytest.fixture(params=["NETCDF4", "NETCDF4_CLASSIC"])
+def data_model(request):
+    return dict(format=request.param)

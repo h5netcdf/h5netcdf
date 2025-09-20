@@ -4,6 +4,8 @@ from collections.abc import MutableMapping
 
 import numpy as np
 
+from .utils import CompatibilityError
+
 
 class Dimensions(MutableMapping):
     def __init__(self, group):
@@ -23,8 +25,20 @@ class Dimensions(MutableMapping):
             raise RuntimeError("H5NetCDF: Write to read only")
         if name in self._objects:
             raise ValueError(f"dimension {name!r} already exists")
+        if (
+            size in [0, None]
+            and self._unlimited()
+            and self._group._format == "NETCDF4_CLASSIC"
+        ):
+            raise CompatibilityError(
+                "Only one unlimited dimension allowed in the NETCDF4_CLASSIC format."
+            )
 
         self._objects[name] = Dimension(self._group, name, size, create_h5ds=True)
+
+    def _unlimited(self):
+        """Return a tuple of unlimited dimensions."""
+        return tuple(dim for dim in self._objects.values() if dim.isunlimited())
 
     def add_phony(self, name, size):
         self._objects[name] = Dimension(
@@ -78,6 +92,7 @@ class Dimension:
         self._h5path = _join_h5paths(parent.name, name)
         self._name = name
         self._size = 0 if size is None else size
+
         if self._phony:
             self._root._phony_dim_count += 1
         else:
