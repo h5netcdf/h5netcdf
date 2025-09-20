@@ -96,7 +96,7 @@ class Attributes(MutableMapping):
             # create with low level API to get fixed length strings
             # as netcdf4-python/netcdf-c does
             _create_string_attribute(self._h5attrs._id, key, value)
-        # always for CLASSIC mode or special NETCDF4 attributes
+        # always for CLASSIC mode
         elif self._format == "NETCDF4_CLASSIC":
             self._h5attrs[key] = np.atleast_1d(value)
         else:
