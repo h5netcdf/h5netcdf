@@ -7,10 +7,10 @@ Development Version (unreleased):
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Create ENUM with low level API to keep order-by-value, add h5dump based tests (:pull:`285`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `David Huard <https://github.com/huard>`_
-- Fix interoperability issues between netcdf4/h5netcdf, namely resizing variables using partial slices, 
+- Fix interoperability issues between netcdf4/h5netcdf, namely resizing variables using partial slices,
 creating string attributes with NULLTERM, proper attachment of _Netcdf4Coordinates and _Netcdf4Dimid as well as special string type fillvalues (:pull:`286`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `David Huard <https://github.com/huard>`_
-- Add the `format` argument to `h5netcdf.File` and partial support for the `NETCDF4_CLASSIC` format (:issue:`280`, :pull:``).
+- Add the `format` argument to `h5netcdf.File` and support for the `NETCDF4_CLASSIC` format (:issue:`280`, :pull:``).
   By `David Huard <https://github.com/huard>`_
 
 Version 1.6.4 (August 5th, 2025):
