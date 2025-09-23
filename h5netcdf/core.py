@@ -14,10 +14,13 @@ from . import __version__
 from .attrs import Attributes
 from .dimensions import Dimension, Dimensions
 from .utils import (
+    CompatibilityError,
     Frozen,
     _commit_enum_type,
+    _create_classic_string_dataset,
     _create_enum_dataset,
     _create_enum_dataset_attribute,
+    _create_string_attribute,
 )
 
 try:
@@ -39,10 +42,6 @@ def _name_from_dimension(dim):
     # First value in a dimension is the actual dimension scale
     # which we'll use to extract the name.
     return dim[0].name.split("/")[-1]
-
-
-class CompatibilityError(Exception):
-    """Raised when using features that are not part of the NetCDF4 API."""
 
 
 def _invalid_netcdf_feature(feature, allow):
@@ -619,13 +618,28 @@ class BaseVariable(BaseObject):
         ):
             self._h5ds[key] = value.view(view)
         else:
-            self._h5ds[key] = value
+            # write with low-level API for CLASSIC format
+            if (
+                self._root._format == "NETCDF4_CLASSIC"
+                and self.dtype.kind in ["S", "U"]
+                and self._root._h5py.__name__ == "h5py"
+            ):
+                # h5py expects np.ndarray
+                value = np.asanyarray(value)
+                self._h5ds.id.write(
+                    h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=self._h5ds.id.get_type()
+                )
+            else:
+                self._h5ds[key] = value
 
     @property
     def attrs(self):
         """Return variable attributes."""
         return Attributes(
-            self._h5ds.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
+            self._h5ds.attrs,
+            self._root._check_valid_netcdf_dtype,
+            self._root._h5py,
+            format=self._root._format,
         )
 
     _cls_name = "h5netcdf.Variable"
@@ -1015,6 +1029,13 @@ class Group(Mapping):
 
     @dimensions.setter
     def dimensions(self, value):
+        if self._format == "NETCDF4_CLASSIC":
+            unlimited_dims = list(filter(lambda s: s in [None, 0], value.values()))
+            if len(unlimited_dims) > 1:
+                raise CompatibilityError(
+                    "NETCDF4_CLASSIC format only allows one unlimited dimension."
+                )
+
         for k, v in self._all_dimensions.maps[0].items():
             if k in value:
                 if v != value[k]:
@@ -1153,7 +1174,16 @@ class Group(Mapping):
         fillvalue, h5fillvalue = _check_fillvalue(self, fillvalue, dtype)
 
         # create hdf5 variable
-        if self._root._h5py.__name__ == "h5py" and isinstance(dtype, EnumType):
+        # for classic format string types write with low level API
+        if (
+            self._root._format == "NETCDF4_CLASSIC"
+            and np.dtype(dtype).kind in ["S", "U"]
+            and self._root._h5py.__name__ == "h5py"
+        ):
+            _create_classic_string_dataset(
+                self._h5group._id, h5name, data, shape, chunks
+            )
+        elif self._root._h5py.__name__ == "h5py" and isinstance(dtype, EnumType):
             # use low level API for creating ENUMS
             _create_enum_dataset(self, h5name, shape, dtype, h5fillvalue)
         else:
@@ -1259,7 +1289,6 @@ class Group(Mapping):
         var : h5netcdf.Variable
             Variable class instance
         """
-
         # if root-variable
         if name.startswith("/"):
             # handling default fillvalues for legacyapi
@@ -1268,6 +1297,12 @@ class Group(Mapping):
 
             if fillvalue is None and isinstance(self._parent._root, Dataset):
                 fillvalue = _get_default_fillvalue(dtype)
+
+            if self._root._format == "NETCDF4_CLASSIC" and len(dimensions) == 0:
+                raise CompatibilityError(
+                    "NETCDF4_CLASSIC format does not allow variables without dimensions."
+                )
+
             return self._root.create_variable(
                 name[1:],
                 dimensions,
@@ -1391,7 +1426,10 @@ class Group(Mapping):
     @property
     def attrs(self):
         return Attributes(
-            self._h5group.attrs, self._root._check_valid_netcdf_dtype, self._root._h5py
+            self._h5group.attrs,
+            self._root._check_valid_netcdf_dtype,
+            self._root._h5py,
+            format=self._root._format,
         )
 
     _cls_name = "h5netcdf.Group"
@@ -1496,7 +1534,15 @@ class Group(Mapping):
 
 
 class File(Group):
-    def __init__(self, path, mode="r", invalid_netcdf=False, phony_dims=None, **kwargs):
+    def __init__(
+        self,
+        path,
+        mode="r",
+        format="NETCDF4",
+        invalid_netcdf=False,
+        phony_dims=None,
+        **kwargs,
+    ):
         """NetCDF4 file constructor.
 
         Parameters
@@ -1507,6 +1553,10 @@ class File(Group):
 
         mode: "r", "r+", "a", "w"
             A valid file access mode. Defaults to "r".
+
+        format: "NETCDF4", "NETCDF4_CLASSIC"
+            The format of the file to create. Only relevant when creating a new
+            file (mode "w"). Defaults to "NETCDF4".
 
         invalid_netcdf: bool
             Allow writing netCDF4 with data types and attributes that would
@@ -1624,8 +1674,16 @@ class File(Group):
         else:
             self._closed = False
 
+        if self._preexisting_file:
+            format = (
+                "NETCDF4_CLASSIC"
+                if self._h5file.attrs.get("_nc3_strict")
+                else "NETCDF4"
+            )
+
         self._filename = self._h5file.filename
         self._mode = mode
+        self._format = format
         self._writable = mode != "r"
         self._root_ref = weakref.ref(self)
         self._h5path = "/"
@@ -1641,6 +1699,9 @@ class File(Group):
                     "Use phony_dims='sort' for sorted naming, "
                     "phony_dims='access' for per access naming."
                 )
+
+        if format not in ["NETCDF4", "NETCDF4_CLASSIC"]:
+            raise ValueError(f"unknown format {format!r}")
 
         # string decoding
         if "legacy" in self._cls_name:
@@ -1692,6 +1753,11 @@ class File(Group):
             description = "boolean"
         elif self._h5py.check_dtype(ref=dtype) is not None:
             description = "reference"
+        elif (
+            dtype in [int, np.int64, np.uint64, np.uint32, np.uint16, np.uint8]
+            and self._format == "NETCDF4_CLASSIC"
+        ):
+            description = f"{dtype} (CLASSIC)"
         else:
             description = None
 
@@ -1714,6 +1780,10 @@ class File(Group):
         return None
 
     @property
+    def data_model(self):
+        return self._format
+
+    @property
     def _root(self):
         return self
 
@@ -1726,12 +1796,20 @@ class File(Group):
                     f"hdf5={self._h5py.version.hdf5_version},"
                     f"{self._h5py.__name__}={self._h5py.__version__}"
                 )
-                self.attrs._h5attrs["_NCProperties"] = np.array(
-                    _NC_PROPERTIES,
-                    dtype=self._h5py.string_dtype(
-                        encoding="ascii", length=len(_NC_PROPERTIES)
-                    ),
-                )
+                if self._format == "NETCDF4_CLASSIC" and self._h5py.__name__ == "h5py":
+                    _create_string_attribute(
+                        self.attrs._h5attrs._id, "_NCProperties", _NC_PROPERTIES
+                    )
+                else:
+                    self.attrs._h5attrs["_NCProperties"] = np.array(
+                        _NC_PROPERTIES,
+                        dtype=self._h5py.string_dtype(
+                            encoding="ascii", length=len(_NC_PROPERTIES)
+                        ),
+                    )
+                if self._format == "NETCDF4_CLASSIC":
+                    self.attrs._h5attrs["_nc3_strict"] = np.array(1, np.int32)
+
             if self.invalid_netcdf:
                 # see https://github.com/h5netcdf/h5netcdf/issues/165
                 # warn user if .nc file extension is used for invalid netcdf features
@@ -1746,6 +1824,8 @@ class File(Group):
                 # remove _NCProperties if invalid_netcdf if exists
                 if "_NCProperties" in self.attrs._h5attrs:
                     del self.attrs._h5attrs["_NCProperties"]
+                if "_nc3_strict" in self.attrs._h5attrs:
+                    del self.attrs._h5attrs["_nc3_strict"]
 
     sync = flush
 
