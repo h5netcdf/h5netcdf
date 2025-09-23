@@ -4,6 +4,10 @@ import h5py
 import numpy as np
 
 
+class CompatibilityError(Exception):
+    """Raised when using features that are not part of the NetCDF4 API."""
+
+
 class Frozen(Mapping):
     """Wrapper around an object implementing the mapping interface to make it
     immutable. If you really want to modify the mapping, the mutable version is
@@ -27,6 +31,47 @@ class Frozen(Mapping):
 
     def __repr__(self):
         return f"{type(self).__name__}({self._mapping!r})"
+
+
+def _create_classic_string_dataset(gid, name, value, shape, chunks):
+    """Write a string dataset to an HDF5 object with control over the strpad.
+
+    Parameters
+    ----------
+    gid : h5py.h5g.GroupID
+        Group ID where to write the dataset.
+    name : str
+        Dataset name.
+    value : str
+        Dataset contents to be written.
+    shape : tuple
+        Dataset shape.
+    chunks : tuple or None
+        Chunk shape.
+    """
+    tid = h5py.h5t.C_S1.copy()
+    tid.set_size(1)
+    tid.set_strpad(h5py.h5t.STR_NULLTERM)
+    kwargs = {}
+    if len(shape) == 0:
+        sid = h5py.h5s.create(h5py.h5s.SCALAR)
+    else:
+        if chunks is not None:
+            # for resizing, we need to provide maxshape
+            # with unlimited as the first dimension
+            maxshape = (h5py.h5s.UNLIMITED,) + shape[1:]
+            # and we also need to create a chunked dataset
+            dcpl = h5py.h5p.create(h5py.h5p.DATASET_CREATE)
+            # try automatic chunking
+            dcpl.set_chunk(chunks)
+            kwargs["dcpl"] = dcpl
+        else:
+            maxshape = shape
+        sid = h5py.h5s.create_simple(shape, maxshape)
+    did = h5py.h5d.create(gid, name.encode(), tid, sid, **kwargs)
+    if value is not None:
+        value = np.array(np.bytes_(value))
+        did.write(h5py.h5s.ALL, h5py.h5s.ALL, value, mtype=did.get_type())
 
 
 def _create_enum_dataset(group, name, shape, enum_type, fillvalue=None):
@@ -65,6 +110,8 @@ def _create_enum_dataset_attribute(ds, name, value, enum_type):
     ds : h5netcdf.Variable
     name : str
         dataset name
+    value : array of ints
+        enum values
     enum_type : h5netcdf.EnumType
     """
     tid = enum_type._h5ds.id.copy()
@@ -108,6 +155,44 @@ def _commit_enum_type(group, name, enum_dict, basetype):
     tid = _make_enum_tid(enum_dict, basetype)
     tid.commit(group._h5group.id, name.encode("ascii"))
     tid.close()
+
+
+def _create_string_attribute(gid, name, value):
+    """Create a string attribute to an HDF5 object with control over the strpad.
+
+    Parameters
+    ----------
+    gid : h5py.h5g.GroupID
+      Group ID where to write the attribute.
+    name : str
+        Attribute name.
+    value : str
+        Attributes contents to be written.
+    """
+    # handle charset and encoding
+    charset = h5py.h5t.CSET_ASCII
+    if isinstance(value, str):
+        if not value.isascii():
+            value = value.encode("utf-8")
+            charset = h5py.h5t.CSET_UTF8
+        else:
+            value = value.encode("ascii")
+            charset = h5py.h5t.CSET_ASCII
+
+    # create string type
+    tid = h5py.h5t.C_S1.copy()
+    tid.set_size(len(value))
+    tid.set_strpad(h5py.h5t.STR_NULLTERM)
+    tid.set_cset(charset)
+
+    sid = h5py.h5s.create(h5py.h5s.SCALAR)
+
+    if h5py.h5a.exists(gid, name.encode()):
+        h5py.h5a.delete(gid, name.encode())
+
+    aid = h5py.h5a.create(gid, name.encode(), tid, sid)
+    value = np.array(value)
+    aid.write(value, mtype=aid.get_type())
 
 
 def h5dump(fn: str, dataset=None, strict=False):

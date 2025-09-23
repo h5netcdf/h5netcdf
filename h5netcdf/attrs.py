@@ -2,6 +2,8 @@ from collections.abc import MutableMapping
 
 import numpy as np
 
+from .utils import _create_string_attribute
+
 _HIDDEN_ATTRS = frozenset(
     [
         "REFERENCE_LIST",
@@ -17,10 +19,11 @@ _HIDDEN_ATTRS = frozenset(
 
 
 class Attributes(MutableMapping):
-    def __init__(self, h5attrs, check_dtype, h5py_pckg):
+    def __init__(self, h5attrs, check_dtype, h5py_pckg, format="NETCDF4"):
         self._h5attrs = h5attrs
         self._check_dtype = check_dtype
         self._h5py = h5py_pckg
+        self._format = format
 
     def __getitem__(self, key):
         if key in _HIDDEN_ATTRS:
@@ -83,7 +86,25 @@ class Attributes(MutableMapping):
             dtype = np.asarray(value).dtype
 
         self._check_dtype(dtype)
-        self._h5attrs[key] = value
+
+        if (
+            dtype.kind in {"S", "U"}  # for strings
+            and dtype.metadata is None  # but not special h5py strings
+            and not isinstance(value, (list, self._h5py.Empty))
+            and self._h5py.__name__ == "h5py"
+        ):
+            # create with low level API to get fixed length strings
+            # as netcdf4-python/netcdf-c does
+            _create_string_attribute(self._h5attrs._id, key, value)
+        # always for CLASSIC mode
+        elif self._format == "NETCDF4_CLASSIC":
+            self._h5attrs[key] = np.atleast_1d(value)
+        else:
+            # netcdf4-python/netcdf-c writes non-string scalars as simple dataset
+            # converting to 1D
+            if np.isscalar(value) and dtype.kind not in {"S", "U"}:
+                value = np.atleast_1d(value)
+            self._h5attrs[key] = value
 
     def __delitem__(self, key):
         del self._h5attrs[key]
