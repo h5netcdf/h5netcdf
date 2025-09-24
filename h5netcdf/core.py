@@ -270,7 +270,7 @@ _h5type_mapping = {
 def _get_h5usertype_identifier(h5type):
     """Return H5 Type Identifier from given H5 Datatype."""
     try:
-        # h5py first
+        # h5py/pyfive first
         h5typeid = h5type.id.get_class()
     except AttributeError:
         # h5pyd second
@@ -1533,13 +1533,21 @@ class Group(Mapping):
         The type is added by name to the dict attached to current group.
         """
         name = h5type.name.split("/")[-1]
-        h5typeid = _get_h5usertype_identifier(h5type)
+        if self._root._h5py.__name__ == "pyfive":
+            if isinstance(h5type.id, self._root._h5py.h5t.TypeEnumID):
+                h5typeid = 8
+        else:
+            h5typeid = _get_h5usertype_identifier(h5type)
         # add usertype to corresponding dict
         self._get_usertype_dict(h5typeid).maps[0].add(name)
 
     def _get_usertype(self, h5type):
         """Get usertype from related usertype dict."""
-        h5typeid = _get_h5usertype_identifier(h5type)
+        if self._root._h5py.__name__ == "pyfive":
+            if isinstance(h5type.id, self._root._h5py.h5t.TypeEnumID):
+                h5typeid = 8
+        else:
+            h5typeid = _get_h5usertype_identifier(h5type)
         return self._get_usertype_dict(h5typeid).get(h5type.name.split("/")[-1])
 
     def _get_usertype_dict(self, h5typeid):

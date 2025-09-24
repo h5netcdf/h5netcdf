@@ -296,11 +296,11 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend="h5py"):
         "foo_unlimited",
         "mismatched_dim",
     }
-    if ds.data_model == "NETCDF4":
+    if ds.data_model != "NETCDF4":
         assert set(ds.dimensions) == dimensions - {"empty"}
         assert set(ds.variables) == variables - {"enum_var", "var_len_str"}
     if backend == "pyfive":
-        assert set(ds.variables) == variables - {"enum_var"}
+        assert set(ds.variables) == variables
     else:
         assert set(ds.variables) == variables
 
@@ -439,12 +439,12 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py")
     if not remote_file:
         variables |= {"y"}
 
-    if ds.data_model == "NETCDF4":
+    if ds.data_model != "NETCDF4":
         assert set(ds.dimensions) == dimensions - {"empty"}
         assert set(ds.variables) == variables - {"enum_var", "var_len_str"}
 
     if backend == "pyfive":
-        assert set(ds.variables) == variables - {"enum_var"}
+        assert set(ds.variables) == variables
     else:
         assert set(ds.variables) == variables
 
@@ -1117,6 +1117,8 @@ def test_invalid_netcdf_error(tmp_local_or_remote_netcdf):
 def test_invalid_netcdf_okay(write_backend, read_backend, tmp_backend_netcdf):
     if tmp_backend_netcdf.startswith(remote_h5):
         pytest.skip("h5pyd does not support NumPy complex dtype yet")
+    if read_backend == "pyfive":
+        pytest.skip("all datatypes are imported as Enum types - this breaks in pyfive")
     with warns(UserWarning, match="invalid netcdf features"):
         with h5netcdf.File(
             tmp_backend_netcdf, "w", invalid_netcdf=True, backend=write_backend
@@ -1127,7 +1129,11 @@ def test_invalid_netcdf_okay(write_backend, read_backend, tmp_backend_netcdf):
             f.create_variable("complex", data=1j)
             f.attrs["complex_attr"] = 1j
             f.create_variable("scaleoffset", data=[1], dimensions=("x",), scaleoffset=0)
-    with h5netcdf.File(tmp_backend_netcdf, "r", backend=read_backend) as f:
+    kwargs = {}
+    if read_backend == "pyfive":
+        kwargs["unsupported_hdf5_features"] = "warn"
+
+    with h5netcdf.File(tmp_backend_netcdf, "r", backend=read_backend, **kwargs) as f:
         np.testing.assert_equal(f["lzf_compressed"][:], [1])
         assert f["complex"][...] == 1j
         assert f.attrs["complex_attr"] == 1j
@@ -1442,7 +1448,11 @@ def test_reading_special_datatype_created_with_c_api(tmp_local_netcdf, local_bac
     with netCDF4.Dataset(tmp_local_netcdf, "w") as f:
         complex128 = np.dtype([("real", np.float64), ("imag", np.float64)])
         f.createCompoundType(complex128, "complex128")
-    with h5netcdf.File(tmp_local_netcdf, "r", backend=local_backend) as f:
+    kwargs = {}
+    if local_backend == "pyfive":
+        kwargs["unsupported_hdf5_features"] = "warn"
+
+    with h5netcdf.File(tmp_local_netcdf, "r", backend=local_backend, **kwargs) as f:
         pass
 
 
