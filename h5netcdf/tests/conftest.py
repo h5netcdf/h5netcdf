@@ -12,6 +12,7 @@ from shutil import rmtree
 import pytest
 
 from h5netcdf.tests import has_h5py, has_h5pyd, has_hsds, has_pyfive
+from h5netcdf.utils import h5dump as _h5dump
 
 remote_h5 = ("http:", "hdf5:")
 
@@ -284,3 +285,13 @@ def pytest_generate_tests(metafunc):
                         )
 
         metafunc.parametrize("wmod, rmod, bmod, decode_vlen", cases, ids=ids)
+
+
+@pytest.fixture
+def h5dump():
+    return _h5dump
+
+
+@pytest.fixture(params=["NETCDF4", "NETCDF4_CLASSIC"])
+def data_model(request):
+    return dict(format=request.param)

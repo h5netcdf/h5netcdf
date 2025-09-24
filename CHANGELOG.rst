@@ -5,6 +5,13 @@ Development Version (unreleased):
 
 - Fix unintentional changes in test suite (:pull:`277`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Create ENUM with low level API to keep order-by-value, add h5dump based tests (:pull:`285`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `David Huard <https://github.com/huard>`_
+- Fix interoperability issues between netcdf4/h5netcdf, namely resizing variables using partial slices,
+creating string attributes with NULLTERM, proper attachment of _Netcdf4Coordinates and _Netcdf4Dimid as well as special string type fillvalues (:pull:`286`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `David Huard <https://github.com/huard>`_
+- Add the `format` argument to `h5netcdf.File` and support for the `NETCDF4_CLASSIC` format (:issue:`280`, :pull:``).
+  By `David Huard <https://github.com/huard>`_
 - Support pyfive as an alternative backend ({pull}`273`).
   By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
   <https://github.com/davidhassell>`_, `Valeriu Predoi

@@ -4,6 +4,8 @@ from collections.abc import MutableMapping
 
 import numpy as np
 
+from .utils import CompatibilityError
+
 
 class Dimensions(MutableMapping):
     def __init__(self, group):
@@ -23,8 +25,20 @@ class Dimensions(MutableMapping):
             raise RuntimeError("H5NetCDF: Write to read only")
         if name in self._objects:
             raise ValueError(f"dimension {name!r} already exists")
+        if (
+            size in [0, None]
+            and self._unlimited()
+            and self._group._format == "NETCDF4_CLASSIC"
+        ):
+            raise CompatibilityError(
+                "Only one unlimited dimension allowed in the NETCDF4_CLASSIC format."
+            )
 
         self._objects[name] = Dimension(self._group, name, size, create_h5ds=True)
+
+    def _unlimited(self):
+        """Return a tuple of unlimited dimensions."""
+        return tuple(dim for dim in self._objects.values() if dim.isunlimited())
 
     def add_phony(self, name, size):
         self._objects[name] = Dimension(
@@ -78,6 +92,7 @@ class Dimension:
         self._h5path = _join_h5paths(parent.name, name)
         self._name = name
         self._size = 0 if size is None else size
+
         if self._phony:
             self._root._phony_dim_count += 1
         else:
@@ -165,7 +180,7 @@ class Dimension:
         """Return dimension scale references"""
         return list(self._h5ds.attrs.get("REFERENCE_LIST", []))
 
-    def _create_scale(self):
+    def _create_scale(self, dimid=None):
         """Create dimension scale for this dimension"""
         if self._name not in self._parent._h5group:
             kwargs = {}
@@ -179,7 +194,10 @@ class Dimension:
                 dtype=">f4",
                 **kwargs,
             )
-        self._h5ds.attrs["_Netcdf4Dimid"] = np.array(self._dimid, dtype=np.int32)
+        # fallback to init-time dimid
+        if dimid is None:
+            dimid = self._dimid
+        self._h5ds.attrs["_Netcdf4Dimid"] = np.array(dimid, dtype=np.int32)
 
         if len(self._h5ds.shape) > 1:
             dims = self._parent._variables[self._name].dimensions
@@ -188,10 +206,8 @@ class Dimension:
             )
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
-        # need special handling for size in case of scalar and tuple
+        # need special handling for size in case of tuple
         size = self._size
-        if not size:
-            size = 1
         if isinstance(size, tuple):
             size = size[0]
         dimlen = bytes(f"{size:10}", "ascii")
