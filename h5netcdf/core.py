@@ -1536,6 +1536,8 @@ class Group(Mapping):
         if self._root._h5py.__name__ == "pyfive":
             if isinstance(h5type.id, self._root._h5py.h5t.TypeEnumID):
                 h5typeid = 8
+            elif isinstance(h5type.id, self._root._h5py.h5t.TypeCompoundID):
+                h5typeid = 6
         else:
             h5typeid = _get_h5usertype_identifier(h5type)
         # add usertype to corresponding dict
@@ -1546,6 +1548,8 @@ class Group(Mapping):
         if self._root._h5py.__name__ == "pyfive":
             if isinstance(h5type.id, self._root._h5py.h5t.TypeEnumID):
                 h5typeid = 8
+            elif isinstance(h5type.id, self._root._h5py.h5t.TypeCompoundID):
+                h5typeid = 6
         else:
             h5typeid = _get_h5usertype_identifier(h5type)
         return self._get_usertype_dict(h5typeid).get(h5type.name.split("/")[-1])
