@@ -535,15 +535,14 @@ class BaseVariable(BaseObject):
             ]
             # second convert to max shape
             max_shape = tuple(
-                [
-                    shape[i] if k is None else max(h5ds_shape[i], k)
-                    for i, k in enumerate(max_index)
-                ]
+                s if k is None else min(s, k) for s, k in zip(shape, max_index)
             )
 
             # check if hdf5 dataset dimensions are smaller than
             # their respective netcdf dimensions
             sdiff = [d0 - d1 for d0, d1 in zip(max_shape, h5ds_shape)]
+            # set negative values to zero
+            sdiff = np.maximum(sdiff, 0)
             # create padding only if hdf5 dataset is smaller than netcdf dimension
             if sum(sdiff):
                 padding = [(0, s) for s in sdiff]
@@ -569,8 +568,11 @@ class BaseVariable(BaseObject):
             if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
 
-        # get padding
+        # get
+        print("key:", key)
+        # print("size", self.size)
         padding = self._get_padding(key)
+        print("padding:", padding)
 
         # apply padding with fillvalue (both api)
         if padding:
