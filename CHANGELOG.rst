@@ -12,6 +12,10 @@ creating string attributes with NULLTERM, proper attachment of _Netcdf4Coordinat
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `David Huard <https://github.com/huard>`_
 - Add the `format` argument to `h5netcdf.File` and support for the `NETCDF4_CLASSIC` format (:issue:`280`, :pull:``).
   By `David Huard <https://github.com/huard>`_
+- Support pyfive as an alternative backend ({pull}`273`).
+  By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
+  <https://github.com/davidhassell>`_, `Valeriu Predoi
+  <https://github.com/valeriupredoi>`_, `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `Stephan Hoyer <https://github.com/shoyer>`_
 
 Version 1.6.4 (August 5th, 2025):
 

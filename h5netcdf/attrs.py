@@ -1,3 +1,4 @@
+from collections import namedtuple
 from collections.abc import MutableMapping
 
 import numpy as np
@@ -17,6 +18,9 @@ _HIDDEN_ATTRS = frozenset(
     ]
 )
 
+# Local version of h5py.h5t.string_info
+_string_info = namedtuple("string_info", ["encoding", "length"])
+
 
 class Attributes(MutableMapping):
     def __init__(self, h5attrs, check_dtype, h5py_pckg, format="NETCDF4"):
@@ -34,6 +38,7 @@ class Attributes(MutableMapping):
         if self._h5py.__name__ == "h5py":
             attr = self._h5attrs.get_id(key)
         else:
+            # pyfive backend
             attr = self._h5attrs[key]
 
         # handle Empty types
@@ -52,28 +57,39 @@ class Attributes(MutableMapping):
         # vlen strings are already decoded -> only decode fixed length strings
         # see https://github.com/h5netcdf/h5netcdf/issues/116
         # netcdf4-python returns string arrays as lists, we do as well
-        if self._h5py.__name__ == "h5py":
+        if hasattr(attr, "dtype"):
             string_info = self._h5py.check_string_dtype(attr.dtype)
-            if string_info is not None:
-                # do not decode "S1"-type char arrays, as they are actually wanted as bytes
-                # see https://github.com/Unidata/netcdf4-python/issues/271
-                if string_info.length is not None and string_info.length > 1:
-                    encoding = string_info.encoding
-                    if np.isscalar(output):
-                        output = output.decode(encoding, "surrogateescape")
-                    else:
-                        output = [
-                            b.decode(encoding, "surrogateescape") for b in output.flat
-                        ]
-                else:
-                    # transform string array to list
-                    if not np.isscalar(output):
-                        output = output.tolist()
+        else:
+            # A pyfive attribute could be a str or bytes object, which
+            # does not have a dtype, so we can't use the
+            # 'check_string_dtype' method in this case.
+            if isinstance(attr, str):
+                string_info = _string_info("utf-8", None)
+            elif isinstance(attr, bytes):
+                string_info = _string_info("ascii", None)
+            else:
+                string_info = None
 
-            # return item if single element list/array
-            # see https://github.com/h5netcdf/h5netcdf/issues/116
-            if not np.isscalar(output) and len(output) == 1:
-                return output[0]
+        if string_info is not None:
+            # do not decode "S1"-type char arrays, as they are actually wanted as bytes
+            # see https://github.com/Unidata/netcdf4-python/issues/271
+            if string_info.length is not None and string_info.length > 1:
+                encoding = string_info.encoding
+                if np.isscalar(output):
+                    output = output.decode(encoding, "surrogateescape")
+                else:
+                    output = [
+                        b.decode(encoding, "surrogateescape") for b in output.flat
+                    ]
+            else:
+                # transform string array to list
+                if not np.isscalar(output):
+                    output = output.tolist()
+
+        # return item if single element list/array see
+        # https://github.com/h5netcdf/h5netcdf/issues/116
+        if not np.isscalar(output) and len(output) == 1:
+            return output[0]
 
         return output
 
