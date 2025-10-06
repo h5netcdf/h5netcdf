@@ -570,11 +570,8 @@ class BaseVariable(BaseObject):
             if string_info and string_info.length is None:
                 return self._h5ds.asstr()[key]
 
-        # get
-        print("key:", key)
-        # print("size", self.size)
+        # get padding
         padding = self._get_padding(key)
-        print("padding:", padding)
 
         # apply padding with fillvalue (both api)
         if padding:
