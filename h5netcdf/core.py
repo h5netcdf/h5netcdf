@@ -534,6 +534,8 @@ class BaseVariable(BaseObject):
                 for k in key0
             ]
             # second convert to max shape
+            # we take the minimum of shape vs max_index to not return
+            # slices larger than expected data
             max_shape = tuple(
                 s if k is None else min(s, k) for s, k in zip(shape, max_index)
             )
