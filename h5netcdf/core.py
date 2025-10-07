@@ -534,16 +534,17 @@ class BaseVariable(BaseObject):
                 for k in key0
             ]
             # second convert to max shape
+            # we take the minimum of shape vs max_index to not return
+            # slices larger than expected data
             max_shape = tuple(
-                [
-                    shape[i] if k is None else max(h5ds_shape[i], k)
-                    for i, k in enumerate(max_index)
-                ]
+                s if k is None else min(s, k) for s, k in zip(shape, max_index)
             )
 
             # check if hdf5 dataset dimensions are smaller than
             # their respective netcdf dimensions
             sdiff = [d0 - d1 for d0, d1 in zip(max_shape, h5ds_shape)]
+            # set negative values to zero
+            sdiff = np.maximum(sdiff, 0)
             # create padding only if hdf5 dataset is smaller than netcdf dimension
             if sum(sdiff):
                 padding = [(0, s) for s in sdiff]

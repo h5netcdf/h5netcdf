@@ -1305,6 +1305,12 @@ def test_reading_unlimited_dimensions_created_with_c_api(tmp_local_netcdf):
         f.groups["test"]["dummy4"].shape == (0, 0)
         assert f["dummy5"].shape == (2, 3)
 
+        # regression test for https://github.com/pydata/xarray/issues/10818
+        # h5netcdf issue https://github.com/h5netcdf/h5netcdf/issues/287
+        # slicing a variable with slice exceeding it's shape
+        # should return only up to shape-size
+        assert f["dummy1"][:10, :2].shape == (2, 2)
+
 
 def test_reading_unused_unlimited_dimension(tmp_local_or_remote_netcdf):
     """Test reading a file with unused dimension of unlimited size"""
