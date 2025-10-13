@@ -102,7 +102,7 @@ jobs:
           pyfive>=0.5.1
     - name: Install pyfive - h5netcdf
       run: |
-        python -m pip install git+https://github.com/kmuehlbauer/pyfive.git@pnew-types --no-deps --ignore-installed --no-cache-dir -vvv
+        python -m pip install git+https://github.com/kmuehlbauer/pyfive.git@new-types --no-deps --ignore-installed --no-cache-dir -vvv
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
