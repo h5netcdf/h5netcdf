@@ -242,7 +242,8 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        repository: "pydata/xarray"
+        repository: "Ouranosinc/xarray"
+        ref: "fix_10676"
         fetch-depth: 0
     - name: Install micromamba
       uses: mamba-org/setup-micromamba@v2
