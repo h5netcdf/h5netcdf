@@ -528,9 +528,7 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py")
     ds.close()
 
 
-def test_roundtrip_local(
-    tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkeypatch, benchmark
-):
+def test_roundtrip_local(tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkeypatch):
     # test matrix is created in conftest.py from available modules
     if wmod.__name__ in ["netCDF4", "h5netcdf.legacyapi"]:
         write_legacy_netcdf(tmp_local_netcdf, wmod)
@@ -539,9 +537,9 @@ def test_roundtrip_local(
     if bmod == "pyfive":
         monkeypatch.setenv("PYFIVE_UNSUPPORTED_FEATURE", "warn")
     if rmod.__name__ in ["netCDF4", "h5netcdf.legacyapi"]:
-        benchmark(read_legacy_netcdf, tmp_local_netcdf, rmod, wmod, backend=bmod)
+        read_legacy_netcdf(tmp_local_netcdf, rmod, wmod, backend=bmod)
     else:
-        benchmark(read_h5netcdf, tmp_local_netcdf, wmod, decode_vlen, backend=bmod)
+        read_h5netcdf(tmp_local_netcdf, wmod, decode_vlen, backend=bmod)
 
 
 @requires_h5pyd
