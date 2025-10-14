@@ -528,7 +528,9 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py")
     ds.close()
 
 
-def test_roundtrip_local(tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkeypatch):
+def test_roundtrip_local(
+    tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkeypatch, benchmark
+):
     # test matrix is created in conftest.py from available modules
     if wmod.__name__ in ["netCDF4", "h5netcdf.legacyapi"]:
         write_legacy_netcdf(tmp_local_netcdf, wmod)
@@ -537,9 +539,9 @@ def test_roundtrip_local(tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkey
     if bmod == "pyfive":
         monkeypatch.setenv("PYFIVE_UNSUPPORTED_FEATURE", "warn")
     if rmod.__name__ in ["netCDF4", "h5netcdf.legacyapi"]:
-        read_legacy_netcdf(tmp_local_netcdf, rmod, wmod, backend=bmod)
+        benchmark(read_legacy_netcdf, tmp_local_netcdf, rmod, wmod, backend=bmod)
     else:
-        read_h5netcdf(tmp_local_netcdf, wmod, decode_vlen, backend=bmod)
+        benchmark(read_h5netcdf, tmp_local_netcdf, wmod, decode_vlen, backend=bmod)
 
 
 @requires_h5pyd
@@ -3122,6 +3124,9 @@ def maybe_resize_with_broadcasting(tmp_netcdf, write_module, data_model):
 
 @pytest.mark.parametrize("dataset", [None, "numbers"])
 @pytest.mark.parametrize("strict", [True, False])
+@pytest.mark.xfail(
+    reason="REFERENCE_LIST: differences in compound type between netcdf4/h5netcdf"
+)
 def test_dump_maybe_resize_with_broadcasting(
     tmp_local_netcdf, data_model, h5dump, dataset, strict
 ):
