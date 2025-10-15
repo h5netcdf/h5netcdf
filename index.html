@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 1.6.4</title>
+    <title>h5netcdf: A Python interface for the netCDF4 file-format based on h5py &#8212; h5netcdf - 1.7.0</title>
   
   
   
@@ -36,7 +36,7 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="_static/documentation_options.js?v=1cef7ae2"></script>
+    <script src="_static/documentation_options.js?v=62544db9"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
@@ -134,7 +134,7 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.6.4</p>
+    <p class="title logo__title">h5netcdf - 1.7.0</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -427,10 +427,10 @@ document.write(`
 <h1>h5netcdf: A Python interface for the netCDF4 file-format based on h5py<a class="headerlink" href="#h5netcdf-a-python-interface-for-the-netcdf4-file-format-based-on-h5py" title="Link to this heading">#</a></h1>
 <dl class="field-list simple">
 <dt class="field-odd">Release<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/v1.6.4">1.6.4</a></p>
+<dd class="field-odd"><p><a class="reference external" href="https://github.com/h5netcdf/h5netcdf/tree/v1.7.0">1.7.0</a></p>
 </dd>
 <dt class="field-even">Date<span class="colon">:</span></dt>
-<dd class="field-even"><p>Aug 05, 2025</p>
+<dd class="field-even"><p>Oct 15, 2025</p>
 </dd>
 </dl>
 <p><strong>h5netcdf</strong> is an open source project and Python package that provides an interface
@@ -478,10 +478,10 @@ to it’s upstream dependencies.</p>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">#</a></h2>
 <p>h5netcdf has two APIs, a new API and a legacy API. Both interfaces currently
-reproduce most of the features of the netCDF interface, with the notable
-exception of support for operations that rename or delete existing objects.
-We simply haven’t gotten around to implementing this yet. Patches
-would be very welcome.</p>
+reproduce most of the features of the netCDF interface, including the ability
+to write NETCDF4 and NETCDF4_CLASSIC formatted files. Support for operations
+that rename or delete existing objects is still missing, and patches would be
+very welcome.</p>
 <section id="new-api">
 <h3>New API<a class="headerlink" href="#new-api" title="Link to this heading">#</a></h3>
 <p>The new API supports direct hierarchical access of variables and groups. Its

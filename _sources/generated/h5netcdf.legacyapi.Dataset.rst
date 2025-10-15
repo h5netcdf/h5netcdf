@@ -47,6 +47,7 @@
    
       ~Dataset.attrs
       ~Dataset.cmptypes
+      ~Dataset.data_model
       ~Dataset.dimensions
       ~Dataset.dims
       ~Dataset.enumtypes

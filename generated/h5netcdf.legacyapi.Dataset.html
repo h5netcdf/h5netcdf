@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>h5netcdf.legacyapi.Dataset &#8212; h5netcdf - 1.6.4</title>
+    <title>h5netcdf.legacyapi.Dataset &#8212; h5netcdf - 1.7.0</title>
   
   
   
@@ -36,7 +36,7 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../_static/documentation_options.js?v=1cef7ae2"></script>
+    <script src="../_static/documentation_options.js?v=62544db9"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
@@ -133,7 +133,7 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.6.4</p>
+    <p class="title logo__title">h5netcdf - 1.7.0</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -416,10 +416,10 @@ document.write(`
 <h1>h5netcdf.legacyapi.Dataset<a class="headerlink" href="#h5netcdf-legacyapi-dataset" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="h5netcdf.legacyapi.Dataset">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">h5netcdf.legacyapi.</span></span><span class="sig-name descname"><span class="pre">Dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invalid_netcdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phony_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.legacyapi.Dataset" title="Link to this definition">#</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">h5netcdf.legacyapi.</span></span><span class="sig-name descname"><span class="pre">Dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'NETCDF4'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invalid_netcdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phony_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.legacyapi.Dataset" title="Link to this definition">#</a></dt>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="h5netcdf.legacyapi.Dataset.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invalid_netcdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phony_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.legacyapi.Dataset.__init__" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'r'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'NETCDF4'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invalid_netcdf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phony_dims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.legacyapi.Dataset.__init__" title="Link to this definition">#</a></dt>
 <dd><p>NetCDF4 file constructor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -427,11 +427,13 @@ document.write(`
 <li><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">path-like</span></code>) – Location of the netCDF4 file to be accessed, or an h5py File object,
 or a Python file-like object (which should read/write bytes).</p></li>
 <li><p><strong>mode</strong> (<code class="docutils literal notranslate"><span class="pre">&quot;r&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;r+&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;w&quot;</span></code>) – A valid file access mode. Defaults to “r”.</p></li>
-<li><p><strong>invalid_netcdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Allow writing netCDF4 with data types and attributes that would
+<li><p><strong>format</strong> (<code class="docutils literal notranslate"><span class="pre">&quot;NETCDF4&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;NETCDF4_CLASSIC&quot;</span></code>) – The format of the file to create. Only relevant when creating a new
+file (mode “w”). Defaults to “NETCDF4”.</p></li>
+<li><p><strong>invalid_netcdf</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Allow writing netCDF4 with data types and attributes that would
 otherwise not generate netCDF4 files that can be read by other
 applications. See <a class="reference internal" href="../index.html#invalid-netcdf"><span class="std std-ref">Invalid netCDF files</span></a> for more details.</p></li>
 <li><p><strong>phony_dims</strong> (<code class="docutils literal notranslate"><span class="pre">'sort'</span></code>, <code class="docutils literal notranslate"><span class="pre">'access'</span></code>) – See <a class="reference internal" href="../index.html#phony-dims"><span class="std std-ref">Datasets with missing dimension scales</span></a> for more details.</p></li>
-<li><p><strong>track_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Corresponds to the h5py.File <cite>track_order</cite> parameter. Unless
+<li><p><strong>track_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Corresponds to the h5py.File <cite>track_order</cite> parameter. Unless
 specified, the library will choose a default that enhances
 compatibility with netCDF4-c. If h5py version 3.7.0 or greater is
 installed, this parameter will be set to True by default.
@@ -458,7 +460,7 @@ does close the underlying file.</p>
 <p class="rubric">Methods</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.legacyapi.Dataset.__init__" title="h5netcdf.legacyapi.Dataset.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(path[, mode, invalid_netcdf, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.legacyapi.Dataset.__init__" title="h5netcdf.legacyapi.Dataset.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(path[, mode, format, ...])</p></td>
 <td><p>NetCDF4 file constructor.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">close</span></code>()</p></td>
@@ -539,34 +541,37 @@ does close the underlying file.</p>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">cmptypes</span></code></p></td>
 <td><p>Return group defined compound types.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimensions</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">data_model</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dims</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimensions</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">enumtypes</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dims</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">enumtypes</span></code></p></td>
 <td><p>Return group defined enum types.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">filename</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">filename</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">groups</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">groups</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">mode</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">mode</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">parent</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">parent</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">variables</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">variables</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">vltypes</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">vltypes</span></code></p></td>
 <td><p>Return group defined vlen types.</p></td>
 </tr>
 </tbody>

@@ -13,6 +13,7 @@ Contributors
 - `Aleksandar Jelenak <https://github.com/ajelenak>`_
 - `Bas Couwenberg <https://github.com/sebastic>`_.
 - `Brett Naul <https://github.com/bnaul>`_
+- `David Huard <https://github.com/huard>`_
 - `Dion Häfner <https://github.com/dionhaefner>`_
 - `Drew Parsons <https://github.com/drew-parsons>`_
 - `Ezequiel Cimadevilla Alvarez <https://github.com/zequihg50>`_
@@ -49,7 +50,7 @@ Continuous Integration
 or a PullRequest branch several checks are performed:
 
 - Lint and style checks (``ruff``, ``black``)
-- Unit tests with latest ``h5py3`` (Python 3.9, 3.10, 3.11) facilitating GitHub Ubuntu worker
+- Unit tests with latest ``h5py3`` (and Python versions) facilitating GitHub Ubuntu worker
 - Documentation build, artifacts are made available to download
 - On release, source-tarball and universal wheel is uploaded to PyPI and documentation is made available
   on `h5netcdf GitHub Pages`_

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Change Log &#8212; h5netcdf - 1.6.4</title>
+    <title>Change Log &#8212; h5netcdf - 1.7.0</title>
   
   
   
@@ -36,7 +36,7 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="_static/documentation_options.js?v=1cef7ae2"></script>
+    <script src="_static/documentation_options.js?v=62544db9"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
@@ -132,7 +132,7 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.6.4</p>
+    <p class="title logo__title">h5netcdf - 1.7.0</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -400,9 +400,27 @@ document.write(`
                   
   <section id="change-log">
 <h1>Change Log<a class="headerlink" href="#change-log" title="Link to this heading">#</a></h1>
+<p>Version 1.7.0 (October 15th, 2025):</p>
+<ul class="simple">
+<li><p>Fix unintentional changes in test suite (<a class="extlink-pull reference external" href="https://github.com/h5netcdf/h5netcdf/pull/277">PR277</a>).
+By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a></p></li>
+<li><p>Create ENUM with low level API to keep order-by-value, add h5dump based tests (<a class="extlink-pull reference external" href="https://github.com/h5netcdf/h5netcdf/pull/285">PR285</a>).
+By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a> and <a class="reference external" href="https://github.com/huard">David Huard</a></p></li>
+<li><p>Fix interoperability issues between netcdf4/h5netcdf, namely resizing variables using partial slices,</p></li>
+</ul>
+<dl class="simple">
+<dt>creating string attributes with NULLTERM, proper attachment of _Netcdf4Coordinates and _Netcdf4Dimid as well as special string type fillvalues (<a class="extlink-pull reference external" href="https://github.com/h5netcdf/h5netcdf/pull/286">PR286</a>).</dt><dd><p>By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a> and <a class="reference external" href="https://github.com/huard">David Huard</a></p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p>Add the <cite>format</cite> argument to <cite>h5netcdf.File</cite> and support for the <cite>NETCDF4_CLASSIC</cite> format (<a class="extlink-issue reference external" href="https://github.com/h5netcdf/h5netcdf/issues/280">GH280</a>, <a class="extlink-pull reference external" href="https://github.com/h5netcdf/h5netcdf/pull/283">PR283</a>).
+By <a class="reference external" href="https://github.com/huard">David Huard</a></p></li>
+<li><p>Do not return padded arrays for slices larger than variable shape (<a class="extlink-issue reference external" href="https://github.com/h5netcdf/h5netcdf/issues/287">GH287</a>, <a class="extlink-pull reference external" href="https://github.com/h5netcdf/h5netcdf/pull/288">PR288</a>).
+By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a></p></li>
+</ul>
 <p>Version 1.6.4 (August 5th, 2025):</p>
 <ul class="simple">
-<li><p>Cleanup: pyupgrade –py39-plus
+<li><p>Cleanup: pyupgrade –py39-plus (<a class="extlink-pull reference external" href="https://github.com/h5netcdf/h5netcdf/pull/272">PR272</a>).
 By <a class="reference external" href="https://github.com/schwehr">Kurt Schwehr</a></p></li>
 <li><p>Add better error messages when operating on a closed file (<a class="extlink-issue reference external" href="https://github.com/h5netcdf/h5netcdf/issues/274">GH274</a>, <a class="extlink-pull reference external" href="https://github.com/h5netcdf/h5netcdf/pull/275">PR275</a>).
 By <a class="reference external" href="https://github.com/kmuehlbauer">Kai Mühlbauer</a></p></li>

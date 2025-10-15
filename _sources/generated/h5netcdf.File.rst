@@ -38,6 +38,7 @@
    
       ~File.attrs
       ~File.cmptypes
+      ~File.data_model
       ~File.dimensions
       ~File.dims
       ~File.enumtypes
