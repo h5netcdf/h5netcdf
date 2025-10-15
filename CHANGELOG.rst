@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Version 1.7.0 (October 16th, 2025):
+Version 1.7.0 (October 15th, 2025):
 
 - Fix unintentional changes in test suite (:pull:`277`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
