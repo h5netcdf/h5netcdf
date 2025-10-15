@@ -80,9 +80,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13"]
-        h5py-version: ["3.12", "3.13", "3.14"]
+        python-version: ["3.12", "3.13", "3.14"]
+        h5py-version: ["3.12", "3.13", "3.14", "3.15"]
         numpy-version: ["2"]
+        exclude:
+          - python-version: "3.14"
+            h5py-version: "3.12"
+          - python-version: "3.14"
+            h5py-version: "3.13"
     steps:
     - uses: actions/checkout@v5
     - name: Install micromamba
@@ -198,7 +203,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14"]
         numpy-version: ["2"]
     steps:
     - uses: actions/checkout@v5
@@ -236,7 +241,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14"]
         numpy-version: ["2"]
         backend: ["h5py", "pyfive"]
     steps:
@@ -253,7 +258,6 @@ jobs:
         cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy-version}}-xarray_nightly-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
-          dask
           h5py
           netCDF4
           packaging
@@ -265,6 +269,7 @@ jobs:
           pytest-mypy-plugins
           wheel
           numpy=${{ matrix.numpy-version }}
+          ${{ matrix.python-version != '3.14' && 'dask' || '' }}
     - name: Install xarray
       run: |
         python -m pip install --no-deps .
@@ -284,41 +289,6 @@ jobs:
     - name: Test with pytest
       run: |
         python -m pytest -v --durations=0 -k "H5NetCDF"
-
-  build_4:
-    name: python 3.14 alpha test
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    defaults:
-      run:
-        shell: bash -l {0}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.14.0-alpha - 3.14"]
-    steps:
-    - uses: actions/checkout@v5
-    - name: setup Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: "pip"
-    - name: Install local dependencies
-      run: |
-        sudo apt-get -y update
-        sudo apt-get -y install libhdf5-dev libnetcdf-dev netcdf-bin hdf5-tools
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install --pre --extra-index-url \
-          https://pypi.anaconda.org/scientific-python-nightly-wheels/simple \
-          pytest wheel h5py netCDF4==1.7.2 cftime numpy
-    - name: Install h5netcdf
-      run: |
-        python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
-    - name: Test with pytest
-      run: |
-        pytest -v --durations=0 h5netcdf/tests/
 
   sphinx_doc:
     runs-on: ubuntu-latest
