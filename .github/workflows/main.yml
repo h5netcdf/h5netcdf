@@ -77,8 +77,11 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.12", "3.13", "3.14"]
-        h5py-version: ["3.12", "3.13", "3.14"]
+        h5py-version: ["3.12", "3.13", "3.14", "3.15"]
         numpy-version: ["2"]
+        exclude:
+          - python-version: "3.14"
+            h5py-version: ["3.12", "3.13"]
     steps:
     - uses: actions/checkout@v5
     - name: Install micromamba
@@ -243,7 +246,6 @@ jobs:
         cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy-version}}-xarray_nightly-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
-          dask
           h5py
           netCDF4
           packaging
@@ -254,6 +256,7 @@ jobs:
           pytest-mypy-plugins
           wheel
           numpy=${{ matrix.numpy-version }}
+          ${{ matrix.python-version != '3.14' && 'dask' || '' }}
     - name: Install xarray
       run: |
         python -m pip install --no-deps .
