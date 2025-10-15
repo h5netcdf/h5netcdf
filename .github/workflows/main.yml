@@ -81,7 +81,9 @@ jobs:
         numpy-version: ["2"]
         exclude:
           - python-version: "3.14"
-            h5py-version: ["3.12", "3.13"]
+            h5py-version: "3.12"
+          - python-version: "3.14"
+            h5py-version: "3.13"
     steps:
     - uses: actions/checkout@v5
     - name: Install micromamba
