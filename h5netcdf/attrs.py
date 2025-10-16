@@ -87,11 +87,10 @@ class Attributes(MutableMapping):
 
         self._check_dtype(dtype)
 
+        is_plain_string = dtype.kind in {"S", "U"} and dtype.metadata is None
         if (
-            dtype.kind in {"S", "U"}  # for strings
-            and dtype.metadata is None  # but not special h5py strings
-            and not isinstance(value, list)
-            and self._format == "NETCDF4_CLASSIC"
+            is_plain_string  # for simple strings
+            and (not isinstance(value, list) and self._format == "NETCDF4_CLASSIC")
             and not isinstance(value, self._h5py.Empty)
             and self._h5py.__name__ == "h5py"
         ):

@@ -3001,14 +3001,15 @@ def test_is_classic(tmp_local_netcdf):
     assert out.stdout.decode().strip() == "netCDF-4 classic model"
 
 
-def test_attributes_list(tmp_local_netcdf):
+@pytest.mark.parametrize(
+    "attr", [("un", "deux"), ["un", "deux"], ("one", "two"), ["one", "two"]]
+)
+def test_attributes_list(tmp_local_netcdf, attr):
     # regression test for https://github.com/h5netcdf/h5netcdf/issues/291
     with h5netcdf.File(tmp_local_netcdf, mode="w") as hf:
-        hf.attrs["foo"] = ("un", "deux")
-        hf.attrs["bar"] = ["one", "two"]
+        hf.attrs["foo"] = attr
 
     with h5netcdf.File(tmp_local_netcdf, mode="r") as hf:
-        assert isinstance(hf.attrs["bar"], list)
+        assert hf.attrs["foo"][0] == attr[0]
+        assert hf.attrs["foo"][1] == attr[1]
         assert isinstance(hf.attrs["foo"], list)
-        assert hf.attrs["foo"][0] == "un"
-        assert hf.attrs["foo"][1] == "deux"
