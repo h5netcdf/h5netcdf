@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Version 1.7.1 (October 16th, 2025):
+
+- Fix regression where attributes with list of strings were written with h5py low-level API instead of high-level API (:issue:`291`, :pull:`292`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.7.0 (October 15th, 2025):
 
 - Fix unintentional changes in test suite (:pull:`277`).
