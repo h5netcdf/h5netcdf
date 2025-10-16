@@ -2999,3 +2999,16 @@ def test_is_classic(tmp_local_netcdf):
 
     out = subprocess.run(["ncdump", "-k", tmp_local_netcdf], capture_output=True)
     assert out.stdout.decode().strip() == "netCDF-4 classic model"
+
+
+def test_attributes_list(tmp_local_netcdf):
+    # regression test for https://github.com/h5netcdf/h5netcdf/issues/291
+    with h5netcdf.File(tmp_local_netcdf, mode="w") as hf:
+        hf.attrs["foo"] = ("un", "deux")
+        hf.attrs["bar"] = ["one", "two"]
+
+    with h5netcdf.File(tmp_local_netcdf, mode="r") as hf:
+        assert isinstance(hf.attrs["bar"], list)
+        assert isinstance(hf.attrs["foo"], list)
+        assert hf.attrs["foo"][0] == "un"
+        assert hf.attrs["foo"][1] == "deux"

@@ -90,7 +90,9 @@ class Attributes(MutableMapping):
         if (
             dtype.kind in {"S", "U"}  # for strings
             and dtype.metadata is None  # but not special h5py strings
-            and not isinstance(value, (list, self._h5py.Empty))
+            and not isinstance(value, list)
+            and self._format == "NETCDF4_CLASSIC"
+            and not isinstance(value, self._h5py.Empty)
             and self._h5py.__name__ == "h5py"
         ):
             # create with low level API to get fixed length strings
