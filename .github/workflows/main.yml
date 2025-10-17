@@ -60,6 +60,10 @@ jobs:
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy=${{ matrix.numpy-version }}
+          pyfive>=0.5.1
+    - name: Install pyfive - h5netcdf
+      run: |
+        python -m pip install git+https://github.com/kmuehlbauer/pyfive.git@new-types --no-deps --ignore-installed --no-cache-dir -vvv
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -100,6 +104,10 @@ jobs:
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy=${{ matrix.numpy-version }}
+          pyfive>=0.5.1
+    - name: Install pyfive - h5netcdf
+      run: |
+        python -m pip install git+https://github.com/kmuehlbauer/pyfive.git@new-types --no-deps --ignore-installed --no-cache-dir -vvv
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -235,6 +243,7 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13", "3.14"]
         numpy-version: ["2"]
+        backend: ["h5py", "pyfive"]
     steps:
     - uses: actions/checkout@v5
       with:
@@ -253,6 +262,7 @@ jobs:
           packaging
           pandas
           pip
+          pyfive>=0.5.1
           pytest
           pytest-asyncio
           pytest-mypy-plugins
@@ -262,10 +272,19 @@ jobs:
     - name: Install xarray
       run: |
         python -m pip install --no-deps .
+    - name: Install pyfive - h5netcdf
+      run: |
+        python -m pip install git+https://github.com/kmuehlbauer/pyfive.git@new-types --no-deps --ignore-installed --no-cache-dir -vvv
     - name: Install h5netcdf
       run: |
         python -m pip install --no-deps --ignore-installed --no-cache-dir -vvv \
           git+https://github.com/h5netcdf/h5netcdf.git@${{ github.ref }}
+    - name: Set env vars for pyfive
+      if: matrix.backend == 'pyfive'
+      run: |
+        echo "H5NETCDF_READ_BACKEND=pyfive" >> $GITHUB_ENV
+        echo "PYFIVE_UNSUPPORTED_FEATURE=warn" >> $GITHUB_ENV
+
     - name: Test with pytest
       run: |
         python -m pytest -v --durations=0 -k "H5NetCDF"
