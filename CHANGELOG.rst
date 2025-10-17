@@ -1,6 +1,12 @@
 Change Log
 ----------
 
+Version 1.7.2 (October 17th, 2025):
+
+- Fix regression where format was requested from group instance instead of _root. Simplify logic to check and raise ``CompatibilityError``. (:issue:`293`, :pull:`294`).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
+
 Version 1.7.1 (October 16th, 2025):
 
 - Fix regression where attributes with list of strings were written with h5py low-level API instead of high-level API (:issue:`291`, :pull:`292`).

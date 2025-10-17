@@ -1,10 +1,22 @@
 import weakref
 from collections import OrderedDict
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 
 import numpy as np
 
 from .utils import CompatibilityError
+
+
+def _check_classic_unlimited(value, unlimited=None):
+    if isinstance(value, Mapping):
+        multiple_unlimited_dimensions = sum(v in (None, 0) for v in value.values()) > 1
+    else:
+        multiple_unlimited_dimensions = unlimited and value in (None, 0)
+
+    if multiple_unlimited_dimensions:
+        raise CompatibilityError(
+            "Only one unlimited dimension allowed in the NETCDF4_CLASSIC format."
+        )
 
 
 class Dimensions(MutableMapping):
@@ -25,14 +37,8 @@ class Dimensions(MutableMapping):
             raise RuntimeError("H5NetCDF: Write to read only")
         if name in self._objects:
             raise ValueError(f"dimension {name!r} already exists")
-        if (
-            size in [0, None]
-            and self._unlimited()
-            and self._group._format == "NETCDF4_CLASSIC"
-        ):
-            raise CompatibilityError(
-                "Only one unlimited dimension allowed in the NETCDF4_CLASSIC format."
-            )
+        if self._group._root._format == "NETCDF4_CLASSIC":
+            _check_classic_unlimited(size, self._unlimited())
 
         self._objects[name] = Dimension(self._group, name, size, create_h5ds=True)
 

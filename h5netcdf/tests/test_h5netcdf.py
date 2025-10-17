@@ -187,7 +187,7 @@ def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
     if ds.data_model == "NETCDF4_CLASSIC":
         with raises(
             CompatibilityError,
-            match="NETCDF4_CLASSIC format only allows one unlimited dimension.",
+            match="Only one unlimited dimension allowed",
         ):
             ds.dimensions = {"x": 4, "y": 5, "z": 6, "unlimited": None, "empty": 0}
 
@@ -3045,7 +3045,7 @@ def test_raise_on_closed_file(tmp_local_netcdf):
     v = f.create_variable("hello", ("x",), float)
     v[:] = np.ones(5)
     f.close()
-    with pytest.raises(
+    with raises(
         ValueError,
         match=f"I/O operation on <Closed h5netcdf.File>: '{tmp_local_netcdf}'",
     ):
@@ -3161,3 +3161,30 @@ def test_attributes_list(tmp_local_netcdf, attr):
         assert hf.attrs["foo"][0] == attr[0]
         assert hf.attrs["foo"][1] == attr[1]
         assert isinstance(hf.attrs["foo"], list)
+
+
+def test_group_dimensions(tmp_local_netcdf):
+    # regression test for https://github.com/h5netcdf/h5netcdf/issues/293
+    with h5netcdf.File(tmp_local_netcdf, mode="w") as f:
+        group = f.create_group("data")
+        dims = {"y": 3, "x": 3, "z": None, "z1": None}
+        group.dimensions = dims
+        assert list(group.dimensions) == ["y", "x", "z", "z1"]
+        group.dimensions["z2"] = None
+        assert list(group.dimensions) == ["y", "x", "z", "z1", "z2"]
+
+
+def test_group_dimensions_classic(tmp_local_netcdf):
+    # regression test for https://github.com/h5netcdf/h5netcdf/issues/293
+    with h5netcdf.File(tmp_local_netcdf, mode="w", format="NETCDF4_CLASSIC") as f:
+        group = f.create_group("data")
+        dims = {"y": 3, "x": 3, "z": None, "z1": None}
+        with raises(CompatibilityError, match=r"Only one unlimited dimension allowed"):
+            group.dimensions = dims
+        assert list(group.dimensions) == []
+        dims = {"y": 3, "x": 3, "z": None}
+        group.dimensions = dims
+        assert list(group.dimensions) == ["y", "x", "z"]
+        with raises(CompatibilityError, match=r"Only one unlimited dimension allowed"):
+            group.dimensions["z1"] = None
+        assert list(group.dimensions) == ["y", "x", "z"]
