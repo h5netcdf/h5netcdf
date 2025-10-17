@@ -12,7 +12,7 @@ from packaging import version
 
 from . import __version__
 from .attrs import Attributes
-from .dimensions import Dimension, Dimensions
+from .dimensions import Dimension, Dimensions, _check_classic_unlimited
 from .utils import (
     CompatibilityError,
     Frozen,
@@ -1030,12 +1030,8 @@ class Group(Mapping):
 
     @dimensions.setter
     def dimensions(self, value):
-        if self._format == "NETCDF4_CLASSIC":
-            unlimited_dims = list(filter(lambda s: s in [None, 0], value.values()))
-            if len(unlimited_dims) > 1:
-                raise CompatibilityError(
-                    "NETCDF4_CLASSIC format only allows one unlimited dimension."
-                )
+        if self._root._format == "NETCDF4_CLASSIC":
+            _check_classic_unlimited(value)
 
         for k, v in self._all_dimensions.maps[0].items():
             if k in value:
