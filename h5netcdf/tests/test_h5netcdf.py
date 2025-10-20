@@ -2355,9 +2355,17 @@ def test_vlen_string_dataset_fillvalue(tmp_local_netcdf, decode_vlen_strings):
 )
 def test_ros3():
     fname = "https://archive.unidata.ucar.edu/software/netcdf/examples/OMI-Aura_L2-example.nc"
-    f = h5netcdf.File(fname, "r", driver="ros3")
-    assert "Temperature" in list(f)
-    f.close()
+    try:
+        import requests
+        r = requests.head(fname, timeout=3)
+        if r.status_code >= 400:
+            pytest.skip(f"Skipping test: test_ros3 returned {r.status_code}")
+    except requests.RequestException as e:
+        pytest.skip(f"Skipping test: URL not reachable ({e})")
+    else:
+        f = h5netcdf.File(fname, "r", driver="ros3")
+        assert "Temperature" in list(f)
+        f.close()
 
 
 def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
