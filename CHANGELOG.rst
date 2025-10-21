@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Development version (unreleased):
+
+- Fix indexing with empty arrays and lists (:pull:``).
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.7.2 (October 17th, 2025):
 
 - Fix regression where format was requested from group instance instead of _root. Simplify logic to check and raise ``CompatibilityError``. (:issue:`293`, :pull:`294`).
