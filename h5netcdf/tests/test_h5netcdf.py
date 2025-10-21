@@ -1973,6 +1973,13 @@ def test_fancy_indexing(tmp_local_or_remote_netcdf):
         np.testing.assert_array_equal(ds["hello"][[4, 5, 6], 1], [41, 0, 0])
         np.testing.assert_array_equal(ds["hello"][slice(4, 7), 1], [41, 0, 0])
 
+        # test empty slices
+        # regression test for https://github.com/pydata/xarray/pull/10870
+        empty = np.empty(0, dtype="int64")
+        np.testing.assert_array_equal(ds["hello"][1, []], empty)
+        np.testing.assert_array_equal(ds["hello"][1, np.array([], dtype="int")], empty)
+        np.testing.assert_array_equal(ds["hello"][1, slice(0, 0)], empty)
+
 
 def test_h5py_chunking(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as ds:
