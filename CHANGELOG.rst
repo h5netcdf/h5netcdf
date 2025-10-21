@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development version (unreleased):
+Version 1.7.3 (October 21st, 2025):
 
 - Fix indexing with empty arrays and lists (:pull:``).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
