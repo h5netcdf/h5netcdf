@@ -6,6 +6,8 @@ import string
 import sys
 import tempfile
 import weakref
+import urllib
+import urllib.request
 from os import environ as env
 
 import h5py
@@ -2356,16 +2358,15 @@ def test_vlen_string_dataset_fillvalue(tmp_local_netcdf, decode_vlen_strings):
 def test_ros3():
     fname = "https://archive.unidata.ucar.edu/software/netcdf/examples/OMI-Aura_L2-example.nc"
     try:
-        import requests
-        r = requests.head(fname, timeout=3)
-        if r.status_code >= 400:
-            pytest.skip(f"Skipping test: test_ros3 returned {r.status_code}")
-    except requests.RequestException as e:
-        pytest.skip(f"Skipping test: URL not reachable ({e})")
+        req = urllib.request.Request(fname, method="HEAD")
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            if resp.status >= 400:
+                pytest.skip(f"Skipping test: URL returned {resp.status}")
+    except Exception as e:
+        pytest.skip(f"Skipping ros3 test: cannot read remote file ({e})")
     else:
-        f = h5netcdf.File(fname, "r", driver="ros3")
-        assert "Temperature" in list(f)
-        f.close()
+        with h5netcdf.File(fname, "r", driver="ros3") as f:
+            assert "Temperature" in list(f)
 
 
 def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
