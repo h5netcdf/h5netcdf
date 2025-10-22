@@ -5,9 +5,9 @@ import re
 import string
 import sys
 import tempfile
-import weakref
 import urllib
 import urllib.request
+import weakref
 from os import environ as env
 
 import h5py
