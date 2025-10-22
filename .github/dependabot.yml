@@ -1,7 +1,17 @@
 version: 2
 updates:
-# Maintain dependencies for GitHub Actions
+  # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+  # Maintain dependencies for pre-commit
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(pre-commit):"
+    labels:
+      - "pre-commit"
+      - "dependencies"
