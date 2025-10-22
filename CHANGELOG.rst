@@ -1,9 +1,16 @@
 Change Log
 ----------
 
+Development version (unreleased):
+
+- Fix ros3 test (:issue:`295`, :pill:`296`).
+  By `Ezequiel Cimadevilla Alvarez <https://github.com/zequihg50>`_
+- Add dependabot for pre-commit.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.7.3 (October 21st, 2025):
 
-- Fix indexing with empty arrays and lists (:pull:``).
+- Fix indexing with empty arrays and lists (:pull:`297`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.7.2 (October 17th, 2025):
