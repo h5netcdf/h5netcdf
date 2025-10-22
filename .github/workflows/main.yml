@@ -8,7 +8,8 @@ on:
   release:
     types:
       - created
-
+  schedule:
+    - cron: "0 0 * * *" # Daily “At 00:00” UTC
   workflow_dispatch:
 
 jobs:

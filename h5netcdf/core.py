@@ -68,20 +68,13 @@ def _invalid_netcdf_feature(feature, allow):
 
 def _transform_1d_boolean_indexers(key):
     """Find and transform 1D boolean indexers to int"""
-    # return key, if not iterable
-    try:
-        key = [
-            (
-                np.asanyarray(k).nonzero()[0]
-                if isinstance(k, (np.ndarray, list)) and type(k[0]) in (bool, np.bool_)
-                else k
-            )
-            for k in key
-        ]
-    except TypeError:
-        return key
-
-    return tuple(key)
+    # Convert 1D boolean arrays/lists to integer indices,
+    # leaving all other types unchanged
+    return tuple(
+        np.flatnonzero(arr) if arr.dtype == bool else k
+        for k in key
+        for arr in [np.asanyarray(k)]
+    )
 
 
 def _expanded_indexer(key, ndim):
@@ -645,13 +638,27 @@ class BaseVariable(BaseObject):
             h5ds_shape = self._h5ds.shape
             shape = self.shape
 
-            # check for ndarray and list
             # see https://github.com/pydata/xarray/issues/7154
+            # see https://github.com/pydata/xarray/issues/10867
             # first get maximum index
-            max_index = [
-                max(k) + 1 if isinstance(k, (np.ndarray, list)) else k.stop
-                for k in key0
-            ]
+            def _get_max_index(k):
+                # Return the maximum index for ndarray, list, slice, or int,
+                # handling empty arrays/lists safely
+                if isinstance(k, np.ndarray):
+                    if k.size == 0:
+                        return None
+                    return k.max() + 1
+                elif isinstance(k, list):
+                    return max(k) + 1 if k else None
+                elif isinstance(k, slice):
+                    return k.stop
+                elif isinstance(k, int):
+                    return k + 1
+                else:
+                    return None
+
+            max_index = [_get_max_index(k) for k in key0]
+
             # second convert to max shape
             # we take the minimum of shape vs max_index to not return
             # slices larger than expected data
