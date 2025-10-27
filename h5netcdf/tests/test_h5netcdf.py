@@ -1075,7 +1075,7 @@ def test_invalid_netcdf_okay(write_backend, read_backend, tmp_backend_netcdf):
         assert f.attrs["complex_attr"] == 1j
         if read_backend == "pyfive":
             expected_errors = pytest.raises(
-                NotImplementedError, match="Filter with id: 6 import supported"
+                NotImplementedError, match="Filter with id: 6 import not supported"
             )
         else:
             expected_errors = memoryview(b"")
