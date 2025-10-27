@@ -7,6 +7,10 @@ Development version (unreleased):
   By `Ezequiel Cimadevilla Alvarez <https://github.com/zequihg50>`_
 - Update pre-commit.
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Support pyfive as an alternative backend ({pull}`273`).
+  By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
+  <https://github.com/davidhassell>`_, `Valeriu Predoi
+  <https://github.com/valeriupredoi>`_, `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `Stephan Hoyer <https://github.com/shoyer>`_
 
 Version 1.7.3 (October 21st, 2025):
 
@@ -37,10 +41,6 @@ creating string attributes with NULLTERM, proper attachment of _Netcdf4Coordinat
   By `David Huard <https://github.com/huard>`_
 - Do not return padded arrays for slices larger than variable shape (:issue:`287`, :pull:`288`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- Support pyfive as an alternative backend ({pull}`273`).
-  By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
-  <https://github.com/davidhassell>`_, `Valeriu Predoi
-  <https://github.com/valeriupredoi>`_, `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `Stephan Hoyer <https://github.com/shoyer>`_
 
 Version 1.6.4 (August 5th, 2025):
 
