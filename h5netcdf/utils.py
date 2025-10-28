@@ -228,4 +228,23 @@ def h5dump(fn: str, dataset=None, strict=False):
         out = re.sub(r"STRPAD H5T_STR_NULL(?:TERM|PAD);", "STRPAD { ... };", out)
         out = re.sub(r"CSET H5T_CSET_(?:UTF8|ASCII);", "CSET { ... };", out)
 
+        # normalize integer type inside "REFERENCE_LIST" attribute
+        # in some occasions this shows up as H5T_STD_I32 or H5T_STD_UINT32
+        def normalize_reference_list(match):
+            attr_body = match.group(1)
+            # Replace H5T_STD_<U/I><digits><LE/BE> for dimension field
+            attr_body = re.sub(
+                r'(H5T_STD_[UI]\d{1,2})(LE|BE)(\s+"dimension")',
+                r"H5T_STD_I32\2\3",
+                attr_body,
+            )
+            return f'ATTRIBUTE "REFERENCE_LIST" {{\n{attr_body}\n}}'
+
+        out = re.sub(
+            r'ATTRIBUTE "REFERENCE_LIST"\s*{(.*?)}',
+            normalize_reference_list,
+            out,
+            flags=re.DOTALL,
+        )
+
     return out
