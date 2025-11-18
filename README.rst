@@ -159,7 +159,7 @@ exact match. Here is an incomplete list of functionality we don't include:
 Pyfive support
 ~~~~~~~~~~~~~~
 
-h5netcdf 2.0.0 introduces the ability to explicitly select the backend for
+h5netcdf X.Y.0 introduces the ability to explicitly select the backend for
 reading (and writing) NetCDF/HDF5 files, including support for the pure-Python `Pyfive`_ reader backend (without relying on the HDF5 C library and the **h5py** Cython bindings). By default, h5netcdf keeps using **h5py**. Users can select the backend via the `backend` keyword in `h5netcdf.File()` or via environment variables:
 
 Example:
