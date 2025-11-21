@@ -156,6 +156,43 @@ exact match. Here is an incomplete list of functionality we don't include:
   current size of variable's dimensions. The behaviour is equivalent to netCDF4-python's
   ``Dataset.set_auto_mask(False)``.
 
+Pyfive support
+~~~~~~~~~~~~~~
+
+h5netcdf X.Y.0 introduces the ability to explicitly select the backend for
+reading (and writing) NetCDF/HDF5 files, including support for the pure-Python `Pyfive`_ reader backend (without relying on the HDF5 C library and the **h5py** Cython bindings). By default, h5netcdf keeps using **h5py**. Users can select the backend via the `backend` keyword in `h5netcdf.File()` or via environment variables:
+
+Example:
+
+.. code-block:: python
+
+    import os
+    import h5netcdf
+
+    # how to handle unsupported pyfive features
+    # one of {"skip", "warn", "raise"}
+    os.environ["PYFIVE_UNSUPPORTED_FEATURE"] = "warn"
+
+    # default backend (h5py)
+    with h5netcdf.File("mydata.nc", mode="r") as f:
+        print(f["hello"])
+
+    # force pyfive backend
+    with h5netcdf.File("mydata.nc", mode="r", backend="pyfive") as f:
+        print(f["hello"])
+
+    # force h5py backend
+    with h5netcdf.File("mydata.nc", mode="r", backend="h5py") as f:
+        print(f["hello"])
+
+    # force with environment variable (only for default setting)
+    os.environ["H5NETCDF_READ_BACKEND"] = "pyfive"
+    with h5netcdf.File("mydata.nc", mode="r") as f:
+        print(f["hello"])
+
+
+.. _Pyfive: https://github.com/NCAS-CMS/pyfive
+
 .. _invalid netcdf:
 
 Invalid netCDF files
