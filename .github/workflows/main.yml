@@ -144,7 +144,7 @@ jobs:
         python -m pip install h5py==${{ matrix.h5py-version }}
     - name: Install netCDF4
       run: |
-        python -m pip download netCDF4==1.5.*
+        curl -L -O https://files.pythonhosted.org/packages/source/n/netCDF4/netCDF4-1.5.8.tar.gz
         tar xf netCDF4-1.5.*.tar.gz
         cd netCDF4-1.5.*
         python setup.py build_ext --inplace
