@@ -149,6 +149,7 @@ jobs:
         cd netCDF4-1.5.8
         python setup.py build_ext --inplace
         python setup.py bdist_wheel
+        ls -lart dist/
         python -m pip install dist/netCDF4-1.5.8*.whl
     - name: Install h5netcdf
       run: |
