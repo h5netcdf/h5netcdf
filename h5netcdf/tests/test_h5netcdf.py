@@ -2487,9 +2487,6 @@ def test_vlen_string_dataset_fillvalue(
             assert ds["x1"]._FillValue == fill_value1
 
 
-# @pytest.mark.skipif(
-#     "ros3" not in h5py.registered_drivers(), reason="ros3 not available"
-# )
 @requires_h5py_ros3
 def test_ros3():
     fname = "https://archive.unidata.ucar.edu/software/netcdf/examples/OMI-Aura_L2-example.nc"

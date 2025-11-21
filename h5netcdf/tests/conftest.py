@@ -1,4 +1,3 @@
-import importlib.util
 import itertools
 import os
 import random
@@ -17,9 +16,11 @@ from h5netcdf.utils import h5dump as _h5dump
 remote_h5 = ("http:", "hdf5:")
 
 
-def module_available(name: str) -> bool:
-    """Return True if a module can be imported."""
-    return importlib.util.find_spec(name) is not None
+HAS_MAP = {
+    "h5py": has_h5py,
+    "h5pyd": has_h5pyd,
+    "pyfive": has_pyfive,
+}
 
 
 @pytest.fixture(scope="session")
@@ -145,43 +146,34 @@ def decode_vlen_strings(request):
 
 @pytest.fixture(params=["netCDF4", "h5netcdf.legacyapi"])
 def netcdf_write_module(request):
-    if module_available(request.param):
-        return importlib.import_module(request.param)
-    else:
-        pytest.skip(f"module {request.param} not installed.")
+    return pytest.importorskip(request.param)
 
 
 @pytest.fixture(params=["h5py", "h5pyd", "pyfive"])
 def backend(request, monkeypatch):
-    if request.param == "h5py" and not has_h5py:
-        pytest.skip(f"Module {request.param} not available!")
-    if request.param == "h5pyd" and not has_h5pyd:
-        pytest.skip(f"Module {request.param} not available!")
-    if request.param == "pyfive" and not has_pyfive:
-        pytest.skip(f"Module {request.param} not available!")
+    mod = request.param
+    if not HAS_MAP[mod]:
+        pytest.skip(f"Module {mod} not available!")
+    if mod == "pyfive":
         monkeypatch.setenv("PYFIVE_UNSUPPORTED_FEATURE", "warn")
 
-    return request.param
+    return mod
 
 
 @pytest.fixture(params=["h5py", "pyfive"])
 def local_backend(request, monkeypatch):
-    if request.param == "h5py" and not has_h5py:
-        pytest.skip(f"Module {request.param} not available!")
-    if request.param == "pyfive" and not has_pyfive:
-        pytest.skip(f"Module {request.param} not available!")
+    mod = request.param
+    if not HAS_MAP[mod]:
+        pytest.skip(f"Module {mod} not available!")
+    if mod == "pyfive":
         monkeypatch.setenv("PYFIVE_UNSUPPORTED_FEATURE", "warn")
-
-    return request.param
+    return mod
 
 
 def valid_backend_pairs():
     rw_matrix = {"h5py": ["h5py", "pyfive"], "h5pyd": ["h5pyd"], "pyfive": []}
     return [
-        (w, r)
-        for w in rw_matrix
-        for r in rw_matrix[w]
-        if module_available(w) and module_available(r)
+        (w, r) for w in rw_matrix for r in rw_matrix[w] if HAS_MAP[w] and HAS_MAP[r]
     ]
 
 
@@ -228,12 +220,10 @@ def pytest_generate_tests(metafunc):
     read_write_mod = ["netCDF4", "h5netcdf", "h5netcdf.legacyapi"]
 
     # filter out modules which aren't importable
-    read_write_mod = [
-        importlib.import_module(mod) for mod in read_write_mod if module_available(mod)
-    ]
+    read_write_mod = [pytest.importorskip(mod) for mod in read_write_mod]
 
     # available backend modules
-    backends = [b for b in ["h5py", "pyfive"] if module_available(b)]
+    backends = [pytest.importorskip(b) for b in ["h5py", "pyfive"]]
 
     rw_matrix = list(itertools.product(read_write_mod, read_write_mod))
 
@@ -247,8 +237,8 @@ def pytest_generate_tests(metafunc):
                 ids.append(f"{wmod.__name__}->{rmod.__name__}::no-backend")
             else:
                 for backend in backends:
-                    cases.append(((wmod, rmod), backend))
-                    ids.append(f"{wmod.__name__}->{rmod.__name__}::{backend}")
+                    cases.append(((wmod, rmod), backend.__name__))
+                    ids.append(f"{wmod.__name__}->{rmod.__name__}::{backend.__name__}")
         metafunc.parametrize("read_write_matrix, backend_module", cases, ids=ids)
 
     # generate test_roundtrip_local tests
@@ -268,7 +258,7 @@ def pytest_generate_tests(metafunc):
                     # decode_vlen True/False only for h5netcdf reads, others False
                     decode_values = (
                         [True, False]
-                        if rmod.__name__ == "h5netcdf" and backend == "h5py"
+                        if rmod.__name__ == "h5netcdf" and backend.__name__ == "h5py"
                         else [False]
                     )
                     for dec in decode_values:
@@ -276,12 +266,12 @@ def pytest_generate_tests(metafunc):
                             (
                                 wmod,
                                 rmod,
-                                backend,
+                                backend.__name__,
                                 dict(decode_vlen_strings=dec),
                             )
                         )
                         ids.append(
-                            f"{wmod.__name__}->{rmod.__name__}::{backend}, dec-vl::{dec}"
+                            f"{wmod.__name__}->{rmod.__name__}::{backend.__name__}, dec-vl::{dec}"
                         )
 
         metafunc.parametrize("wmod, rmod, bmod, decode_vlen", cases, ids=ids)
