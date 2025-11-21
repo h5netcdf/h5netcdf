@@ -10,26 +10,16 @@ from shutil import rmtree
 
 import pytest
 
-from h5netcdf.tests import has_h5py, has_h5pyd, has_hsds, has_pyfive
 from h5netcdf.utils import h5dump as _h5dump
 
 remote_h5 = ("http:", "hdf5:")
 
 
-HAS_MAP = {
-    "h5py": has_h5py,
-    "h5pyd": has_h5pyd,
-    "pyfive": has_pyfive,
-}
-
-
 @pytest.fixture(scope="session")
 def hsds_up():
     """Provide HDF Highly Scalable Data Service (HSDS) for h5pyd testing."""
-    if not has_h5pyd or not has_hsds:
-        pytest.skip("Required packages h5pyd and/or hsds not available")
-
-    from h5pyd import Folder
+    h5pyd = pytest.importorskip("h5pyd")
+    pytest.importorskip("hsds")
     from hsds.hsds_app import HsdsApp
 
     root_dir = Path(tempfile.mkdtemp(prefix="tmp-hsds-root-"))
@@ -57,20 +47,20 @@ def hsds_up():
         }
     )
 
-    hsds = HsdsApp(**kwargs)
+    hsds_app = HsdsApp(**kwargs)
 
     try:
-        hsds.run()
+        hsds_app.run()
         timeout = time.time() + 60
-        while not hsds.ready:
+        while not hsds_app.ready:
             if time.time() > timeout:
                 raise TimeoutError("HSDS server did not become ready in time")
             time.sleep(1)
 
-        os.environ["HS_ENDPOINT"] = hsds.endpoint
+        os.environ["HS_ENDPOINT"] = hsds_app.endpoint
         # make folders expected by pytest
-        Folder("/home/", mode="w")
-        Folder("/home/h5netcdf-pytest/", mode="w")
+        h5pyd.Folder("/home/", mode="w")
+        h5pyd.Folder("/home/h5netcdf-pytest/", mode="w")
 
         yield True
 
@@ -86,8 +76,8 @@ def hsds_up():
 
     finally:
         try:
-            hsds.check_processes()
-            hsds.stop()
+            hsds_app.check_processes()
+            hsds_app.stop()
         except Exception:
             pass
 
@@ -146,14 +136,14 @@ def decode_vlen_strings(request):
 
 @pytest.fixture(params=["netCDF4", "h5netcdf.legacyapi"])
 def netcdf_write_module(request):
-    return pytest.importorskip(request.param)
+    mod = request.param
+    return pytest.importorskip(mod, reason=f"requires {mod}")
 
 
 @pytest.fixture(params=["h5py", "h5pyd", "pyfive"])
 def backend(request, monkeypatch):
     mod = request.param
-    if not HAS_MAP[mod]:
-        pytest.skip(f"Module {mod} not available!")
+    _ = pytest.importorskip(mod, reason=f"requires {mod}")
     if mod == "pyfive":
         monkeypatch.setenv("PYFIVE_UNSUPPORTED_FEATURE", "warn")
 
@@ -163,8 +153,7 @@ def backend(request, monkeypatch):
 @pytest.fixture(params=["h5py", "pyfive"])
 def local_backend(request, monkeypatch):
     mod = request.param
-    if not HAS_MAP[mod]:
-        pytest.skip(f"Module {mod} not available!")
+    _ = pytest.importorskip(mod, reason=f"requires {mod}")
     if mod == "pyfive":
         monkeypatch.setenv("PYFIVE_UNSUPPORTED_FEATURE", "warn")
     return mod
@@ -172,15 +161,16 @@ def local_backend(request, monkeypatch):
 
 def valid_backend_pairs():
     rw_matrix = {"h5py": ["h5py", "pyfive"], "h5pyd": ["h5pyd"], "pyfive": []}
-    return [
-        (w, r) for w in rw_matrix for r in rw_matrix[w] if HAS_MAP[w] and HAS_MAP[r]
-    ]
+    return [(w, r) for w in rw_matrix for r in rw_matrix[w]]
 
 
 @pytest.fixture(params=valid_backend_pairs(), ids=lambda p: f"w:{p[0]}-r:{p[1]}")
 def backend_pair(request):
     """Valid (write_backend, read_backend) pairs."""
-    return request.param
+    wback, rback = request.param
+    _ = pytest.importorskip(wback, reason=f"requires {wback}")
+    _ = pytest.importorskip(rback, reason=f"requires {rback}")
+    return wback, rback
 
 
 @pytest.fixture
@@ -219,11 +209,8 @@ def pytest_generate_tests(metafunc):
     # read/write matrix definition
     read_write_mod = ["netCDF4", "h5netcdf", "h5netcdf.legacyapi"]
 
-    # filter out modules which aren't importable
-    read_write_mod = [pytest.importorskip(mod) for mod in read_write_mod]
-
-    # available backend modules
-    backends = [pytest.importorskip(b) for b in ["h5py", "pyfive"]]
+    # backend modules
+    backends = [b for b in ["h5py", "pyfive"]]
 
     rw_matrix = list(itertools.product(read_write_mod, read_write_mod))
 
@@ -232,13 +219,13 @@ def pytest_generate_tests(metafunc):
         cases = []
         ids = []
         for wmod, rmod in rw_matrix:
-            if rmod.__name__ == "netCDF4":
+            if rmod == "netCDF4":
                 cases.append(((wmod, rmod), None))
-                ids.append(f"{wmod.__name__}->{rmod.__name__}::no-backend")
+                ids.append(f"{wmod}->{rmod}::no-backend")
             else:
                 for backend in backends:
-                    cases.append(((wmod, rmod), backend.__name__))
-                    ids.append(f"{wmod.__name__}->{rmod.__name__}::{backend.__name__}")
+                    cases.append(((wmod, rmod), backend))
+                    ids.append(f"{wmod}->{rmod}::{backend}")
         metafunc.parametrize("read_write_matrix, backend_module", cases, ids=ids)
 
     # generate test_roundtrip_local tests
@@ -250,15 +237,15 @@ def pytest_generate_tests(metafunc):
 
         # build test matrix
         for wmod, rmod in rw_matrix:
-            if rmod.__name__ == "netCDF4":
+            if rmod == "netCDF4":
                 cases.append((wmod, rmod, None, False))
-                ids.append(f"{wmod.__name__}->{rmod.__name__}::no-backend")
+                ids.append(f"{wmod}->{rmod}::no-backend")
             else:
                 for backend in backends:
                     # decode_vlen True/False only for h5netcdf reads, others False
                     decode_values = (
                         [True, False]
-                        if rmod.__name__ == "h5netcdf" and backend.__name__ == "h5py"
+                        if rmod == "h5netcdf" and backend == "h5py"
                         else [False]
                     )
                     for dec in decode_values:
@@ -266,13 +253,11 @@ def pytest_generate_tests(metafunc):
                             (
                                 wmod,
                                 rmod,
-                                backend.__name__,
+                                backend,
                                 dict(decode_vlen_strings=dec),
                             )
                         )
-                        ids.append(
-                            f"{wmod.__name__}->{rmod.__name__}::{backend.__name__}, dec-vl::{dec}"
-                        )
+                        ids.append(f"{wmod}->{rmod}::{backend}, dec-vl::{dec}")
 
         metafunc.parametrize("wmod, rmod, bmod, decode_vlen", cases, ids=ids)
 

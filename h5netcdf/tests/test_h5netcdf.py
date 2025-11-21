@@ -39,29 +39,14 @@ python_version = version.parse(".".join(map(str, sys.version_info[:3])))
 def get_hdf5_module(resource):
     """Return the correct h5py module based on the input resource."""
     if isinstance(resource, str) and resource.startswith(remote_h5):
-        import h5pyd
-
-        return h5pyd
+        return pytest.importorskip("h5pyd")
     else:
-        import h5py
-
-        return h5py
+        return pytest.importorskip("h5py")
 
 
 def get_backend_module(resource):
     """Return the correct h5py module based on the input resource."""
-    if resource == "h5pyd":
-        import h5pyd
-
-        return h5pyd
-    elif resource == "h5py":
-        import h5py
-
-        return h5py
-    elif resource == "pyfive":
-        import pyfive
-
-        return pyfive
+    return pytest.importorskip(resource)
 
 
 def string_to_char(arr):
@@ -532,6 +517,11 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py")
 
 def test_roundtrip_local(tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkeypatch):
     # test matrix is created in conftest.py from available modules
+    wmod = pytest.importorskip(wmod, reason=f"requires {wmod}")
+    rmod = pytest.importorskip(rmod, reason=f"requires {rmod}")
+    if bmod:
+        _ = pytest.importorskip(bmod, reason=f"requires {bmod}")
+
     if wmod.__name__ in ["netCDF4", "h5netcdf.legacyapi"]:
         write_legacy_netcdf(tmp_local_netcdf, wmod)
     else:
@@ -1729,6 +1719,10 @@ def write_dimensions(tmp_netcdf, write_module):
 
 def test_dimensions(tmp_local_netcdf, read_write_matrix, backend_module):
     write_module, read_module = read_write_matrix
+    write_module = pytest.importorskip(write_module)
+    read_module = pytest.importorskip(read_module)
+    if backend_module:
+        _ = pytest.importorskip(backend_module)
     write_dimensions(tmp_local_netcdf, write_module)
     check_netcdf_dimensions(tmp_local_netcdf, write_module, read_module, backend_module)
 

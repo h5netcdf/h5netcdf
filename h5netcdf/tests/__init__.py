@@ -42,4 +42,4 @@ has_netCDF4, requires_netCDF4 = _importorskip("netCDF4")
 has_netCDF4_ge_1_7_0, requires_netCDF4_ge_1_7_0 = _importorskip(
     "netCDF4", minversion="1.7.0"
 )
-has_pyfive, requires_pyfive = _importorskip("pyfive", minversion="1.0.0")
+has_pyfive, requires_pyfive = _importorskip("pyfive")
