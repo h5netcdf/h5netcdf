@@ -3,9 +3,11 @@ Change Log
 
 Development version (unreleased):
 
-- Fix ros3 test (:issue:`295`, :pill:`296`).
+- Fix ros3 test (:issue:`295`, :pull:`296`).
   By `Ezequiel Cimadevilla Alvarez <https://github.com/zequihg50>`_
 - Update pre-commit.
+  By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Fix h5py3 hdf5 1.10 CI run (:pull:`303`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Support pyfive as an alternative backend ({pull}`273`).
   By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
