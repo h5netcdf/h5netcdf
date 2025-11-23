@@ -9,6 +9,10 @@ Development version (unreleased):
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Fix h5py3 hdf5 1.10 CI run (:pull:`303`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Support pyfive as an alternative backend ({pull}`273`).
+  By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
+  <https://github.com/davidhassell>`_, `Valeriu Predoi
+  <https://github.com/valeriupredoi>`_, `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `Stephan Hoyer <https://github.com/shoyer>`_
 
 Version 1.7.3 (October 21st, 2025):
 

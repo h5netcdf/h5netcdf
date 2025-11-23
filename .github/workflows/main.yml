@@ -61,6 +61,7 @@ jobs:
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy=${{ matrix.numpy-version }}
+          pyfive>=1.0.0
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -101,6 +102,7 @@ jobs:
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy=${{ matrix.numpy-version }}
+          pyfive>=1.0.0
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
@@ -245,6 +247,7 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13", "3.14"]
         numpy-version: ["2"]
+        backend: ["h5py", "pyfive"]
     steps:
     - uses: actions/checkout@v5
       with:
@@ -258,17 +261,18 @@ jobs:
         cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-numpy${{matrix.numpy-version}}-xarray_nightly-${{env.TODAY}}"
         create-args: >-
           python=${{ matrix.python-version }}
+          dask
           h5py
           netCDF4
           packaging
           pandas
           pip
+          pyfive>=1.0.0
           pytest
           pytest-asyncio
           pytest-mypy-plugins
           wheel
           numpy=${{ matrix.numpy-version }}
-          ${{ matrix.python-version != '3.14' && 'dask' || '' }}
     - name: Install xarray
       run: |
         python -m pip install --no-deps .
@@ -276,6 +280,12 @@ jobs:
       run: |
         python -m pip install --no-deps --ignore-installed --no-cache-dir -vvv \
           git+https://github.com/h5netcdf/h5netcdf.git@${{ github.ref }}
+    - name: Set env vars for pyfive
+      if: matrix.backend == 'pyfive'
+      run: |
+        echo "H5NETCDF_READ_BACKEND=pyfive" >> $GITHUB_ENV
+        echo "PYFIVE_UNSUPPORTED_FEATURE=warn" >> $GITHUB_ENV
+
     - name: Test with pytest
       run: |
         python -m pytest -v --durations=0 -k "H5NetCDF"

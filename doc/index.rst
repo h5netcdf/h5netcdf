@@ -50,7 +50,7 @@ by Stephan Hoyer. The first `official` ``h5netcdf`` announcement was made by Ste
 `xarray issue tracker`_ only one day later.
 
 The library evolved constantly over the years (fixing bugs and adding enhancements)
-and gained contributions from 21 other :ref:`contributors` so far. The library is widely used,
+and gained contributions from 25 :ref:`contributors` so far. The library is widely used,
 especially as backend within `xarray`_.
 
 Early 2020 Kai Mühlbauer started to add contributions and after some time he volunteered
