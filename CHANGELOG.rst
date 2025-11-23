@@ -9,6 +9,10 @@ Development version (unreleased):
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Fix h5py3 hdf5 1.10 CI run (:pull:`303`).
   By `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Enhance h5netcdf to support additional backends (:pull:`304`).
+  By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
+  <https://github.com/davidhassell>`_, `Valeriu Predoi
+  <https://github.com/valeriupredoi>`_, `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.7.3 (October 21st, 2025):
 
