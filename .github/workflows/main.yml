@@ -17,7 +17,7 @@ jobs:
     name: lint and style checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -46,7 +46,7 @@ jobs:
         h5py-version: ["3.10", "3.11"]
         numpy-version: ["1"]
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Install micromamba
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -86,7 +86,7 @@ jobs:
           - python-version: "3.14"
             h5py-version: "3.13"
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Install micromamba
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -122,7 +122,7 @@ jobs:
         hdf5-version: ["1.10.*"]
         numpy-version: ["1"]
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Install micromamba
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -171,7 +171,7 @@ jobs:
         h5py-version: ["3.12", "3.13"]
         numpy-version: ["2.2.6"]
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Install micromamba
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -208,7 +208,7 @@ jobs:
         python-version: ["3.12", "3.13", "3.14"]
         numpy-version: ["2"]
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Install micromamba
       uses: mamba-org/setup-micromamba@v2
       with:
@@ -246,7 +246,7 @@ jobs:
         python-version: ["3.12", "3.13", "3.14"]
         numpy-version: ["2"]
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         repository: "pydata/xarray"
         fetch-depth: 0
@@ -286,7 +286,7 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
     - name: Install micromamba
@@ -333,7 +333,7 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up Python
