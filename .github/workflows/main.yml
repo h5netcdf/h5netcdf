@@ -283,7 +283,7 @@ jobs:
         echo "def pytest_runtest_setup(item):" >> conftest.py
         echo "    import os" >> conftest.py
         echo "    xfail_tests = ['test_compute_false']" >> conftest.py
-        echo "    if os.environ.get("H5NETCDF_READ_BACKEND", "h5py") == "pyfive" and item.name in xfail_tests:" >> conftest.py
+        echo "    if os.environ.get('H5NETCDF_READ_BACKEND', 'h5py') == 'pyfive' and item.name in xfail_tests:" >> conftest.py
         echo "        pytest.xfail(f'Test {item.name} is marked as expected to fail')" >> conftest.py
     - name: Install h5netcdf
       run: |
