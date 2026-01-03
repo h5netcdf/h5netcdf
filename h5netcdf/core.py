@@ -829,7 +829,6 @@ class Variable(BaseVariable):
             "shuffle": self._h5ds.shuffle,
             "fletcher32": self._h5ds.fletcher32,
         }
-        complevel = None
 
         if self._h5ds.compression == "gzip":
             filters_dict["zlib"] = True
