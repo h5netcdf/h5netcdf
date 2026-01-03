@@ -13,6 +13,8 @@ Development version (unreleased):
   By `Bryan Lawrence <https://github.com/bnlawrence>`_, `David Hassell
   <https://github.com/davidhassell>`_, `Valeriu Predoi
   <https://github.com/valeriupredoi>`_, `Kai Mühlbauer <https://github.com/kmuehlbauer>`_ and `Stephan Hoyer <https://github.com/shoyer>`_
+- Add support for ``filters()`` for ``Variables`` to match netCDF4 python API.
+  By `Mark Harfouche <https://github.com/hmaarrfk>`_.
 
 Version 1.7.3 (October 21st, 2025):
 
