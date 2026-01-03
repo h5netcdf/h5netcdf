@@ -3156,6 +3156,15 @@ def test_is_classic(tmp_local_netcdf):
     assert out.stdout.decode().strip() == "netCDF-4 classic model"
 
 
+def test_filters(tmp_local_netcdf):
+    write_h5netcdf(tmp_local_netcdf)
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        assert ds["foo"].compression == "gzip"
+        assert ds["foo"].filters()["zlib"]
+        # This variable is present in netcdf4 so we want to make sure it is also here
+        assert not ds["foo"].filters()["zstd"]
+
+
 @pytest.mark.parametrize(
     "attr", [("un", "deux"), ["un", "deux"], ("one", "two"), ["one", "two"]]
 )
