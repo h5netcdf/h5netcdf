@@ -845,7 +845,6 @@ class Variable(BaseVariable):
             "307": "bzip2",
             "32004": "blosc",
             "32015": "zstd",
-
             # They might return the filter as a string, not as a code
             "zlib": "zlib",
             "szip": "szip",
