@@ -820,6 +820,8 @@ class Variable(BaseVariable):
         and complevel, matching the format returned by netCDF4's var.filters() method.
         Returns None if no filters are present.
         """
+        # These filters were obtained by opening the same file with netCDF4 and
+        # calling the filter method there
         filters_dict = {
             "zlib": False,
             "szip": False,
@@ -843,10 +845,17 @@ class Variable(BaseVariable):
             "307": "bzip2",
             "32004": "blosc",
             "32015": "zstd",
+
+            # They might return the filter as a string, not as a code
+            "zlib": "zlib",
+            "szip": "szip",
+            "bzip2": "bzip2",
+            "blosc": "blosc",
+            "zstd": "zstd",
         }
         for filter_id, filter_opts in h5py_filters.items():
-            compression_name = HDF5_FILTER_TO_COMPRESSION.get(filter_id)
-            if compression_name:
+            compression_name = HDF5_FILTER_TO_COMPRESSION.get(filter_id, None)
+            if compression_name is not None:
                 filters_dict[compression_name] = True
                 if filter_opts and len(filter_opts) > 0:
                     filters_dict["complevel"] = filter_opts[0]
