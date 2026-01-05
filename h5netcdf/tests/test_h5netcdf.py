@@ -3163,6 +3163,14 @@ def test_filters(tmp_local_netcdf):
         assert ds["foo"].filters()["zlib"]
         # This variable is present in netcdf4 so we want to make sure it is also here
         assert not ds["foo"].filters()["zstd"]
+        h5netcdf_filters = ds["foo"].filters()
+
+    if has_netCDF4:
+        import netCDF4
+
+        with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+            netcdf4_filters = ds["foo"].filters()
+        assert h5netcdf_filters == netcdf4_filters
 
 
 @pytest.mark.parametrize(
