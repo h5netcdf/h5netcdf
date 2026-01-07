@@ -3170,7 +3170,10 @@ def test_filters(tmp_local_netcdf):
 
         with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
             netcdf4_filters = ds["foo"].filters()
-        assert h5netcdf_filters == netcdf4_filters
+        # to be compliant with old netcdf4-python, we only test keys
+        # available in netcdf4_filters
+        missing = netcdf4_filters.items() - h5netcdf_filters.items()
+        assert not missing, f"Missing or mismatched filters: {missing}"
 
 
 @pytest.mark.parametrize(
