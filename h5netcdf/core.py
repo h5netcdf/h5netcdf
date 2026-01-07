@@ -813,6 +813,54 @@ class Variable(BaseVariable):
     def shuffle(self):
         return self._h5ds.shuffle
 
+    def filters(self):
+        """Return HDF5 filter parameters dictionary, matching netCDF4's var.filters() API.
+
+        Returns a dictionary with compression flags (zlib, szip, bzip2, blosc, zstd)
+        and complevel, matching the format returned by netCDF4's var.filters() method.
+        Returns None if no filters are present.
+        """
+        # These filters were obtained by opening the same file with netCDF4 and
+        # calling the filter method there
+        filters_dict = {
+            "zlib": False,
+            "szip": False,
+            "bzip2": False,
+            "blosc": False,
+            "zstd": False,
+            "shuffle": self._h5ds.shuffle,
+            "fletcher32": self._h5ds.fletcher32,
+        }
+
+        if self._h5ds.compression == "gzip":
+            filters_dict["zlib"] = True
+            filters_dict["complevel"] = self._h5ds.compression_opts
+
+        h5py_filters = getattr(self._h5ds, "_filters", {})
+        # These don't really get defined in h5py
+        # https://github.com/HDFGroup/hdf5_plugins/blob/master/docs/RegisteredFilterPlugins.md
+        HDF5_FILTER_TO_COMPRESSION = {
+            "1": "zlib",
+            "2": "szip",
+            "307": "bzip2",
+            "32004": "blosc",
+            "32015": "zstd",
+            # They might return the filter as a string, not as a code
+            "zlib": "zlib",
+            "szip": "szip",
+            "bzip2": "bzip2",
+            "blosc": "blosc",
+            "zstd": "zstd",
+        }
+        for filter_id, filter_opts in h5py_filters.items():
+            compression_name = HDF5_FILTER_TO_COMPRESSION.get(filter_id, None)
+            if compression_name is not None:
+                filters_dict[compression_name] = True
+                if filter_opts and len(filter_opts) > 0:
+                    filters_dict["complevel"] = filter_opts[0]
+
+        return filters_dict
+
 
 class _LazyObjectLookup(Mapping):
     def __init__(self, parent, object_cls):

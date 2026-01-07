@@ -3156,6 +3156,26 @@ def test_is_classic(tmp_local_netcdf):
     assert out.stdout.decode().strip() == "netCDF-4 classic model"
 
 
+def test_filters(tmp_local_netcdf):
+    write_h5netcdf(tmp_local_netcdf)
+    with h5netcdf.File(tmp_local_netcdf, "r") as ds:
+        assert ds["foo"].compression == "gzip"
+        assert ds["foo"].filters()["zlib"]
+        # This variable is present in netcdf4 so we want to make sure it is also here
+        assert not ds["foo"].filters()["zstd"]
+        h5netcdf_filters = ds["foo"].filters()
+
+    if has_netCDF4:
+        import netCDF4
+
+        with netCDF4.Dataset(tmp_local_netcdf, "r") as ds:
+            netcdf4_filters = ds["foo"].filters()
+        # to be compliant with old netcdf4-python, we only test keys
+        # available in netcdf4_filters
+        missing = netcdf4_filters.items() - h5netcdf_filters.items()
+        assert not missing, f"Missing or mismatched filters: {missing}"
+
+
 @pytest.mark.parametrize(
     "attr", [("un", "deux"), ["un", "deux"], ("one", "two"), ["one", "two"]]
 )
