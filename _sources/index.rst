@@ -9,9 +9,9 @@ h5netcdf: A Python interface for the netCDF4 file-format based on h5py
 :Release: |release|
 :Date: |today|
 
-**h5netcdf** is an open source project and Python package that provides an interface
-for the `netCDF4 file-format`_ that reads and writes local or remote HDF5 files directly
-via `h5py`_ or `h5pyd`_, without relying on the Unidata netCDF library.
+.. include:: _build/README_included.rst
+   :start-after: .. preamble
+   :end-before:  .. why-h5netcdf
 
 .. toctree::
    :maxdepth: 2
@@ -38,7 +38,7 @@ via `h5py`_ or `h5pyd`_, without relying on the Unidata netCDF library.
 
    GitHub issues <https://github.com/h5netcdf/h5netcdf/issues>
 
-.. include:: ../README.rst
+.. include:: _build/README_included.rst
    :start-after: .. why-h5netcdf
    :end-before:  .. changelog
 
@@ -50,7 +50,7 @@ by Stephan Hoyer. The first `official` ``h5netcdf`` announcement was made by Ste
 `xarray issue tracker`_ only one day later.
 
 The library evolved constantly over the years (fixing bugs and adding enhancements)
-and gained contributions from 21 other :ref:`contributors` so far. The library is widely used,
+and gained contributions from 25 :ref:`contributors` so far. The library is widely used,
 especially as backend within `xarray`_.
 
 Early 2020 Kai Mühlbauer started to add contributions and after some time he volunteered

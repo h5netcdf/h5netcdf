@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>h5netcdf.Group &#8212; h5netcdf - 1.7.3</title>
+    <title>h5netcdf.Group &#8212; h5netcdf - 1.8.0</title>
   
   
   
@@ -36,9 +36,9 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../_static/documentation_options.js?v=7520cddf"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/documentation_options.js?v=72d4789a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/h5netcdf.Group';</script>
     <link rel="canonical" href="https://h5netcdf.org/generated/h5netcdf.Group.html" />
@@ -133,7 +133,7 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.7.3</p>
+    <p class="title logo__title">h5netcdf - 1.8.0</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -434,7 +434,7 @@ document.write(`
 <h1>h5netcdf.Group<a class="headerlink" href="#h5netcdf-group" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="h5netcdf.Group">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">h5netcdf.</span></span><span class="sig-name descname"><span class="pre">Group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">h5netcdf.</span></span><span class="sig-name descname"><span class="pre">Group</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group" title="Link to this definition">#</a></dt>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="h5netcdf.Group.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Group.__init__" title="Link to this definition">#</a></dt>
@@ -526,12 +526,12 @@ Each group is like a Dataset itself.</p>
 </div>
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.attrs">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">attrs</span></span><a class="headerlink" href="#h5netcdf.Group.attrs" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">attrs</span></span><a class="headerlink" href="#h5netcdf.Group.attrs" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.cmptypes">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cmptypes</span></span><a class="headerlink" href="#h5netcdf.Group.cmptypes" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">cmptypes</span></span><a class="headerlink" href="#h5netcdf.Group.cmptypes" title="Link to this definition">#</a></dt>
 <dd><p>Return group defined compound types.</p>
 </dd></dl>
 
@@ -583,8 +583,8 @@ Each group is like a Dataset itself.</p>
 if not existent.</p></li>
 <li><p><strong>dimensions</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – Tuple containing dimension name strings. Defaults to empty tuple, effectively
 creating a scalar variable.</p></li>
-<li><p><strong>dtype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.dtype</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UserType</span> <span class="pre">(Enum</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VL</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Compound)</span></code>, <em>optional</em>) – Datatype of the new variable. Defaults to None.</p></li>
-<li><p><strong>fillvalue</strong> (<a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-scalar" title="(in NumPy v2.3)"><span class="xref std std-term">scalar</span></a>, <em>optional</em>) – Specify fillvalue for uninitialized parts of the variable. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>dtype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.dtype</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UserType</span> <span class="pre">(Enum</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VL</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Compound)</span></code>, <em>optional</em>) – Datatype of the new variable. Defaults to None.</p></li>
+<li><p><strong>fillvalue</strong> (<a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-scalar" title="(in NumPy v2.4)"><span class="xref std std-term">scalar</span></a>, <em>optional</em>) – Specify fillvalue for uninitialized parts of the variable. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>chunks</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>, <em>optional</em>) – Tuple of integers specifying the chunksizes of each variable dimension.</p></li>
 <li><p><strong>chunking_heuristic</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Specify auto-chunking approach. Can be either of <code class="docutils literal notranslate"><span class="pre">h5py</span></code> or <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code>. Defaults to
 <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code>. Discussion on <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> chunking can be found in (<a class="extlink-issue reference external" href="https://github.com/h5netcdf/h5netcdf/issues/52">GH52</a>)
@@ -624,17 +624,17 @@ created with <code class="docutils literal notranslate"><span class="pre">invali
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.dimensions">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dimensions</span></span><a class="headerlink" href="#h5netcdf.Group.dimensions" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dimensions</span></span><a class="headerlink" href="#h5netcdf.Group.dimensions" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.dims">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dims</span></span><a class="headerlink" href="#h5netcdf.Group.dims" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dims</span></span><a class="headerlink" href="#h5netcdf.Group.dims" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.enumtypes">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">enumtypes</span></span><a class="headerlink" href="#h5netcdf.Group.enumtypes" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">enumtypes</span></span><a class="headerlink" href="#h5netcdf.Group.enumtypes" title="Link to this definition">#</a></dt>
 <dd><p>Return group defined enum types.</p>
 </dd></dl>
 
@@ -645,17 +645,17 @@ created with <code class="docutils literal notranslate"><span class="pre">invali
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.groups">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">groups</span></span><a class="headerlink" href="#h5netcdf.Group.groups" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">groups</span></span><a class="headerlink" href="#h5netcdf.Group.groups" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.name">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#h5netcdf.Group.name" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#h5netcdf.Group.name" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.parent">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parent</span></span><a class="headerlink" href="#h5netcdf.Group.parent" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">parent</span></span><a class="headerlink" href="#h5netcdf.Group.parent" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -673,12 +673,12 @@ zero) where necessary.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.variables">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">variables</span></span><a class="headerlink" href="#h5netcdf.Group.variables" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">variables</span></span><a class="headerlink" href="#h5netcdf.Group.variables" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Group.vltypes">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">vltypes</span></span><a class="headerlink" href="#h5netcdf.Group.vltypes" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">vltypes</span></span><a class="headerlink" href="#h5netcdf.Group.vltypes" title="Link to this definition">#</a></dt>
 <dd><p>Return group defined vlen types.</p>
 </dd></dl>
 
@@ -766,10 +766,6 @@ zero) where necessary.</p>
   
   <div class="footer-item">
     
-<p class="component-author">
-By Author name not set
-</p>
-
   </div>
   
   <div class="footer-item">
@@ -777,7 +773,7 @@ By Author name not set
 
   <p class="copyright">
     
-      © Copyright 2015-2025, h5netcdf developers.
+      © Copyright 2015-2026, h5netcdf developers.
       <br/>
     
   </p>

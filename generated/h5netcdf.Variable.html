@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>h5netcdf.Variable &#8212; h5netcdf - 1.7.3</title>
+    <title>h5netcdf.Variable &#8212; h5netcdf - 1.8.0</title>
   
   
   
@@ -36,9 +36,9 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../_static/documentation_options.js?v=7520cddf"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/documentation_options.js?v=72d4789a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/h5netcdf.Variable';</script>
     <link rel="canonical" href="https://h5netcdf.org/generated/h5netcdf.Variable.html" />
@@ -133,7 +133,7 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.7.3</p>
+    <p class="title logo__title">h5netcdf - 1.8.0</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -402,6 +402,7 @@ document.write(`
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.chunks"><code class="docutils literal notranslate"><span class="pre">Variable.chunks</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.compression"><code class="docutils literal notranslate"><span class="pre">Variable.compression</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.compression_opts"><code class="docutils literal notranslate"><span class="pre">Variable.compression_opts</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.filters"><code class="docutils literal notranslate"><span class="pre">Variable.filters()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.fletcher32"><code class="docutils literal notranslate"><span class="pre">Variable.fletcher32</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.shuffle"><code class="docutils literal notranslate"><span class="pre">Variable.shuffle</span></code></a></li>
 </ul>
@@ -421,7 +422,7 @@ document.write(`
 <h1>h5netcdf.Variable<a class="headerlink" href="#h5netcdf-variable" title="Link to this heading">#</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="h5netcdf.Variable">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">h5netcdf.</span></span><span class="sig-name descname"><span class="pre">Variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimensions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Variable" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">h5netcdf.</span></span><span class="sig-name descname"><span class="pre">Variable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimensions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Variable" title="Link to this definition">#</a></dt>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="h5netcdf.Variable.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimensions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Variable.__init__" title="Link to this definition">#</a></dt>
@@ -432,6 +433,9 @@ document.write(`
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#h5netcdf.Variable.__init__" title="h5netcdf.Variable.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(parent, name[, dimensions])</p></td>
 <td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#h5netcdf.Variable.filters" title="h5netcdf.Variable.filters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filters</span></code></a>()</p></td>
+<td><p>Return HDF5 filter parameters dictionary, matching netCDF4's var.filters() API.</p></td>
 </tr>
 </tbody>
 </table>
@@ -480,27 +484,36 @@ document.write(`
 </div>
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Variable.chunks">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">chunks</span></span><a class="headerlink" href="#h5netcdf.Variable.chunks" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">chunks</span></span><a class="headerlink" href="#h5netcdf.Variable.chunks" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Variable.compression">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compression</span></span><a class="headerlink" href="#h5netcdf.Variable.compression" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">compression</span></span><a class="headerlink" href="#h5netcdf.Variable.compression" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Variable.compression_opts">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compression_opts</span></span><a class="headerlink" href="#h5netcdf.Variable.compression_opts" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">compression_opts</span></span><a class="headerlink" href="#h5netcdf.Variable.compression_opts" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="h5netcdf.Variable.filters">
+<span class="sig-name descname"><span class="pre">filters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#h5netcdf.Variable.filters" title="Link to this definition">#</a></dt>
+<dd><p>Return HDF5 filter parameters dictionary, matching netCDF4’s var.filters() API.</p>
+<p>Returns a dictionary with compression flags (zlib, szip, bzip2, blosc, zstd)
+and complevel, matching the format returned by netCDF4’s var.filters() method.
+Returns None if no filters are present.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Variable.fletcher32">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fletcher32</span></span><a class="headerlink" href="#h5netcdf.Variable.fletcher32" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">fletcher32</span></span><a class="headerlink" href="#h5netcdf.Variable.fletcher32" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="h5netcdf.Variable.shuffle">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shuffle</span></span><a class="headerlink" href="#h5netcdf.Variable.shuffle" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">shuffle</span></span><a class="headerlink" href="#h5netcdf.Variable.shuffle" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -557,6 +570,7 @@ document.write(`
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.chunks"><code class="docutils literal notranslate"><span class="pre">Variable.chunks</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.compression"><code class="docutils literal notranslate"><span class="pre">Variable.compression</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.compression_opts"><code class="docutils literal notranslate"><span class="pre">Variable.compression_opts</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.filters"><code class="docutils literal notranslate"><span class="pre">Variable.filters()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.fletcher32"><code class="docutils literal notranslate"><span class="pre">Variable.fletcher32</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#h5netcdf.Variable.shuffle"><code class="docutils literal notranslate"><span class="pre">Variable.shuffle</span></code></a></li>
 </ul>
@@ -574,10 +588,6 @@ document.write(`
   
   <div class="footer-item">
     
-<p class="component-author">
-By Author name not set
-</p>
-
   </div>
   
   <div class="footer-item">
@@ -585,7 +595,7 @@ By Author name not set
 
   <p class="copyright">
     
-      © Copyright 2015-2025, h5netcdf developers.
+      © Copyright 2015-2026, h5netcdf developers.
       <br/>
     
   </p>

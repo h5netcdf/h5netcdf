@@ -46,6 +46,7 @@
    .. autosummary::
    
       ~Dataset.attrs
+      ~Dataset.backend
       ~Dataset.cmptypes
       ~Dataset.data_model
       ~Dataset.dimensions

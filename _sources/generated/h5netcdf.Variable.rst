@@ -14,6 +14,7 @@
    .. autosummary::
    
       ~Variable.__init__
+      ~Variable.filters
    
    
 

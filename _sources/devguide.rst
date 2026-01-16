@@ -13,6 +13,8 @@ Contributors
 - `Aleksandar Jelenak <https://github.com/ajelenak>`_
 - `Bas Couwenberg <https://github.com/sebastic>`_.
 - `Brett Naul <https://github.com/bnaul>`_
+- `Bryan Lawrence <https://github.com/bnlawrence>`_
+- `David Hassell <https://github.com/davidhassell>`_
 - `David Huard <https://github.com/huard>`_
 - `Dion Häfner <https://github.com/dionhaefner>`_
 - `Drew Parsons <https://github.com/drew-parsons>`_
@@ -31,6 +33,7 @@ Contributors
 - `Scott Henderson <https://github.com/scottyhq>`_
 - `Thomas Kluyver <https://github.com/takluyver>`_
 - `Tom Augspurger <https://github.com/TomAugspurger>`_
+- `Valeriu Predoi <https://github.com/valeriupredoi>`_
 
 If you are interested to contribute, just let us know by creating an issue or pull request on github.
 

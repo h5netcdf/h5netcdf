@@ -37,6 +37,7 @@
    .. autosummary::
    
       ~File.attrs
+      ~File.backend
       ~File.cmptypes
       ~File.data_model
       ~File.dimensions

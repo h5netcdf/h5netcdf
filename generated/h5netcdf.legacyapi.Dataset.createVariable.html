@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>h5netcdf.legacyapi.Dataset.createVariable &#8212; h5netcdf - 1.7.3</title>
+    <title>h5netcdf.legacyapi.Dataset.createVariable &#8212; h5netcdf - 1.8.0</title>
   
   
   
@@ -36,9 +36,9 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../_static/documentation_options.js?v=7520cddf"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/documentation_options.js?v=72d4789a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/h5netcdf.legacyapi.Dataset.createVariable';</script>
     <link rel="canonical" href="https://h5netcdf.org/generated/h5netcdf.legacyapi.Dataset.createVariable.html" />
@@ -133,7 +133,7 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.7.3</p>
+    <p class="title logo__title">h5netcdf - 1.8.0</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -420,7 +420,7 @@ document.write(`
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>varname</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – Name of the new variable. If given as a path, intermediate groups will be created,
 if not existent.</p></li>
-<li><p><strong>datatype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.3)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.dtype</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UserType</span> <span class="pre">(Enum</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VL</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Compound)</span></code>) – Datatype of the new variable.</p></li>
+<li><p><strong>datatype</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.dtype</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">UserType</span> <span class="pre">(Enum</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">VL</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Compound)</span></code>) – Datatype of the new variable.</p></li>
 <li><p><strong>dimensions</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>) – Tuple containing dimension name strings. Defaults to empty tuple, effectively
 creating a scalar variable.</p></li>
 <li><p><strong>zlib</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, variable data will be gzip compressed.</p></li>
@@ -431,7 +431,7 @@ Ignored if <code class="docutils literal notranslate"><span class="pre">zlib=Fal
 <li><p><strong>fletcher32</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, HDF5 Fletcher32 checksum algorithm is applied. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>chunksizes</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>, <em>optional</em>) – Tuple of integers specifying the chunksizes of each variable dimension.
 Discussion on <code class="docutils literal notranslate"><span class="pre">h5netcdf</span></code> chunksizes can be found in (<a class="extlink-issue reference external" href="https://github.com/h5netcdf/h5netcdf/issues/52">GH52</a>) and (<a class="extlink-pull reference external" href="https://github.com/h5netcdf/h5netcdf/pull/127">PR127</a>).</p></li>
-<li><p><strong>fill_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-scalar" title="(in NumPy v2.3)"><span class="xref std std-term">scalar</span></a>, <em>optional</em>) – Specify <code class="docutils literal notranslate"><span class="pre">_FillValue</span></code> for uninitialized parts of the variable. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>fill_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/glossary.html#term-scalar" title="(in NumPy v2.4)"><span class="xref std std-term">scalar</span></a>, <em>optional</em>) – Specify <code class="docutils literal notranslate"><span class="pre">_FillValue</span></code> for uninitialized parts of the variable. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>endian</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <em>optional</em>) – Control on-disk storage format.
 Can be any of <code class="docutils literal notranslate"><span class="pre">little</span></code>, <code class="docutils literal notranslate"><span class="pre">big</span></code> or <code class="docutils literal notranslate"><span class="pre">native</span></code> (default).</p></li>
 </ul>
@@ -503,10 +503,6 @@ Can be any of <code class="docutils literal notranslate"><span class="pre">littl
   
   <div class="footer-item">
     
-<p class="component-author">
-By Author name not set
-</p>
-
   </div>
   
   <div class="footer-item">
@@ -514,7 +510,7 @@ By Author name not set
 
   <p class="copyright">
     
-      © Copyright 2015-2025, h5netcdf developers.
+      © Copyright 2015-2026, h5netcdf developers.
       <br/>
     
   </p>
