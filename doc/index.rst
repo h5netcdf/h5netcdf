@@ -9,7 +9,7 @@ h5netcdf: A Python interface for the netCDF4 file-format based on h5py
 :Release: |release|
 :Date: |today|
 
-.. include:: ../README.rst
+.. include:: _build/README_included.rst
    :start-after: .. preamble
    :end-before:  .. why-h5netcdf
 
@@ -38,7 +38,7 @@ h5netcdf: A Python interface for the netCDF4 file-format based on h5py
 
    GitHub issues <https://github.com/h5netcdf/h5netcdf/issues>
 
-.. include:: ../README.rst
+.. include:: _build/README_included.rst
    :start-after: .. why-h5netcdf
    :end-before:  .. changelog
 

@@ -13,7 +13,7 @@ h5netcdf
 **h5netcdf** is an open source project and Python package that provides an
 interface for the `netCDF4`_ file-format that reads and writes local or
 remote HDF5 files directly via `h5py`_ or `h5pyd`_, without relying on the Unidata
-netCDF library. See :ref:`pyfive-support` for a pure Python HDF5 reading chain.
+netCDF library. See `Pyfive support <#pyfive-support>`_ for a pure Python HDF5 reading chain.
 
 .. _netCDF4: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec
 .. _h5py: https://www.h5py.org/
@@ -36,7 +36,7 @@ Why h5netcdf?
 - Finally, side-stepping the netCDF C library (and Cython bindings to it)
   gives us an easier way to identify the source of performance issues and
   bugs in the netCDF libraries/specification.
-- With :ref:`pyfive-support` it provides a pure Python reading interface,
+- With `Pyfive support <#pyfive-support>`_ it provides a pure Python reading interface,
   which can be especially useful in restricted or hard-to-build environments.
 
 .. _one workflow: https://github.com/Unidata/netcdf4-python/issues/390#issuecomment-93864839

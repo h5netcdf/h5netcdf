@@ -5,7 +5,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
-
+from pathlib import Path
+import re
 import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -66,6 +67,25 @@ autodoc_default_options = {
     "undoc-members": False,
     "inherited-members": False,
 }
+
+# -- Preprocessing -----------------------------------------------------------
+
+# Replace GitHub-style inline anchors with Sphinx :ref:`label` but keep the visible text
+README_SRC = Path(__file__).parent.parent / "README.rst"
+README_DST = Path(__file__).parent / "_build/README_included.rst"
+
+# Read README
+content = README_SRC.read_text(encoding="utf-8")
+
+content = re.sub(
+    r"`([^`<>]+)\s*<#([^>]+)>`_",  # match `link text <#anchor>`_
+    r":ref:`\1 <\2>`",  # replace with :ref:`link text <anchor>`
+    content,
+)
+
+# Write preprocessed file
+README_DST.parent.mkdir(parents=True, exist_ok=True)
+README_DST.write_text(content, encoding="utf-8")
 
 # -- Options for HTML output -------------------------------------------------
 
