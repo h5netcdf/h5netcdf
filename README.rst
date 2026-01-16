@@ -8,14 +8,16 @@ h5netcdf
 .. image:: https://github.com/h5netcdf/h5netcdf/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages
     :target: https://h5netcdf.github.io/h5netcdf/
 
-A Python interface for the `netCDF4`_ file-format that reads and writes local or
+.. preamble
+
+**h5netcdf** is an open source project and Python package that provides an
+interface for the `netCDF4`_ file-format that reads and writes local or
 remote HDF5 files directly via `h5py`_ or `h5pyd`_, without relying on the Unidata
-netCDF library.
+netCDF library. See `Pyfive support <#pyfive-support>`_ for a pure Python HDF5 reading chain.
 
 .. _netCDF4: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec
 .. _h5py: https://www.h5py.org/
 .. _h5pyd: https://github.com/HDFGroup/h5pyd
-
 
 .. why-h5netcdf
 
@@ -34,6 +36,8 @@ Why h5netcdf?
 - Finally, side-stepping the netCDF C library (and Cython bindings to it)
   gives us an easier way to identify the source of performance issues and
   bugs in the netCDF libraries/specification.
+- With `Pyfive support <#pyfive-support>`_ it provides a pure Python reading interface,
+  which can be especially useful in restricted or hard-to-build environments.
 
 .. _one workflow: https://github.com/Unidata/netcdf4-python/issues/390#issuecomment-93864839
 .. _xarray: https://github.com/pydata/xarray/
@@ -156,10 +160,12 @@ exact match. Here is an incomplete list of functionality we don't include:
   current size of variable's dimensions. The behaviour is equivalent to netCDF4-python's
   ``Dataset.set_auto_mask(False)``.
 
+.. _pyfive-support:
+
 Pyfive support
 ~~~~~~~~~~~~~~
 
-h5netcdf X.Y.0 introduces the ability to explicitly select the backend for
+h5netcdf 1.8.0 introduces the ability to explicitly select the backend for
 reading (and writing) NetCDF/HDF5 files, including support for the pure-Python `Pyfive`_ reader backend (without relying on the HDF5 C library and the **h5py** Cython bindings). By default, h5netcdf keeps using **h5py**. Users can select the backend via the `backend` keyword in `h5netcdf.File()` or via environment variables:
 
 Example:
@@ -189,6 +195,7 @@ Example:
     os.environ["H5NETCDF_READ_BACKEND"] = "pyfive"
     with h5netcdf.File("mydata.nc", mode="r") as f:
         print(f["hello"])
+
 
 
 .. _Pyfive: https://github.com/NCAS-CMS/pyfive
