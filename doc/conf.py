@@ -27,6 +27,7 @@ release = h5netcdf.__version__
 
 project = "h5netcdf"
 copyright = "2015-%s, h5netcdf developers" % datetime.datetime.now().year
+author = ""
 language = "en"
 
 # -- General configuration ---------------------------------------------------
