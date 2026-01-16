@@ -42,6 +42,6 @@ differences which are outlined in the following table.
 +---------------------+-------------------------+----------------+------------------+
 | endian              | |check|                 | |cross|        | Variable/Dataset |
 +---------------------+-------------------------+----------------+------------------+
-| track order         | |cross|                 | |cross|        | File/Group       |
+| track order         | |cross|                 | |check|        | File/Group       |
 |                     |                         |                | Dataset          |
 +---------------------+-------------------------+----------------+------------------+

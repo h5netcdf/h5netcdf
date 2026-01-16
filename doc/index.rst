@@ -9,9 +9,9 @@ h5netcdf: A Python interface for the netCDF4 file-format based on h5py
 :Release: |release|
 :Date: |today|
 
-**h5netcdf** is an open source project and Python package that provides an interface
-for the `netCDF4 file-format`_ that reads and writes local or remote HDF5 files directly
-via `h5py`_ or `h5pyd`_, without relying on the Unidata netCDF library.
+.. include:: ../README.rst
+   :start-after: .. preamble
+   :end-before:  .. why-h5netcdf
 
 .. toctree::
    :maxdepth: 2

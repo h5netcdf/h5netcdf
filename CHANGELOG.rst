@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development version (unreleased):
+Version 1.8.0 (January 16st, 2026):
 
 - Fix ros3 test (:issue:`295`, :pull:`296`).
   By `Ezequiel Cimadevilla Alvarez <https://github.com/zequihg50>`_
