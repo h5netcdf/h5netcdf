@@ -169,8 +169,12 @@ def _parse_backend(path, mode, backend, **kwargs):
         "h5py": no_h5py,
         "h5pyd": no_h5pyd,
     }
+
     if no_backend.get(backend, False):
-        raise ImportError(f"No module named {backend}, backend not available")
+        raise ImportError(
+            f"No module named {backend!r}, backend not available. "
+            f"Please install {backend!r} into your Python environment."
+        )
 
     return backend
 
@@ -2083,7 +2087,7 @@ class File(Group):
         return self.__h5file
 
     def close(self):
-        if not self._closed:
+        if hasattr(self, "_closed") and not self._closed:
             self.flush()
             if self._close_h5file:
                 self._h5file.close()
