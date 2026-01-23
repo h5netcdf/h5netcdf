@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>h5netcdf &#8212; h5netcdf - 1.8.0</title>
+    <title>h5netcdf &#8212; h5netcdf - 1.8.1</title>
   
   
   
@@ -36,7 +36,7 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="../_static/documentation_options.js?v=72d4789a"></script>
+    <script src="../_static/documentation_options.js?v=c928fa87"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
@@ -133,7 +133,7 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.8.0</p>
+    <p class="title logo__title">h5netcdf - 1.8.1</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -457,11 +457,17 @@ which can be especially useful in restricted or hard-to-build environments.</p><
 <h2>Install<a class="headerlink" href="#install" title="Link to this heading">#</a></h2>
 <p>Ensure you have a recent version of h5py installed (I recommend using <a class="reference external" href="https://conda.io/">conda</a> or
 the community effort <a class="reference external" href="https://conda-forge.org/">conda-forge</a>).
-At least version 3.0 is required. Then:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install h5netcdf
+At least version 3.0 is required. From version h5netcdf 1.8.0 h5py dependency was dropped,
+to be able to ease installation of h5pyd and pyfive backends.</p>
+<p>Install h5py alongside h5netcdf:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install h5netcdf[h5py]
 </pre></div>
 </div>
-<p>Or if you are already using conda:</p>
+<p>Install h5pyd alongside h5netcdf:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install h5netcdf[h5pyd]
+</pre></div>
+</div>
+<p>Or if you are already using conda, h5py is currently included:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ conda install h5netcdf
 </pre></div>
 </div>
@@ -560,7 +566,11 @@ current size of variable’s dimensions. The behaviour is equivalent to netCDF4-
 <section id="pyfive-support">
 <span id="id1"></span><h3>Pyfive support<a class="headerlink" href="#pyfive-support" title="Link to this heading">#</a></h3>
 <p>h5netcdf 1.8.0 introduces the ability to explicitly select the backend for
-reading (and writing) NetCDF/HDF5 files, including support for the pure-Python <a class="reference external" href="https://github.com/NCAS-CMS/pyfive">Pyfive</a> reader backend (without relying on the HDF5 C library and the <strong>h5py</strong> Cython bindings). By default, h5netcdf keeps using <strong>h5py</strong>. Users can select the backend via the <cite>backend</cite> keyword in <cite>h5netcdf.File()</cite> or via environment variables:</p>
+reading (and writing) NetCDF/HDF5 files, including support for the pure-Python <a class="reference external" href="https://github.com/NCAS-CMS/pyfive">Pyfive</a> reader backend (without relying on the HDF5 C library and the <strong>h5py</strong> Cython bindings). By default, h5netcdf keeps using <strong>h5py</strong>. Users can select the backend via the <cite>backend</cite> keyword in <cite>h5netcdf.File()</cite> or via environment variables.</p>
+<p>Install h5netcdf and pyfive:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install h5netcdf[pyfive]
+</pre></div>
+</div>
 <p>Example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">h5netcdf</span>
