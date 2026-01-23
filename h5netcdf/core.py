@@ -169,8 +169,12 @@ def _parse_backend(path, mode, backend, **kwargs):
         "h5py": no_h5py,
         "h5pyd": no_h5pyd,
     }
+
     if no_backend.get(backend, False):
-        raise ImportError(f"No module named {backend}, backend not available")
+        raise ImportError(
+            f"No module named {backend!r}, backend not available. "
+            f"Please install {backend!r} into your Python environment."
+        )
 
     return backend
 
@@ -1880,12 +1884,12 @@ class File(Group):
         does close the underlying file.
 
         """
-        self._backend = _parse_backend(path, mode, backend, **kwargs)
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         self._close_h5file = True
         self._preexisting_file = True
 
         try:
+            self._backend = _parse_backend(path, mode, backend, **kwargs)
             if self.backend == "pyfive":
                 self._unsupported_hdf5_features = kwargs.pop(
                     "unsupported_hdf5_features",

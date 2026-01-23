@@ -1,6 +1,5 @@
 from collections.abc import Mapping
 
-import h5py
 import numpy as np
 
 
@@ -49,6 +48,8 @@ def _create_classic_string_dataset(gid, name, value, shape, chunks):
     chunks : tuple or None
         Chunk shape.
     """
+    import h5py
+
     tid = h5py.h5t.C_S1.copy()
     tid.set_size(1)
     tid.set_strpad(h5py.h5t.STR_NULLTERM)
@@ -90,6 +91,8 @@ def _create_enum_dataset(group, name, shape, enum_type, fillvalue=None):
     -----------------
     fillvalue : optional scalar fill value
     """
+    import h5py
+
     # copy from existing committed type
     enum_tid = enum_type._h5ds.id.copy()
     space = h5py.h5s.create_simple(shape)
@@ -114,6 +117,8 @@ def _create_enum_dataset_attribute(ds, name, value, enum_type):
         enum values
     enum_type : h5netcdf.EnumType
     """
+    import h5py
+
     tid = enum_type._h5ds.id.copy()
     space = h5py.h5s.create_simple((1,))
 
@@ -131,6 +136,8 @@ def _make_enum_tid(enum_dict, basetype):
     basetype : np.dtype
         basetype of the enum
     """
+    import h5py
+
     items = sorted(enum_dict.items(), key=lambda kv: kv[1])  # sort by value
     base_tid = h5py.h5t.py_create(np.dtype(basetype))
     tid = h5py.h5t.enum_create(base_tid)
@@ -169,6 +176,8 @@ def _create_string_attribute(gid, name, value):
     value : str
         Attributes contents to be written.
     """
+    import h5py
+
     # handle charset and encoding
     charset = h5py.h5t.CSET_ASCII
     if isinstance(value, str):

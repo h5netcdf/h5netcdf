@@ -47,11 +47,18 @@ Install
 
 Ensure you have a recent version of h5py installed (I recommend using `conda`_ or
 the community effort `conda-forge`_).
-At least version 3.0 is required. Then::
+At least version 3.0 is required. From version h5netcdf 1.8.0 h5py dependency was dropped,
+to be able to ease installation of h5pyd and pyfive backends.
 
-    $ pip install h5netcdf
+Install h5py alongside h5netcdf::
 
-Or if you are already using conda::
+    $ pip install h5netcdf[h5py]
+
+Install h5pyd alongside h5netcdf::
+
+    $ pip install h5netcdf[h5pyd]
+
+Or if you are already using conda, h5py is currently included::
 
     $ conda install h5netcdf
 
@@ -166,7 +173,11 @@ Pyfive support
 ~~~~~~~~~~~~~~
 
 h5netcdf 1.8.0 introduces the ability to explicitly select the backend for
-reading (and writing) NetCDF/HDF5 files, including support for the pure-Python `Pyfive`_ reader backend (without relying on the HDF5 C library and the **h5py** Cython bindings). By default, h5netcdf keeps using **h5py**. Users can select the backend via the `backend` keyword in `h5netcdf.File()` or via environment variables:
+reading (and writing) NetCDF/HDF5 files, including support for the pure-Python `Pyfive`_ reader backend (without relying on the HDF5 C library and the **h5py** Cython bindings). By default, h5netcdf keeps using **h5py**. Users can select the backend via the `backend` keyword in `h5netcdf.File()` or via environment variables.
+
+Install h5netcdf and pyfive::
+
+    $ pip install h5netcdf[pyfive]
 
 Example:
 

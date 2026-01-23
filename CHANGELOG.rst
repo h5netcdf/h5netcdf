@@ -1,6 +1,10 @@
 Change Log
 ----------
 
+Version 1.8.1 (January Nst, 2026):
+
+- Add numpy to default dependencies, update install section to highlight backend installation, update error message on missing backend (:issue:`310`, :pull:`311`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.8.0 (January 16st, 2026):
 
 - Fix ros3 test (:issue:`295`, :pull:`296`).
