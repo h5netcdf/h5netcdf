@@ -1884,12 +1884,12 @@ class File(Group):
         does close the underlying file.
 
         """
-        self._backend = _parse_backend(path, mode, backend, **kwargs)
         self.decode_vlen_strings = kwargs.pop("decode_vlen_strings", None)
         self._close_h5file = True
         self._preexisting_file = True
 
         try:
+            self._backend = _parse_backend(path, mode, backend, **kwargs)
             if self.backend == "pyfive":
                 self._unsupported_hdf5_features = kwargs.pop(
                     "unsupported_hdf5_features",
@@ -2087,7 +2087,7 @@ class File(Group):
         return self.__h5file
 
     def close(self):
-        if hasattr(self, "_closed") and not self._closed:
+        if not self._closed:
             self.flush()
             if self._close_h5file:
                 self._h5file.close()
