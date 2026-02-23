@@ -185,6 +185,7 @@ jobs:
           pip
           pytest
           wheel
+          setuptools=81
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy<=${{ matrix.numpy-version }}
