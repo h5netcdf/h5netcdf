@@ -185,6 +185,7 @@ jobs:
           pip
           pytest
           wheel
+          setuptools=81
           h5py=${{ matrix.h5py-version }}
           netCDF4
           numpy<=${{ matrix.numpy-version }}
@@ -271,6 +272,7 @@ jobs:
           pytest
           pytest-asyncio
           pytest-mypy-plugins
+          pytz
           wheel
           numpy=${{ matrix.numpy-version }}
     - name: Install xarray
