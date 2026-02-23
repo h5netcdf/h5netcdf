@@ -271,6 +271,7 @@ jobs:
           pytest
           pytest-asyncio
           pytest-mypy-plugins
+          pytz
           wheel
           numpy=${{ matrix.numpy-version }}
     - name: Install xarray
