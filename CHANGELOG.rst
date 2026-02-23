@@ -1,6 +1,10 @@
 Change Log
 ----------
 
+Development Version (unreleased):
+
+- Fix CI issues with xarray nightly tests (add pytz dependency) and h5pyd tests (pin setuptools=81) (:issue:`312`, :pull:`313`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.8.1 (January 23rd, 2026):
 
 - Add numpy to default dependencies, update install section to highlight backend installation, update error message on missing backend (:issue:`310`, :pull:`311`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
