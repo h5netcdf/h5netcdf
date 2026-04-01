@@ -2492,7 +2492,7 @@ def test_ros3():
     except Exception as e:
         pytest.skip(f"Skipping ros3 test: cannot read remote file ({e})")
     else:
-        with h5netcdf.File(fname, "r", driver="ros3") as f:
+        with h5netcdf.File(fname, "r", driver="ros3", aws_region=b"") as f:
             assert "Temperature" in list(f)
 
 
