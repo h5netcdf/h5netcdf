@@ -2483,7 +2483,7 @@ def test_vlen_string_dataset_fillvalue(
 
 @requires_h5py_ros3
 def test_ros3():
-    fname = "https://archive.unidata.ucar.edu/software/netcdf/examples/OMI-Aura_L2-example.nc"
+    fname = "https://dandiarchive.s3.amazonaws.com/ros3test.hdf5"
     try:
         req = urllib.request.Request(fname, method="HEAD")
         with urllib.request.urlopen(req, timeout=3) as resp:
@@ -2492,8 +2492,8 @@ def test_ros3():
     except Exception as e:
         pytest.skip(f"Skipping ros3 test: cannot read remote file ({e})")
     else:
-        with h5netcdf.File(fname, "r", driver="ros3", aws_region=b"") as f:
-            assert "Temperature" in list(f)
+        with h5netcdf.File(fname, "r", driver="ros3") as f:
+            assert "mydataset" in list(f)
 
 
 def test_user_type_errors_new_api(tmp_local_or_remote_netcdf):
