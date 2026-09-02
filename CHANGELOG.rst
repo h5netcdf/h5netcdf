@@ -5,7 +5,7 @@ Development Version (unreleased):
 
 - Fix CI issues with xarray nightly tests (add pytz dependency) and h5pyd tests (pin setuptools=81) (:issue:`312`, :pull:`313`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - FIX CI wrt setup-micromamba v3, update ros3 tests to work with HDF v2 (:pull:`316`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- Use use netcdf4 instead of netCDF4 for conda-based installations (:pull:`318`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Use netcdf4 instead of netCDF4 for conda-based installations (:pull:`318`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Add HDF5 V2 tests to CI test matrix (:pull:`323`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.8.1 (January 23rd, 2026):
