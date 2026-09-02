@@ -111,6 +111,44 @@ jobs:
         pytest -v --durations=0 h5netcdf/tests/
 
   build_0b:
+    name: h5py3 hdf5 2 numpy 2 tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.14", "3.15"]
+        h5py-version: ["3.16"]
+        hdf5-version: ["2.2"]
+        numpy-version: ["2"]
+    steps:
+    - uses: actions/checkout@v6
+    - name: Install micromamba
+      uses: mamba-org/setup-micromamba@v3
+      with:
+        environment-name: h5netcdf-tests
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py-version}}-hdf5${{matrix.hdf5-version}}-numpy${{matrix.numpy-version}}-${{env.TODAY}}"
+        create-args: >-
+          python=${{ matrix.python-version }}
+          pip
+          pytest
+          wheel
+          h5py=${{ matrix.h5py-version }}
+          hdf5=${{ matrix.hdf5-version }}
+          netcdf4
+          numpy=${{ matrix.numpy-version }}
+          pyfive>=1.0.0
+    - name: Install h5netcdf
+      run: |
+        python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+    - name: Test with pytest
+      run: |
+        pytest -v --durations=0 h5netcdf/tests/
+
+  build_0c:
     name: h5py3 hdf5 1.10 tests
     runs-on: ubuntu-latest
     defaults:
