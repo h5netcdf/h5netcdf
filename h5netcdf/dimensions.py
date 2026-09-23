@@ -83,7 +83,7 @@ class Dimension:
         ----------
         parent: h5netcdf.Group
             Parent group.
-        name : str
+        name: str
             Name of the dimension.
         size : int
             Size of the Netcdf4 Dimension. Defaults to None (unlimited).
@@ -98,7 +98,6 @@ class Dimension:
         self._h5path = _join_h5paths(parent.name, name)
         self._name = name
         self._size = 0 if size is None else size
-        self._cached_name = None  # Cache for dimension name
 
         if self._phony:
             self._root._phony_dim_count += 1
@@ -122,10 +121,7 @@ class Dimension:
         """Return dimension name."""
         if self._phony:
             return self._name
-        # Cache the name to avoid repeated HDF5 calls
-        if self._cached_name is None:
-            self._cached_name = self._h5ds.name.split("/")[-1]
-        return self._cached_name
+        return self._h5ds.name.split("/")[-1]
 
     @property
     def size(self):

@@ -394,13 +394,11 @@ class BaseVariable(BaseObject):
         return super().name.replace("_nc4_non_coord_", "")
 
     def _lookup_dimensions(self):
-        # Cache specific attrs to avoid repeated HDF5 calls
         attrs = self._h5ds.attrs
-        attrs_get = attrs.get  # Cache method lookup
         # coordinate variable and dimension, eg. 1D ("time") or 2D string variable
         if (
             "_Netcdf4Coordinates" in attrs
-            and attrs_get("CLASS", None) == b"DIMENSION_SCALE"
+            and attrs.get("CLASS", None) == b"DIMENSION_SCALE"
         ):
             order_dim = {
                 value._dimid: key for key, value in self._parent._all_dimensions.items()
@@ -411,24 +409,14 @@ class BaseVariable(BaseObject):
         # normal variable carrying DIMENSION_LIST
         # extract hdf5 file references and get objects name
         if "DIMENSION_LIST" in attrs:
-            # Use cached dimension names if available
-            h5path = self._h5ds.name
-            if h5path in self._root._dim_ref_cache:
-                return self._root._dim_ref_cache[h5path]
-            # Fallback: compute and cache
-            # Check for malformed dimensions first
+            # check if malformed variable and raise
             if _unlabeled_dimension_mix(self._h5ds) == "labeled":
-                try:
-                    dim_names = tuple(
-                        self._root._h5file[ref[-1]].name.split("/")[-1]
-                        for ref in attrs_get("DIMENSION_LIST", [])
-                    )
-                    self._root._dim_ref_cache[h5path] = dim_names
-                    return dim_names
-                except Exception:
-                    raise
-            # Not fully labeled - let the original code handle it
-            # This will raise for malformed files
+                # If a dimension has attached more than one scale for some reason, then
+                # take the last one. This is in line with netcdf-c and netcdf4-python.
+                return tuple(
+                    self._root._h5file[ref[-1]].name.split("/")[-1]
+                    for ref in list(self._h5ds.attrs.get("DIMENSION_LIST", []))
+                )
 
         # need to use the h5ds name here to distinguish from collision dimensions
         child_name = self._h5ds.name.split("/")[-1]
@@ -437,24 +425,9 @@ class BaseVariable(BaseObject):
 
         dims = []
         phony_dims = defaultdict(int)
-        dims_obj = self._h5ds.dims  # Cache dims access
-        shape = self._h5ds.shape  # Cache shape access
-        dim_scale_cache = self._root._dim_scale_id_to_name
-        for axis, dim in enumerate(dims_obj):
+        for axis, dim in enumerate(self._h5ds.dims):
             if len(dim):
-                # Use cached dimension scale name - fast path uses dim[0].id
-                dim_scale = dim[0]
-                dim_id = dim_scale.id
-                if dim_id in dim_scale_cache:
-                    dim_scale_name = dim_scale_cache[dim_id]
-                else:
-                    # Fallback: this shouldn't normally happen if cache is populated
-                    dim_scale_name = dim_scale.name.split("/")[-1]
-                    dim_scale_cache[dim_id] = dim_scale_name
-                if dim_scale_name in self._parent._all_dimensions:
-                    name = self._parent._all_dimensions[dim_scale_name].name
-                else:
-                    name = dim_scale_name
+                name = _name_from_dimension(dim)
             else:
                 # if unlabeled dimensions are found
                 if self._root._phony_dims_mode is None:
@@ -466,7 +439,7 @@ class BaseVariable(BaseObject):
                     )
                 else:
                     # get current dimension
-                    dimsize = shape[axis]
+                    dimsize = self._h5ds.shape[axis]
                     # get dimension names
                     dim_names = [
                         d.name
@@ -1986,10 +1959,6 @@ class File(Group):
         self._max_dim_id = -1
         # This maps keeps track of all HDF5 datasets corresponding to this group.
         self._all_h5groups = ChainMap(self._h5group)
-        # Pre-populate caches to avoid expensive HDF5 calls in _lookup_dimensions
-        # Must be set before super().__init__() for legacyapi compatibility
-        self.__dim_scale_cache = {}
-        self.__dim_ref_cache = {}
         super().__init__(self, self._h5path)
         # get maximum dimension id and count of labeled dimensions
         if self._writable:
@@ -1998,77 +1967,6 @@ class File(Group):
         # mimics netcdf-c style naming
         if phony_dims == "sort":
             self._determine_phony_dimensions()
-
-        self._populate_dim_scale_cache()
-
-    @property
-    def _dim_scale_id_to_name(self):
-        return self.__dim_scale_cache
-
-    @property
-    def _dim_ref_cache(self):
-        return self.__dim_ref_cache
-
-    def _populate_dim_scale_cache(self):
-        """Build caches to avoid expensive HDF5 calls in _lookup_dimensions.
-
-        Populates _dim_ref_cache with {hdf5_path → (dim_name, ...)} for each
-        variable that carries a DIMENSION_LIST attribute.  Two optimisations
-        over naïve per-access lookups:
-
-        1. The HDF5 path is tracked during tree traversal so that
-           ``obj.name`` (an expensive C-level call) is never needed as the
-           cache key.
-        2. Each unique dimension-scale dataset is resolved to its name only
-           once, keyed by its stable file-level object address (obtained via
-           ``h5o.get_info``).  Subsequent references to the same dimension
-           scale are served from the in-memory dict without any additional
-           HDF5 I/O.
-        """
-        h5r = self._h5py.h5r
-        h5o = self._h5py.h5o
-
-        # Maps stable file-level object address → last path component (dim name).
-        # h5py assigns a new id.id each time the same object is opened via a
-        # reference, so id.id cannot serve as a stable key; the object address
-        # from h5o.get_info() is invariant for the lifetime of the open file.
-        addr_to_name = {}
-
-        def build_cache(h5py_group, group_path=""):
-            for name in h5py_group:
-                # Track the full path ourselves to avoid the expensive
-                # Dataset.name property (an HDF5 C-level name lookup).
-                child_path = group_path + "/" + name
-                obj = h5py_group[name]
-                if isinstance(obj, self._h5py.Group):
-                    build_cache(obj, child_path)
-                elif isinstance(obj, self._h5py.Dataset) and "DIMENSION_LIST" in obj.attrs:
-                    key = child_path
-                    if key in self._dim_ref_cache:
-                        continue
-                    try:
-                        dimlist = getattr(obj, "dims", [])
-                        if not dimlist:
-                            continue
-                        dimset = {len(j) for j in dimlist}
-                        # Skip malformed (mix of labeled and unlabeled) dims
-                        if (dimset ^ {0} == set()) or (dimset & {0}):
-                            continue
-                        dim_names = []
-                        for ref in obj.attrs["DIMENSION_LIST"]:
-                            if len(ref) > 0:
-                                hdf5_ref = ref[-1]
-                                obj_id = h5r.dereference(hdf5_ref, self._h5file.id)
-                                addr = h5o.get_info(obj_id).addr
-                                if addr not in addr_to_name:
-                                    raw = h5r.get_name(hdf5_ref, self._h5file.id)
-                                    addr_to_name[addr] = raw.decode().split("/")[-1]
-                                dim_names.append(addr_to_name[addr])
-                        self._dim_ref_cache[key] = tuple(dim_names)
-                    except (KeyError, IndexError, OSError, RuntimeError):
-                        pass
-
-        build_cache(self._h5file)
 
     def _get_maximum_dimension_id(self):
         dimids = []
