@@ -1,6 +1,31 @@
+import functools
 from collections.abc import Mapping
 
 import numpy as np
+
+
+def _readonly_cached_property(func):
+    """Property which is computed only once for files opened read-only.
+
+    Querying HDF5 metadata repeatedly is costly, but it can only change when
+    the file is writable. Values are cached rather than the underlying h5py
+    objects, as keeping HDF5 objects open serves stale content when the file
+    is reopened after being rewritten on disk.
+    """
+    key = f"_cached_{func.__name__}"
+
+    @functools.wraps(func)
+    def getter(self):
+        try:
+            return self.__dict__[key]
+        except KeyError:
+            value = func(self)
+            if not self._root._writable:
+                # bypass legacyapi __setattr__, which would create an attribute
+                self.__dict__[key] = value
+            return value
+
+    return property(getter)
 
 
 class CompatibilityError(Exception):

@@ -20,6 +20,7 @@ from .utils import (
     _create_enum_dataset,
     _create_enum_dataset_attribute,
     _create_string_attribute,
+    _readonly_cached_property,
 )
 
 try:
@@ -248,7 +249,7 @@ class BaseObject:
         """Return object name."""
         return self._h5ds.name
 
-    @property
+    @_readonly_cached_property
     def dtype(self):
         """Return NumPy dtype giving object’s dtype."""
         return self._h5ds.dtype
@@ -792,7 +793,7 @@ class BaseVariable(BaseObject):
 
 
 class Variable(BaseVariable):
-    @property
+    @_readonly_cached_property
     def chunks(self):
         if self.shape == ():
             # In HSDS, the layout can be chunked even for scalar datasets, but with only a single chunk.
