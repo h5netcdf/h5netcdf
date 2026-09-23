@@ -17,9 +17,9 @@ jobs:
     name: lint and style checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Install dependencies
@@ -46,9 +46,9 @@ jobs:
         h5py-version: ["3.10", "3.11"]
         numpy-version: ["1"]
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -59,7 +59,7 @@ jobs:
           pytest
           wheel
           h5py=${{ matrix.h5py-version }}
-          netCDF4
+          netcdf4
           numpy=${{ matrix.numpy-version }}
           pyfive>=1.0.0
     - name: Install h5netcdf
@@ -87,9 +87,9 @@ jobs:
           - python-version: "3.14"
             h5py-version: "3.13"
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -100,7 +100,7 @@ jobs:
           pytest
           wheel
           h5py=${{ matrix.h5py-version }}
-          netCDF4
+          netcdf4
           numpy=${{ matrix.numpy-version }}
           pyfive>=1.0.0
     - name: Install h5netcdf
@@ -111,6 +111,44 @@ jobs:
         pytest -v --durations=0 h5netcdf/tests/
 
   build_0b:
+    name: h5py3 hdf5 2 numpy 2 tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.14"]
+        h5py-version: ["3.16"]
+        hdf5-version: ["2.2"]
+        numpy-version: ["2"]
+    steps:
+    - uses: actions/checkout@v6
+    - name: Install micromamba
+      uses: mamba-org/setup-micromamba@v3
+      with:
+        environment-name: h5netcdf-tests
+        cache-environment: true
+        cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-h5py${{matrix.h5py-version}}-hdf5${{matrix.hdf5-version}}-numpy${{matrix.numpy-version}}-${{env.TODAY}}"
+        create-args: >-
+          python=${{ matrix.python-version }}
+          pip
+          pytest
+          wheel
+          h5py=${{ matrix.h5py-version }}
+          hdf5=${{ matrix.hdf5-version }}
+          netcdf4
+          numpy=${{ matrix.numpy-version }}
+          pyfive>=1.0.0
+    - name: Install h5netcdf
+      run: |
+        python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+    - name: Test with pytest
+      run: |
+        pytest -v --durations=0 h5netcdf/tests/
+
+  build_0c:
     name: h5py3 hdf5 1.10 tests
     runs-on: ubuntu-latest
     defaults:
@@ -124,9 +162,9 @@ jobs:
         hdf5-version: ["1.10.*"]
         numpy-version: ["1"]
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -173,9 +211,9 @@ jobs:
         h5py-version: ["3.12", "3.13"]
         numpy-version: ["2.2.6"]
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -187,7 +225,7 @@ jobs:
           wheel
           setuptools=81
           h5py=${{ matrix.h5py-version }}
-          netCDF4
+          netcdf4
           numpy<=${{ matrix.numpy-version }}
     - name: Install h5netcdf
       run: |
@@ -211,9 +249,9 @@ jobs:
         python-version: ["3.12", "3.13", "3.14"]
         numpy-version: ["2"]
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -250,12 +288,12 @@ jobs:
         numpy-version: ["2"]
         backend: ["h5py", "pyfive"]
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         repository: "pydata/xarray"
         fetch-depth: 0
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         environment-name: h5netcdf-tests
         cache-environment: true
@@ -264,7 +302,7 @@ jobs:
           python=${{ matrix.python-version }}
           dask
           h5py
-          netCDF4
+          netcdf4
           packaging
           pandas
           pip
@@ -307,11 +345,11 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     - name: Install micromamba
-      uses: mamba-org/setup-micromamba@v2
+      uses: mamba-org/setup-micromamba@v3
       with:
         environment-name: h5netcdf-docs
         cache-environment: true
@@ -322,7 +360,7 @@ jobs:
           pytest
           wheel
           h5py
-          netCDF4
+          netcdf4
           sphinx
           sphinx-book-theme>=0.3.2
     - name: Install h5netcdf
@@ -333,7 +371,7 @@ jobs:
         cd doc
         make html
     - name: Upload artifacts
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: html-doc
         path: doc/_build/html
@@ -354,11 +392,11 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Install dependencies
