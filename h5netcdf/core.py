@@ -20,6 +20,7 @@ from .utils import (
     _create_enum_dataset,
     _create_enum_dataset_attribute,
     _create_string_attribute,
+    _readonly_cached_property,
 )
 
 try:
@@ -248,7 +249,7 @@ class BaseObject:
         """Return object name."""
         return self._h5ds.name
 
-    @property
+    @_readonly_cached_property
     def dtype(self):
         """Return NumPy dtype giving object’s dtype."""
         return self._h5ds.dtype
@@ -394,7 +395,9 @@ class BaseVariable(BaseObject):
         return super().name.replace("_nc4_non_coord_", "")
 
     def _lookup_dimensions(self):
-        attrs = self._h5ds.attrs
+        # opening the HDF5 dataset is costly, so do it only once
+        h5ds = self._h5ds
+        attrs = h5ds.attrs
         # coordinate variable and dimension, eg. 1D ("time") or 2D string variable
         if (
             "_Netcdf4Coordinates" in attrs
@@ -410,22 +413,22 @@ class BaseVariable(BaseObject):
         # extract hdf5 file references and get objects name
         if "DIMENSION_LIST" in attrs:
             # check if malformed variable and raise
-            if _unlabeled_dimension_mix(self._h5ds) == "labeled":
+            if _unlabeled_dimension_mix(h5ds) == "labeled":
                 # If a dimension has attached more than one scale for some reason, then
                 # take the last one. This is in line with netcdf-c and netcdf4-python.
                 return tuple(
-                    self._root._h5file[ref[-1]].name.split("/")[-1]
-                    for ref in list(self._h5ds.attrs.get("DIMENSION_LIST", []))
+                    self._root._dimension_scale_name(ref[-1])
+                    for ref in list(attrs.get("DIMENSION_LIST", []))
                 )
 
         # need to use the h5ds name here to distinguish from collision dimensions
-        child_name = self._h5ds.name.split("/")[-1]
+        child_name = h5ds.name.split("/")[-1]
         if child_name in self._parent._all_dimensions:
             return (child_name,)
 
         dims = []
         phony_dims = defaultdict(int)
-        for axis, dim in enumerate(self._h5ds.dims):
+        for axis, dim in enumerate(h5ds.dims):
             if len(dim):
                 name = _name_from_dimension(dim)
             else:
@@ -439,7 +442,7 @@ class BaseVariable(BaseObject):
                     )
                 else:
                     # get current dimension
-                    dimsize = self._h5ds.shape[axis]
+                    dimsize = h5ds.shape[axis]
                     # get dimension names
                     dim_names = [
                         d.name
@@ -792,7 +795,7 @@ class BaseVariable(BaseObject):
 
 
 class Variable(BaseVariable):
-    @property
+    @_readonly_cached_property
     def chunks(self):
         if self.shape == ():
             # In HSDS, the layout can be chunked even for scalar datasets, but with only a single chunk.
@@ -801,19 +804,19 @@ class Variable(BaseVariable):
             return None
         return self._h5ds.chunks
 
-    @property
+    @_readonly_cached_property
     def compression(self):
         return self._h5ds.compression
 
-    @property
+    @_readonly_cached_property
     def compression_opts(self):
         return self._h5ds.compression_opts
 
-    @property
+    @_readonly_cached_property
     def fletcher32(self):
         return self._h5ds.fletcher32
 
-    @property
+    @_readonly_cached_property
     def shuffle(self):
         return self._h5ds.shuffle
 
@@ -1168,6 +1171,7 @@ class Group(Mapping):
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
                     # add dimension and retrieve size
                     self._dimensions.add(k)
+                    self._root._add_dimension_scale_name(v, k)
                 else:
                     if self._root._phony_dims_mode is not None:
                         # check if malformed variable and raise
@@ -1957,6 +1961,8 @@ class File(Group):
                 self.decode_vlen_strings = False
 
         self._max_dim_id = -1
+        # maps file addresses of dimension scales to their names
+        self._dimension_scale_names = {}
         # This maps keeps track of all HDF5 datasets corresponding to this group.
         self._all_h5groups = ChainMap(self._h5group)
         super().__init__(self, self._h5path)
@@ -1967,6 +1973,34 @@ class File(Group):
         # mimics netcdf-c style naming
         if phony_dims == "sort":
             self._determine_phony_dimensions()
+
+    @property
+    def _remembers_dimension_scale_names(self):
+        # the address of a deleted scale may be reused by another object in
+        # writable files, and addresses are only available with h5py
+        return self._backend == "h5py" and not self._writable
+
+    def _add_dimension_scale_name(self, h5ds, name):
+        """Remember the name of dimension scale ``h5ds`` by its address."""
+        if self._remembers_dimension_scale_names:
+            addr = self._h5py.h5o.get_info(h5ds.id).addr
+            self._dimension_scale_names[addr] = name
+
+    def _dimension_scale_name(self, ref):
+        """Return the name of the dimension scale referenced by ``ref``.
+
+        Looking up the name of a referenced object makes HDF5 search the file,
+        so names of scales are remembered by address when groups are listed,
+        and else after the first lookup.
+        """
+        if not self._remembers_dimension_scale_names:
+            return self._h5file[ref].name.split("/")[-1]
+        h5py = self._h5py
+        addr = h5py.h5o.get_info(h5py.h5r.dereference(ref, self._h5file.id)).addr
+        if addr not in self._dimension_scale_names:
+            name = self._h5file[ref].name.split("/")[-1]
+            self._dimension_scale_names[addr] = name
+        return self._dimension_scale_names[addr]
 
     def _get_maximum_dimension_id(self):
         dimids = []

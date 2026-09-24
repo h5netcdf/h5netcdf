@@ -4,7 +4,7 @@ from collections.abc import Mapping, MutableMapping
 
 import numpy as np
 
-from .utils import CompatibilityError
+from .utils import CompatibilityError, _readonly_cached_property
 
 
 def _check_classic_unlimited(value, unlimited=None):
@@ -123,7 +123,7 @@ class Dimension:
             return self._name
         return self._h5ds.name.split("/")[-1]
 
-    @property
+    @_readonly_cached_property
     def size(self):
         """Return dimension size."""
         size = len(self)
