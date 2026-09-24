@@ -37,6 +37,14 @@ def hdf5_object_opens(monkeypatch):
 
 
 @pytest.fixture
+def hdf5_attribute_opens(monkeypatch):
+    """Count the HDF5 attributes opened (``H5Aopen``)."""
+    counter = _CallCounter()
+    monkeypatch.setattr(h5py.h5a, "open", counter.wrap(h5py.h5a.open))
+    return counter
+
+
+@pytest.fixture
 def hdf5_name_lookups(monkeypatch):
     """Count the HDF5 lookups of an object's path name.
 
@@ -141,3 +149,21 @@ def test_resolving_dimensions_opens_the_variable_at_most_once(
 
         assert foo.dimensions == ("x", "y")
         assert hdf5_object_opens.count - before <= 1
+
+
+@pytest.mark.parametrize(
+    "value",
+    [np.float64(1.5), np.array([1, 2, 3]), "a string", np.bytes_(b"fixed")],
+    ids=["scalar", "array", "vlen string", "fixed string"],
+)
+def test_reading_an_attribute_opens_it_once(
+    tmp_local_netcdf, hdf5_attribute_opens, value
+):
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.attrs["foo"] = value
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        expected = f.attrs["foo"]
+        before = hdf5_attribute_opens.count
+
+        np.testing.assert_equal(f.attrs["foo"], expected)
+        assert hdf5_attribute_opens.count - before == 1

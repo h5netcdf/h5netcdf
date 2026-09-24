@@ -22,6 +22,39 @@ _HIDDEN_ATTRS = frozenset(
 _string_info = namedtuple("string_info", ["encoding", "length"])
 
 
+def _read_h5py_attribute(h5py, attr):
+    """Read the value of the low-level h5py attribute ``attr``.
+
+    This mirrors ``h5py.AttributeManager.__getitem__``, reusing the already
+    opened attribute instead of opening it again by name.
+    """
+    shape = attr.shape
+    # shape is None for empty dataspaces
+    if shape is None:
+        return h5py.Empty(attr.dtype)
+
+    dtype = attr.dtype
+    htype = h5py.h5t.py_create(dtype)
+    # NumPy doesn't support top-level array types
+    if dtype.subdtype is not None:
+        dtype, subshape = dtype.subdtype
+        shape = shape + subshape
+
+    arr = np.zeros(shape, dtype=dtype, order="C")
+    attr.read(arr, mtype=htype)
+
+    string_info = h5py.h5t.check_string_dtype(dtype)
+    if string_info and string_info.length is None:
+        # vlen strings are read as bytes
+        arr = np.array(
+            [b.decode("utf-8", "surrogateescape") for b in arr.flat], dtype=dtype
+        ).reshape(arr.shape)
+
+    if arr.ndim == 0:
+        return arr[()]
+    return arr
+
+
 class Attributes(MutableMapping):
     def __init__(self, h5attrs, check_dtype, h5py_pckg, format="NETCDF4"):
         self._h5attrs = h5attrs
@@ -37,21 +70,20 @@ class Attributes(MutableMapping):
         # see https://github.com/h5py/h5py/issues/2045
         if self._h5py.__name__ == "h5py":
             attr = self._h5attrs.get_id(key)
+            output = _read_h5py_attribute(self._h5py, attr)
         else:
             # pyfive backend
-            attr = self._h5attrs[key]
+            attr = output = self._h5attrs[key]
 
         # handle Empty types
-        if isinstance(self._h5attrs[key], self._h5py.Empty):
+        if isinstance(output, self._h5py.Empty):
             # see https://github.com/h5netcdf/h5netcdf/issues/94 for details
-            string_info = self._h5py.check_string_dtype(self._h5attrs[key].dtype)
+            string_info = self._h5py.check_string_dtype(output.dtype)
             if string_info and string_info.length == 1:
                 return b""
             # see https://github.com/h5netcdf/h5netcdf/issues/154 for details
             else:
                 return np.array([], dtype=attr.dtype)
-
-        output = self._h5attrs[key]
 
         # string decoding subtleties
         # vlen strings are already decoded -> only decode fixed length strings
