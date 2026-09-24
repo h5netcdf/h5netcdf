@@ -130,3 +130,14 @@ def test_dimensions_from_own_or_ancestor_groups_need_no_name_lookups(
 
         assert foo.dimensions == ("x", "y")
         assert hdf5_name_lookups.count == before
+
+
+def test_resolving_dimensions_opens_the_variable_at_most_once(
+    netcdf_file, hdf5_object_opens
+):
+    with h5netcdf.File(netcdf_file, "r") as f:
+        foo = f["foo"]
+        before = hdf5_object_opens.count
+
+        assert foo.dimensions == ("x", "y")
+        assert hdf5_object_opens.count - before <= 1

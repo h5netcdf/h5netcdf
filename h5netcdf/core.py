@@ -395,7 +395,9 @@ class BaseVariable(BaseObject):
         return super().name.replace("_nc4_non_coord_", "")
 
     def _lookup_dimensions(self):
-        attrs = self._h5ds.attrs
+        # opening the HDF5 dataset is costly, so do it only once
+        h5ds = self._h5ds
+        attrs = h5ds.attrs
         # coordinate variable and dimension, eg. 1D ("time") or 2D string variable
         if (
             "_Netcdf4Coordinates" in attrs
@@ -411,22 +413,22 @@ class BaseVariable(BaseObject):
         # extract hdf5 file references and get objects name
         if "DIMENSION_LIST" in attrs:
             # check if malformed variable and raise
-            if _unlabeled_dimension_mix(self._h5ds) == "labeled":
+            if _unlabeled_dimension_mix(h5ds) == "labeled":
                 # If a dimension has attached more than one scale for some reason, then
                 # take the last one. This is in line with netcdf-c and netcdf4-python.
                 return tuple(
                     self._root._dimension_scale_name(ref[-1])
-                    for ref in list(self._h5ds.attrs.get("DIMENSION_LIST", []))
+                    for ref in list(attrs.get("DIMENSION_LIST", []))
                 )
 
         # need to use the h5ds name here to distinguish from collision dimensions
-        child_name = self._h5ds.name.split("/")[-1]
+        child_name = h5ds.name.split("/")[-1]
         if child_name in self._parent._all_dimensions:
             return (child_name,)
 
         dims = []
         phony_dims = defaultdict(int)
-        for axis, dim in enumerate(self._h5ds.dims):
+        for axis, dim in enumerate(h5ds.dims):
             if len(dim):
                 name = _name_from_dimension(dim)
             else:
@@ -440,7 +442,7 @@ class BaseVariable(BaseObject):
                     )
                 else:
                     # get current dimension
-                    dimsize = self._h5ds.shape[axis]
+                    dimsize = h5ds.shape[axis]
                     # get dimension names
                     dim_names = [
                         d.name
