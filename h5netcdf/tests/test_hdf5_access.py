@@ -5,7 +5,9 @@ objects many times, so re-doing HDF5 work on every query is costly for files
 with many variables and groups.
 """
 
+import gc
 import shutil
+import weakref
 
 import h5py
 import numpy as np
@@ -68,21 +70,40 @@ def _variables_sharing_dimensions(path, n_variables):
 def netcdf_file(tmp_local_netcdf):
     with h5netcdf.File(tmp_local_netcdf, "w") as f:
         f.dimensions = {"x": 4, "y": 5}
-        f.create_variable("foo", ("x", "y"), float, chunks=(2, 5))
+        f.create_variable(
+            "foo",
+            ("x", "y"),
+            float,
+            chunks=(2, 5),
+            compression="gzip",
+            shuffle=True,
+            fletcher32=True,
+        )
     return tmp_local_netcdf
 
 
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        "shape",
+        "dtype",
+        "chunks",
+        "compression",
+        "compression_opts",
+        "shuffle",
+        "fletcher32",
+    ],
+)
 def test_repeated_variable_metadata_access_opens_no_hdf5_objects_in_read_mode(
-    netcdf_file, hdf5_object_opens
+    netcdf_file, hdf5_object_opens, metadata
 ):
     with h5netcdf.File(netcdf_file, "r") as f:
         foo = f["foo"]
-        foo.shape, foo.dtype, foo.chunks
-        opens_after_first_access = hdf5_object_opens.count
+        expected = getattr(foo, metadata)
+        before = hdf5_object_opens.count
 
-        foo.shape, foo.dtype, foo.chunks
-
-        assert hdf5_object_opens.count == opens_after_first_access
+        assert getattr(foo, metadata) == expected
+        assert hdf5_object_opens.count == before
 
 
 def test_file_rewritten_on_disk_shows_new_content_when_reopened(tmpdir):
@@ -167,3 +188,14 @@ def test_reading_an_attribute_opens_it_once(
 
         np.testing.assert_equal(f.attrs["foo"], expected)
         assert hdf5_attribute_opens.count - before == 1
+
+
+def test_variables_are_freed_once_their_file_is_closed_and_released(netcdf_file):
+    with h5netcdf.File(netcdf_file, "r") as f:
+        foo = f["foo"]
+        foo.shape, foo.dtype, foo.chunks, foo.compression
+        foo_ref = weakref.ref(foo)
+    del f, foo
+    gc.collect()
+
+    assert foo_ref() is None

@@ -804,19 +804,19 @@ class Variable(BaseVariable):
             return None
         return self._h5ds.chunks
 
-    @property
+    @_readonly_cached_property
     def compression(self):
         return self._h5ds.compression
 
-    @property
+    @_readonly_cached_property
     def compression_opts(self):
         return self._h5ds.compression_opts
 
-    @property
+    @_readonly_cached_property
     def fletcher32(self):
         return self._h5ds.fletcher32
 
-    @property
+    @_readonly_cached_property
     def shuffle(self):
         return self._h5ds.shuffle
 
