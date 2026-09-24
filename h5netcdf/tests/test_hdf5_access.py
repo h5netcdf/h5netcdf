@@ -15,21 +15,45 @@ import h5netcdf
 
 
 class _CallCounter:
-    def __init__(self, func):
-        self._func = func
+    """Count the calls made to the functions it wraps."""
+
+    def __init__(self):
         self.count = 0
 
-    def __call__(self, *args, **kwargs):
-        self.count += 1
-        return self._func(*args, **kwargs)
+    def wrap(self, func):
+        def counted(*args, **kwargs):
+            self.count += 1
+            return func(*args, **kwargs)
+
+        return counted
 
 
 @pytest.fixture
 def hdf5_object_opens(monkeypatch):
     """Count the HDF5 objects opened by name (``H5Oopen``)."""
-    counter = _CallCounter(h5py.h5o.open)
-    monkeypatch.setattr(h5py.h5o, "open", counter)
+    counter = _CallCounter()
+    monkeypatch.setattr(h5py.h5o, "open", counter.wrap(h5py.h5o.open))
     return counter
+
+
+@pytest.fixture
+def hdf5_name_lookups(monkeypatch):
+    """Count the HDF5 lookups of an object's path name.
+
+    Finding the name of an object obtained from a reference requires HDF5 to
+    search the file, which is slow for large files.
+    """
+    counter = _CallCounter()
+    monkeypatch.setattr(h5py.h5i, "get_name", counter.wrap(h5py.h5i.get_name))
+    monkeypatch.setattr(h5py.h5r, "get_name", counter.wrap(h5py.h5r.get_name))
+    return counter
+
+
+def _variables_sharing_dimensions(path, n_variables):
+    with h5netcdf.File(path, "w") as f:
+        f.dimensions = {"x": 4, "y": 5}
+        for i in range(n_variables):
+            f.create_variable(f"var{i}", ("x", "y"), float)
 
 
 @pytest.fixture
@@ -71,3 +95,21 @@ def test_file_rewritten_on_disk_shows_new_content_when_reopened(tmpdir):
 
         with h5netcdf.File(path, "r") as new:
             np.testing.assert_array_equal(new["foo"][:], np.full(3, 2.0))
+
+
+def test_dimension_name_lookups_do_not_grow_with_variables_sharing_them(
+    tmpdir, hdf5_name_lookups
+):
+    lookups = {}
+    for n_variables in (1, 10):
+        path = str(tmpdir.join(f"{n_variables}.nc"))
+        _variables_sharing_dimensions(path, n_variables)
+        with h5netcdf.File(path, "r") as f:
+            variables = list(f.variables.values())
+            before = hdf5_name_lookups.count
+            dimensions = [var.dimensions for var in variables]
+            lookups[n_variables] = hdf5_name_lookups.count - before
+
+        assert dimensions == [("x", "y")] * n_variables
+
+    assert lookups[10] == lookups[1]

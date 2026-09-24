@@ -415,7 +415,7 @@ class BaseVariable(BaseObject):
                 # If a dimension has attached more than one scale for some reason, then
                 # take the last one. This is in line with netcdf-c and netcdf4-python.
                 return tuple(
-                    self._root._h5file[ref[-1]].name.split("/")[-1]
+                    self._root._dimension_scale_name(ref[-1])
                     for ref in list(self._h5ds.attrs.get("DIMENSION_LIST", []))
                 )
 
@@ -1958,6 +1958,8 @@ class File(Group):
                 self.decode_vlen_strings = False
 
         self._max_dim_id = -1
+        # maps file addresses of dimension scales to their names
+        self._dimension_scale_names = {}
         # This maps keeps track of all HDF5 datasets corresponding to this group.
         self._all_h5groups = ChainMap(self._h5group)
         super().__init__(self, self._h5path)
@@ -1968,6 +1970,23 @@ class File(Group):
         # mimics netcdf-c style naming
         if phony_dims == "sort":
             self._determine_phony_dimensions()
+
+    def _dimension_scale_name(self, ref):
+        """Return the name of the dimension scale referenced by ``ref``.
+
+        Looking up the name of a referenced object makes HDF5 search the file,
+        so for read-only files names are remembered by the scale's address.
+        Writable files are excluded as the address of a deleted scale may be
+        reused by another object.
+        """
+        if self._backend != "h5py" or self._writable:
+            return self._h5file[ref].name.split("/")[-1]
+        h5py = self._h5py
+        addr = h5py.h5o.get_info(h5py.h5r.dereference(ref, self._h5file.id)).addr
+        if addr not in self._dimension_scale_names:
+            name = self._h5file[ref].name.split("/")[-1]
+            self._dimension_scale_names[addr] = name
+        return self._dimension_scale_names[addr]
 
     def _get_maximum_dimension_id(self):
         dimids = []
