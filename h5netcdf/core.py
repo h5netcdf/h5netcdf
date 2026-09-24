@@ -1169,6 +1169,7 @@ class Group(Mapping):
                 if v.attrs.get("CLASS") == b"DIMENSION_SCALE":
                     # add dimension and retrieve size
                     self._dimensions.add(k)
+                    self._root._add_dimension_scale_name(v, k)
                 else:
                     if self._root._phony_dims_mode is not None:
                         # check if malformed variable and raise
@@ -1971,15 +1972,26 @@ class File(Group):
         if phony_dims == "sort":
             self._determine_phony_dimensions()
 
+    @property
+    def _remembers_dimension_scale_names(self):
+        # the address of a deleted scale may be reused by another object in
+        # writable files, and addresses are only available with h5py
+        return self._backend == "h5py" and not self._writable
+
+    def _add_dimension_scale_name(self, h5ds, name):
+        """Remember the name of dimension scale ``h5ds`` by its address."""
+        if self._remembers_dimension_scale_names:
+            addr = self._h5py.h5o.get_info(h5ds.id).addr
+            self._dimension_scale_names[addr] = name
+
     def _dimension_scale_name(self, ref):
         """Return the name of the dimension scale referenced by ``ref``.
 
         Looking up the name of a referenced object makes HDF5 search the file,
-        so for read-only files names are remembered by the scale's address.
-        Writable files are excluded as the address of a deleted scale may be
-        reused by another object.
+        so names of scales are remembered by address when groups are listed,
+        and else after the first lookup.
         """
-        if self._backend != "h5py" or self._writable:
+        if not self._remembers_dimension_scale_names:
             return self._h5file[ref].name.split("/")[-1]
         h5py = self._h5py
         addr = h5py.h5o.get_info(h5py.h5r.dereference(ref, self._h5file.id)).addr

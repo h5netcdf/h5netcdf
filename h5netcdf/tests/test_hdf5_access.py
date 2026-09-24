@@ -113,3 +113,20 @@ def test_dimension_name_lookups_do_not_grow_with_variables_sharing_them(
         assert dimensions == [("x", "y")] * n_variables
 
     assert lookups[10] == lookups[1]
+
+
+def test_dimensions_from_own_or_ancestor_groups_need_no_name_lookups(
+    tmp_local_netcdf, hdf5_name_lookups
+):
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions = {"x": 4}
+        sub = f.create_group("sub")
+        sub.dimensions = {"y": 5}
+        sub.create_variable("foo", ("x", "y"), float)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        foo = f["sub"]["foo"]
+        before = hdf5_name_lookups.count
+
+        assert foo.dimensions == ("x", "y")
+        assert hdf5_name_lookups.count == before
