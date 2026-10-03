@@ -1,10 +1,50 @@
 from collections.abc import Mapping
+from contextlib import ExitStack
 
 import numpy as np
 
 
 class CompatibilityError(Exception):
     """Raised when using features that are not part of the NetCDF4 API."""
+
+
+class _CreationTransaction(ExitStack):
+    """Record inverses before mutations, including partially failing operations."""
+
+    def dataset(self, group, name):
+        if name not in group:
+            self.callback(self._remove_dataset, group, name)
+
+    @staticmethod
+    def _remove_dataset(group, name):
+        if name in group:
+            del group[name]
+
+    def attribute(self, attrs, name):
+        present = name in attrs
+        value = attrs[name] if present else None
+        self.callback(self._restore_attribute, attrs, name, present, value)
+
+    @staticmethod
+    def _restore_attribute(attrs, name, present, value):
+        if present:
+            attrs[name] = value
+        elif name in attrs:
+            del attrs[name]
+
+    def scale_attachment(self, axis, dimension):
+        attached = dimension._h5ds.name in [scale.name for scale in axis.values()]
+        self.callback(self._restore_attachment, axis, dimension, attached)
+
+    @staticmethod
+    def _restore_attachment(axis, dimension, attached):
+        # Resolve the scale now: an earlier undo may have recreated its dataset.
+        scale = dimension._h5ds
+        current = scale.name in [item.name for item in axis.values()]
+        if attached and not current:
+            axis.attach_scale(scale)
+        elif current and not attached:
+            axis.detach_scale(scale)
 
 
 class Frozen(Mapping):

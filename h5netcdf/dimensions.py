@@ -32,6 +32,9 @@ class Dimensions(MutableMapping):
         return self._objects[name]
 
     def __setitem__(self, name, size):
+        self._create(name, size)
+
+    def _create(self, name, size, _undo=None):
         # creating new dimensions
         if not self._group._root._writable:
             raise RuntimeError("H5NetCDF: Write to read only")
@@ -40,7 +43,10 @@ class Dimensions(MutableMapping):
         if self._group._root._format == "NETCDF4_CLASSIC":
             _check_classic_unlimited(size, self._unlimited())
 
-        self._objects[name] = Dimension(self._group, name, size, create_h5ds=True)
+        dimension = Dimension(self._group, name, size, create_h5ds=True, _undo=_undo)
+        if _undo is not None:
+            _undo.callback(self._objects.pop, name, None)
+        self._objects[name] = dimension
 
     def _unlimited(self):
         """Return a tuple of unlimited dimensions."""
@@ -51,9 +57,12 @@ class Dimensions(MutableMapping):
             self._group, name, size, create_h5ds=False, phony=True
         )
 
-    def add(self, name):
+    def add(self, name, _undo=None):
         # adding dimensions which are already created in the file
-        self._objects[name] = Dimension(self._group, name)
+        dimension = Dimension(self._group, name, _undo=_undo)
+        if _undo is not None:
+            _undo.callback(self._objects.pop, name, None)
+        self._objects[name] = dimension
 
     def __delitem__(self, key):
         raise NotImplementedError("cannot yet delete dimensions")
@@ -76,7 +85,9 @@ def _join_h5paths(parent_path, child_path):
 
 
 class Dimension:
-    def __init__(self, parent, name, size=None, create_h5ds=False, phony=False):
+    def __init__(
+        self, parent, name, size=None, create_h5ds=False, phony=False, _undo=None
+    ):
         """NetCDF4 Dimension constructor.
 
         Parameters
@@ -102,10 +113,14 @@ class Dimension:
         if self._phony:
             self._root._phony_dim_count += 1
         else:
+            if _undo is not None:
+                _undo.callback(
+                    setattr, self._root, "_max_dim_id", self._root._max_dim_id
+                )
             self._root._max_dim_id += 1
         self._dimensionid = self._root._max_dim_id
         if parent._root._writable and create_h5ds and not self._phony:
-            self._create_scale()
+            self._create_scale(_undo=_undo)
         self._initialized = True
 
     @property
@@ -186,7 +201,7 @@ class Dimension:
         """Return dimension scale references"""
         return list(self._h5ds.attrs.get("REFERENCE_LIST", []))
 
-    def _create_scale(self, dimid=None):
+    def _create_scale(self, dimid=None, _undo=None):
         """Create dimension scale for this dimension"""
         if self._name not in self._parent._h5group:
             kwargs = {}
@@ -194,6 +209,8 @@ class Dimension:
                 kwargs["maxshape"] = (None,)
             if self._root._h5py.__name__ == "h5py":
                 kwargs.update(dict(track_order=self._parent._track_order))
+            if _undo is not None:
+                _undo.dataset(self._parent._h5group, self._name)
             self._parent._h5group.create_dataset(
                 name=self._name,
                 shape=(self._size,),
@@ -203,6 +220,8 @@ class Dimension:
         # fallback to init-time dimid
         if dimid is None:
             dimid = self._dimid
+        if _undo is not None:
+            _undo.attribute(self._h5ds.attrs, "_Netcdf4Dimid")
         self._h5ds.attrs["_Netcdf4Dimid"] = np.array(dimid, dtype=np.int32)
 
         if len(self._h5ds.shape) > 1:
@@ -210,6 +229,8 @@ class Dimension:
             coord_ids = np.array(
                 [self._parent._dimensions[d]._dimid for d in dims], "int32"
             )
+            if _undo is not None:
+                _undo.attribute(self._h5ds.attrs, "_Netcdf4Coordinates")
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
         # need special handling for size in case of tuple
@@ -226,19 +247,46 @@ class Dimension:
         )
         # don't re-create scales if they already exist.
         if not self._root._h5py.h5ds.is_scale(self._h5ds.id):
+            if _undo is not None:
+                _undo.attribute(self._h5ds.attrs, "CLASS")
+                _undo.attribute(self._h5ds.attrs, "NAME")
             self._h5ds.make_scale(scale_name)
 
-    def _attach_scale(self, refs):
+    def _attach_scale(self, refs, _undo=None):
         """Attach dimension scale to references"""
         for var, dim in refs:
-            self._parent._all_h5groups[var].dims[dim].attach_scale(self._h5ds)
+            axis = self._parent._all_h5groups[var].dims[dim]
+            if _undo is not None:
+                _undo.scale_attachment(axis, self)
+            axis.attach_scale(self._h5ds)
 
-    def _detach_scale(self):
+    def _detach_scale(self, _undo=None):
         """Detach dimension scale from all references"""
         refs = self._scale_refs
         if refs:
             for var, dim in refs:
-                self._parent._all_h5groups[var].dims[dim].detach_scale(self._h5ds)
+                axis = self._parent._all_h5groups[var].dims[dim]
+                if _undo is not None:
+                    _undo.scale_attachment(axis, self)
+                axis.detach_scale(self._h5ds)
+
+    def _restore_scale(self, shape, maxshape, chunks, dtype, attrs):
+        """Undo removal of a dummy dimension scale (references undo separately)."""
+        if self._name not in self._parent._h5group:
+            kwargs = {}
+            if chunks is not None:
+                kwargs.update(maxshape=maxshape, chunks=chunks)
+            if self._root._h5py.__name__ == "h5py":
+                kwargs["track_order"] = self._parent._track_order
+            self._parent._h5group.create_dataset(
+                self._name, shape, dtype=dtype, **kwargs
+            )
+            # Let the backend recreate CLASS/NAME with the HDF5 string padding
+            # required by the dimension-scale API, rather than plain attributes.
+            self._h5ds.make_scale(attrs["NAME"])
+        for name, value in attrs.items():
+            if name not in {"CLASS", "NAME"}:
+                self._h5ds.attrs[name] = value
 
     @property
     def _maxsize(self):

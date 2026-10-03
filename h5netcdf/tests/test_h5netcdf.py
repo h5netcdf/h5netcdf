@@ -2151,6 +2151,298 @@ def test_create_invalid_netcdf_catch_error(tmp_local_or_remote_netcdf):
         assert repr(f.dimensions) == "<h5netcdf.Dimensions: >"
 
 
+def test_create_variable_error_rolls_back_inferred_dimensions(tmp_local_netcdf):
+    # see https://github.com/h5netcdf/h5netcdf/issues/138
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        with raises(ValueError):
+            f.create_variable(
+                "test",
+                ("x", "y"),
+                data=np.ones((2, 2)),
+                chunks=(3, 3),
+            )
+
+        assert not f.dimensions
+        assert not f.variables
+        assert not list(f._h5group)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert not f.dimensions
+        assert not f.variables
+        assert not list(f._h5group)
+
+    with h5netcdf.File(tmp_local_netcdf, "a") as f:
+        variable = f.create_variable(
+            "test", ("x", "y"), data=np.ones((2, 2)), chunks=(2, 2)
+        )
+        assert variable.shape == (2, 2)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f["test"].shape == (2, 2)
+
+
+def test_create_coordinate_error_restores_dimension_scale(tmp_local_netcdf):
+    # see https://github.com/h5netcdf/h5netcdf/issues/138
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions["x"] = 2
+        dependent = f.create_variable("dependent", ("x",), data=[1, 2])
+
+        with raises(ValueError):
+            f.create_variable("x", ("x",), data=[3, 4], chunks=(3,))
+
+        assert f.dimensions["x"].size == 2
+        assert dependent.dimensions == ("x",)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f.dimensions["x"].size == 2
+        assert f["dependent"].dimensions == ("x",)
+        assert "x" not in f.variables
+
+    with h5netcdf.File(tmp_local_netcdf, "a") as f:
+        coordinate = f.create_variable("x", ("x",), data=[3, 4], chunks=(2,))
+        assert coordinate[:].tolist() == [3, 4]
+        assert f["dependent"].dimensions == ("x",)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f["x"][:].tolist() == [3, 4]
+        assert f["dependent"].dimensions == ("x",)
+
+
+def test_create_variable_error_detaches_existing_dimension_scale(
+    tmp_local_netcdf, monkeypatch
+):
+    # see https://github.com/h5netcdf/h5netcdf/issues/138
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions["x"] = 2
+
+        def fail_to_attach_coords(variable, **kwargs):
+            raise RuntimeError("failed after attaching dimension scales")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(f._variable_cls, "_attach_coords", fail_to_attach_coords)
+            with raises(RuntimeError, match="failed after attaching dimension scales"):
+                f.create_variable("broken", ("x",), data=[1, 2])
+
+        assert "broken" not in f.variables
+        assert "broken" not in f._h5group
+        assert not f.dimensions["x"]._scale_refs
+
+        variable = f.create_variable("broken", ("x",), data=[1, 2])
+        assert variable[:].tolist() == [1, 2]
+
+
+def test_duplicate_coordinate_error_keeps_existing_variable(tmp_local_netcdf):
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions["x"] = 2
+        coordinate = f.create_variable("x", ("x",), data=[1, 2])
+
+        with raises(ValueError, match="name already exists"):
+            f.create_variable("x", ("x",), data=[3, 4])
+
+        assert coordinate[:].tolist() == [1, 2]
+        assert coordinate.dimensions == ("x",)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f["x"][:].tolist() == [1, 2]
+        assert f["x"].dimensions == ("x",)
+
+
+def test_create_coordinate_error_restores_partially_detached_scales(
+    tmp_local_netcdf, monkeypatch
+):
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions["x"] = 2
+        first = f.create_variable("first", ("x",), data=[1, 2])
+        second = f.create_variable("second", ("x",), data=[3, 4])
+        axis_cls = type(first._h5ds.dims[0])
+        detach_scale = axis_cls.detach_scale
+        failed = False
+
+        def fail_after_detach(axis, scale):
+            nonlocal failed
+            detach_scale(axis, scale)
+            if not failed:
+                failed = True
+                raise RuntimeError("failed while detaching scales")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(axis_cls, "detach_scale", fail_after_detach)
+            with raises(RuntimeError, match="failed while detaching scales"):
+                f.create_variable("x", ("x",), data=[5, 6])
+
+        assert len(f.dimensions["x"]._scale_refs) == 2
+        assert len(first._h5ds.dims[0]) == len(second._h5ds.dims[0]) == 1
+        coordinate = f.create_variable("x", ("x",), data=[5, 6])
+        assert coordinate[:].tolist() == [5, 6]
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f["first"].dimensions == f["second"].dimensions == ("x",)
+        assert f["first"][:].tolist() == [1, 2]
+        assert f["second"][:].tolist() == [3, 4]
+
+
+@pytest.mark.parametrize("unlimited", [False, True])
+def test_create_coordinate_error_preserves_reopened_dimension(
+    tmp_local_netcdf, unlimited
+):
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions["x"] = None if unlimited else 3
+        if unlimited:
+            f.resize_dimension("x", 3)
+        f.create_variable("dependent", ("x",), data=[1, 2, 3])
+        f._h5group["x"].attrs["description"] = "original scale"
+
+    with h5netcdf.File(tmp_local_netcdf, "a") as f:
+        dimid = f.dimensions["x"]._dimid
+        chunks = f._h5group["x"].chunks
+        with raises(ValueError):
+            f.create_variable("x", ("x",), data=[4, 5, 6], chunks=(4, 4))
+        assert f.dimensions["x"].size == 3
+        assert f.dimensions["x"].isunlimited() == unlimited
+        assert f.dimensions["x"]._dimid == dimid
+        assert f._h5group["x"].chunks == chunks
+        assert f._h5group["x"].attrs["description"] == "original scale"
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f.dimensions["x"].isunlimited() == unlimited
+        assert f["dependent"].dimensions == ("x",)
+        assert f["dependent"][:].tolist() == [1, 2, 3]
+
+
+@pytest.mark.parametrize(
+    "stage",
+    ["dimension", "dataset", "scales", "coordinates", "dimension_id", "fillvalue"],
+)
+def test_create_variable_undoes_each_completed_stage(
+    tmp_local_netcdf, monkeypatch, stage
+):
+    from h5netcdf.dimensions import Dimension
+
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions["existing"] = 2
+        f.create_variable("unchanged", ("existing",), data=[7, 8])
+        max_dim_id = f._max_dim_id
+        if stage == "dimension":
+            cls, method = Dimension, "_create_scale"
+        elif stage == "dataset":
+            cls, method = type(f._h5group), "create_dataset"
+        else:
+            cls = f._variable_cls
+            method = {
+                "scales": "_attach_dim_scales",
+                "coordinates": "_attach_coords",
+                "dimension_id": "_ensure_dim_id",
+                "fillvalue": "_add_fillvalue",
+            }[stage]
+        original = getattr(cls, method)
+        failed = False
+
+        def fail_after_mutation(obj, *args, **kwargs):
+            nonlocal failed
+            result = original(obj, *args, **kwargs)
+            # Dataset creation is also used for inferred dimension scales.
+            target = (
+                stage != "dataset" or (args[0] if args else kwargs["name"]) == "broken"
+            )
+            if target and not failed:
+                failed = True
+                raise RuntimeError(f"failed after {stage}")
+            return result
+
+        with monkeypatch.context() as patch:
+            patch.setattr(cls, method, fail_after_mutation)
+            with raises(RuntimeError, match=f"failed after {stage}"):
+                f.create_variable(
+                    "broken", ("x", "y"), data=np.ones((2, 3)), fillvalue=0
+                )
+
+        assert failed
+        assert list(f.dimensions) == ["existing"]
+        assert list(f.variables) == ["unchanged"]
+        assert set(f._h5group) == {"existing", "unchanged"}
+        assert f._max_dim_id == max_dim_id
+        assert len(f.dimensions["existing"]._scale_refs) == 1
+        assert f["unchanged"][:].tolist() == [7, 8]
+        variable = f.create_variable(
+            "broken", ("x", "y"), data=np.ones((2, 3)), fillvalue=0
+        )
+        assert variable.shape == (2, 3)
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f["broken"].dimensions == ("x", "y")
+        np.testing.assert_array_equal(f["broken"][:], np.ones((2, 3)))
+        assert f["unchanged"][:].tolist() == [7, 8]
+
+
+@pytest.mark.parametrize("fail_at", [1, 2])
+def test_create_variable_undoes_partial_parent_scale_attachments(
+    tmp_local_netcdf, monkeypatch, fail_at
+):
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions = {"x": 2, "y": 3}
+        parent = f.create_variable("parent", ("x",), data=[7, 8])
+        group = f.create_group("child")
+        axis_cls = type(parent._h5ds.dims[0])
+        attach_scale = axis_cls.attach_scale
+        calls = 0
+
+        def fail_after_attach(axis, scale):
+            nonlocal calls
+            attach_scale(axis, scale)
+            calls += 1
+            if calls == fail_at:
+                raise RuntimeError("failed while attaching scales")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(axis_cls, "attach_scale", fail_after_attach)
+            with raises(RuntimeError, match="failed while attaching scales"):
+                group.create_variable("broken", ("x", "y"), data=np.ones((2, 3)))
+
+        assert not group.variables
+        assert not group.dimensions
+        assert not list(group._h5group)
+        assert len(f.dimensions["x"]._scale_refs) == 1
+        assert not f.dimensions["y"]._scale_refs
+        group.create_variable("broken", ("x", "y"), data=np.ones((2, 3)))
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f["child/broken"].dimensions == ("x", "y")
+        np.testing.assert_array_equal(f["child/broken"][:], np.ones((2, 3)))
+        assert f["parent"][:].tolist() == [7, 8]
+
+
+@pytest.mark.parametrize("stage", ["_attach_coords", "_add_fillvalue"])
+def test_create_coordinate_undoes_late_failure(tmp_local_netcdf, monkeypatch, stage):
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions["x"] = 2
+        f.create_variable("dependent", ("x",), data=[1, 2])
+        original = getattr(f._variable_cls, stage)
+        failed = False
+
+        def fail_after_mutation(variable, *args, **kwargs):
+            nonlocal failed
+            original(variable, *args, **kwargs)
+            if not failed:
+                failed = True
+                raise RuntimeError("failed after coordinate mutation")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(f._variable_cls, stage, fail_after_mutation)
+            with raises(RuntimeError, match="failed after coordinate mutation"):
+                f.create_variable("x", ("x",), data=[3, 4], fillvalue=-1)
+
+        assert list(f.variables) == ["dependent"]
+        assert len(f.dimensions["x"]._scale_refs) == 1
+        assert f["dependent"].dimensions == ("x",)
+        coordinate = f.create_variable("x", ("x",), data=[3, 4], fillvalue=-1)
+        assert coordinate[:].tolist() == [3, 4]
+
+    with h5netcdf.File(tmp_local_netcdf, "r") as f:
+        assert f["dependent"].dimensions == ("x",)
+        assert f["dependent"][:].tolist() == [1, 2]
+        assert f["x"][:].tolist() == [3, 4]
+
+
 @requires_netCDF4
 def test_dimensions_in_parent_groups(tmpdir, local_backend):
     import netCDF4
