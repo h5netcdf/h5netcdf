@@ -998,6 +998,9 @@ def test_failed_read_open_and_clean_delete(tmpdir, local_backend):
 def test_create_variable_matching_saved_dimension(
     write_backend, read_backend, tmp_backend_netcdf
 ):
+    if write_backend == "h5pyd":
+        # revisit after https://github.com/HDFGroup/h5pyd/issues/306 is fixed
+        pytest.skip("Known failure with h5pyd")
     h5 = get_backend_module(read_backend)
     with h5netcdf.File(tmp_backend_netcdf, "w", backend=write_backend) as f:
         f.dimensions["x"] = 2
@@ -1541,6 +1544,20 @@ def test_create_attach_scales(tmp_local_netcdf, netcdf_write_module):
             assert ds._root._h5file[ref].name == name
 
 
+@pytest.mark.parametrize(
+    "tmp_local_or_remote_netcdf",
+    [
+        "testfile.nc",
+        pytest.param(
+            "hdf5://testfile",
+            marks=pytest.mark.xfail(
+                reason="Known failure with h5pyd (https://github.com/HDFGroup/h5pyd/issues/306)",
+                strict=True,
+            ),
+        ),
+    ],
+    indirect=True,
+)
 def test_detach_scale(tmp_local_or_remote_netcdf):
     with h5netcdf.File(tmp_local_or_remote_netcdf, "w") as ds:
         ds.dimensions["x"] = 2
