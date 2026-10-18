@@ -1872,6 +1872,41 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
         assert f.variables["dummy4"]._h5ds.shape == (0, 3)
 
 
+@requires_netCDF4
+@requires_h5py
+@pytest.mark.parametrize("api", [h5netcdf.File, legacyapi.Dataset])
+@pytest.mark.parametrize(
+    "key",
+    [
+        -1,
+        -2,
+        slice(None, -1),
+        slice(-2, 4),
+        slice(-5, -1),
+        [-2, -1],
+        np.array([-2, -1]),
+        slice(None, 2),
+    ],
+)
+def test_negative_indexing_of_padded_variables(tmp_local_netcdf, api, key):
+    """Negative indices use the shared dimension, including its unwritten tail."""
+    import netCDF4
+
+    with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("time", None)
+        ds.createVariable("time", "i8", ("time",))[:] = np.arange(6)
+        variable = ds.createVariable("sensor", "f8", ("time",), fill_value=-999)
+        variable[:3] = [11, 12, 13]
+
+    with netCDF4.Dataset(tmp_local_netcdf) as ds:
+        ds.set_auto_mask(False)
+        expected = ds["sensor"][key]
+
+    with api(tmp_local_netcdf, backend="h5py") as ds:
+        assert ds["sensor"].shape == (6,)
+        np.testing.assert_array_equal(ds["sensor"][key], expected)
+
+
 # https://github.com/h5netcdf/h5netcdf/issues/136
 @requires_h5py_ge_3_7_0
 @requires_netCDF4
