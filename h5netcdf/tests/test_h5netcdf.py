@@ -1973,6 +1973,25 @@ def test_group_names(tmp_local_netcdf, local_backend):
             assert ds[name].name == name
 
 
+@pytest.mark.parametrize("datatype", [">i2", "<i2", ">f4", "<f4", ">f8", "<f8"])
+@pytest.mark.parametrize("endian", ["native", "little", "big"])
+def test_legacyapi_explicit_dtype_endian(
+    write_backend, read_backend, tmp_backend_netcdf, datatype, endian
+):
+    values = np.array([1, -2, 3, 4], dtype=datatype)
+    with legacyapi.Dataset(tmp_backend_netcdf, "w", backend=write_backend) as ds:
+        ds.createDimension("x", len(values))
+        variable = ds.createVariable("values", values.dtype, ("x",), endian=endian)
+        variable[:] = values
+
+    order = {"native": "=", "little": "<", "big": ">"}[endian]
+    expected_dtype = np.dtype(order + datatype[1:])
+    h5 = get_backend_module(read_backend)
+    with h5.File(tmp_backend_netcdf, "r") as ds:
+        assert ds["values"].dtype == expected_dtype
+        np.testing.assert_array_equal(ds["values"][:], values)
+
+
 def test_legacyapi_endianess(write_backend, read_backend, tmp_backend_netcdf):
     # https://github.com/h5netcdf/h5netcdf/issues/15
     big = legacyapi._check_return_dtype_endianess("big")

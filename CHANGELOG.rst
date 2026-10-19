@@ -8,6 +8,8 @@ Development Version (unreleased):
 - Use netcdf4 instead of netCDF4 for conda-based installations (:pull:`318`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Add HDF5 V2.2 tests to CI test matrix (:pull:`323`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
+- Honor the requested byte order in legacy ``createVariable`` when the NumPy dtype already specifies a byte order.
+
 Version 1.8.1 (January 23rd, 2026):
 
 - Add numpy to default dependencies, update install section to highlight backend installation, update error message on missing backend (:issue:`310`, :pull:`311`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
