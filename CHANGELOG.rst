@@ -7,7 +7,7 @@ Development Version (unreleased):
 - FIX CI wrt setup-micromamba v3, update ros3 tests to work with HDF v2 (:pull:`316`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Use netcdf4 instead of netCDF4 for conda-based installations (:pull:`318`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Add HDF5 V2.2 tests to CI test matrix (:pull:`323`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-- Update h5pyd>=1.0.0, hsds>=1.0.0, fix code and tests, update CI (:pull:`328`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Update h5pyd>=1.0.0, hsds>=1.0.0, fix code and tests, xfail remaining h5pyd/hsds tests with issues reported to h5pyd, update CI (:pull:`328`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.8.1 (January 23rd, 2026):
 
