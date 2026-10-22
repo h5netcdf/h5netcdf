@@ -242,12 +242,7 @@ def pytest_generate_tests(metafunc):
                 ids.append(f"{wmod}->{rmod}::no-backend")
             else:
                 for backend in backends:
-                    # decode_vlen True/False only for h5netcdf reads, others False
-                    decode_values = (
-                        [True, False]
-                        if rmod == "h5netcdf" and backend == "h5py"
-                        else [False]
-                    )
+                    decode_values = [True, False]
                     for dec in decode_values:
                         cases.append(
                             (
