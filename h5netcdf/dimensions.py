@@ -226,6 +226,9 @@ class Dimension:
         )
         # don't re-create scales if they already exist.
         if not self._root._h5py.h5ds.is_scale(self._h5ds.id):
+            # h5pyd expects scale names as strings
+            if self._root._backend == "h5pyd" and isinstance(scale_name, bytes):
+                scale_name = scale_name.decode("ascii")
             self._h5ds.make_scale(scale_name)
 
     def _attach_scale(self, refs):

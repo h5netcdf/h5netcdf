@@ -230,8 +230,9 @@ jobs:
     - name: Install h5netcdf
       run: |
         python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
-        python -m pip install hsds
-        python -m pip install h5pyd
+        python -m pip install "hsds>=1.0.0"
+        python -m pip install "h5pyd>=1.0.0"
+        python -m pip list
     - name: Test with pytest
       run: |
         pytest -v --durations=0 h5netcdf/tests/
