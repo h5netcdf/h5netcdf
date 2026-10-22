@@ -1749,11 +1749,11 @@ class Group(Mapping):
         return cmptype
 
 
-def _open_pyfive(path, mode):
+def _open_pyfive(path, mode, **kwargs):
     import pyfive
 
     try:
-        h5file = pyfive.File(path, mode)
+        h5file = pyfive.File(path, mode, **kwargs)
     except Exception:
         raise
     else:
@@ -1876,7 +1876,14 @@ class File(Group):
                     os.environ.get("PYFIVE_UNSUPPORTED_FEATURE", "error"),
                 )
                 self._h5py = pyfive
-                self.__h5file = _open_pyfive(path, mode)
+                # from version 1.2.0 behaviour switched
+                # set decoding_strings = True explicitly
+                if version.parse(pyfive.__version__) >= version.parse("1.2.0"):
+                    self.decode_vlen_strings = (
+                        None if "legacy" in self._cls_name else True
+                    )
+                    kwargs = dict(decode_strings=True)
+                self.__h5file = _open_pyfive(path, mode, **kwargs)
             elif self.backend == "h5pyd":
                 self._h5py = h5pyd
                 self.__h5file, self._preexisting_file = _open_h5pyd(
