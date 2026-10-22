@@ -37,6 +37,11 @@ class Attributes(MutableMapping):
         # see https://github.com/h5py/h5py/issues/2045
         if self._h5py.__name__ == "h5py":
             attr = self._h5attrs.get_id(key)
+        # do similar for h5pyd
+        elif self._h5py.__name__ == "h5pyd":
+            attr = self._h5attrs._parent.id.db.getAttributeValue(
+                self._h5attrs._parent.id.uuid, key
+            )
         else:
             # pyfive backend
             attr = self._h5attrs[key]
