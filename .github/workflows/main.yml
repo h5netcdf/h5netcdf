@@ -124,7 +124,7 @@ jobs:
         hdf5-version: ["2.2"]
         numpy-version: ["2"]
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Install micromamba
       uses: mamba-org/setup-micromamba@v3
       with:
