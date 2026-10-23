@@ -9,8 +9,7 @@ Development Version (unreleased):
 - Add HDF5 V2.2 tests to CI test matrix (:pull:`323`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Update h5pyd>=1.0.0, hsds>=1.0.0, fix code and tests, xfail remaining h5pyd/hsds tests with issues reported to h5pyd, update CI (:pull:`328`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Update pyfive>=1.2.0, pin pyfive>=1.3.0 in CI, remove pyfive from numpy 1 CI runs, use `decode_strings=True` (:pull:`331`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
-
-- Honor the requested byte order in legacy ``createVariable`` when the NumPy dtype already specifies a byte order.
+- Honor the requested byte order in legacy ``createVariable`` when the NumPy dtype already specifies a byte order (:pull:`330`) by `Anton Soloviev <https://github.com/antonsoo>`_
 
 Version 1.8.1 (January 23rd, 2026):
 
