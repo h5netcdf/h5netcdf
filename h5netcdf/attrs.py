@@ -93,7 +93,8 @@ class Attributes(MutableMapping):
 
         # return item if single element list/array see
         # https://github.com/h5netcdf/h5netcdf/issues/116
-        if not np.isscalar(output) and len(output) == 1:
+        # HDF5 reference scalars are not recognized by np.isscalar.
+        if isinstance(output, (np.ndarray, list)) and len(output) == 1:
             return output[0]
 
         return output
