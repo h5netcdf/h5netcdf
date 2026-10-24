@@ -204,6 +204,7 @@ class Group(core.Group, HasAttributesMixin):
         endian : str, optional
             Control on-disk storage format.
             Can be any of ``little``, ``big`` or ``native`` (default).
+            Overrides the byte order specified in ``datatype``.
 
         Returns
         -------
@@ -231,12 +232,9 @@ class Group(core.Group, HasAttributesMixin):
 
         # control endian-ess
         endianess = _check_return_dtype_endianess(endian)
-        # needs swapping?
-        if endianess != "=":
-            # transform to numpy dtype and swap endianess
-            dtype = np.dtype(datatype)
-            if dtype.byteorder != "|":
-                datatype = dtype.newbyteorder("S")
+        dtype = np.dtype(datatype)
+        if dtype.byteorder not in ("|", endianess):
+            datatype = dtype.newbyteorder(endianess)
 
         # closer to netCDF4 chunking behavior
         kwds["chunking_heuristic"] = "h5netcdf"
