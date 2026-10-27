@@ -11,6 +11,7 @@ Contributors
 ------------
 
 - `Aleksandar Jelenak <https://github.com/ajelenak>`_
+- `Anthony Mercer <https://github.com/antonsoo>`_
 - `Bas Couwenberg <https://github.com/sebastic>`_.
 - `Brett Naul <https://github.com/bnaul>`_
 - `Bryan Lawrence <https://github.com/bnlawrence>`_
@@ -29,6 +30,7 @@ Contributors
 - `Martin Raspaud <https://github.com/mraspaud>`_
 - `Pierre Augier <https://github.com/paugier>`_
 - `Rickard Holmberg <https://github.com/rho-novatron>`_
+- `Ramiz <https://github.com/rmz-oz>`_
 - `Ryan Grout <https://github.com/groutr>`_
 - `Scott Henderson <https://github.com/scottyhq>`_
 - `Thomas Kluyver <https://github.com/takluyver>`_
@@ -41,10 +43,12 @@ Contribution Guidelines
 -----------------------
 
 - New features and changes should be added via Pull Requests from forks for contributors as well as maintainers.
+- An issue with details to the feature or bug should be created first.
 - Pull Requests should have at least one approval (once the maintainer count has increased).
 - Self merges without approval are allowed for repository maintenance, hotfixes and if the code changes do not affect functionality.
 - Directly pushing to the repository main branch should only be used as a last resort.
 - Releases should be introduced via Pull Request and approved. Exception: Patch release after hotfix.
+- Any AI usage must be explicitly disclosed in the Issue or Pull Request description.
 
 Continuous Integration
 ----------------------
