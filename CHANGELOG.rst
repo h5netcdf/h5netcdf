@@ -1,7 +1,7 @@
 Change Log
 ----------
 
-Development Version (unreleased):
+Version 1.8.2 (October 27th, 2026):
 
 - Fix negative indexing of partially written variables to use the full shared dimension, including unwritten fill values (:pull:`329`) by `Anton Soloviev <https://github.com/antonsoo>`_
 - Fix CI issues with xarray nightly tests (add pytz dependency) and h5pyd tests (pin setuptools=81) (:issue:`312`, :pull:`313`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
@@ -11,6 +11,7 @@ Development Version (unreleased):
 - Update h5pyd>=1.0.0, hsds>=1.0.0, fix code and tests, xfail remaining h5pyd/hsds tests with issues reported to h5pyd, update CI (:pull:`328`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Update pyfive>=1.2.0, pin pyfive>=1.3.0 in CI, remove pyfive from numpy 1 CI runs, use `decode_strings=True` (:pull:`331`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Honor the requested byte order in legacy ``createVariable`` when the NumPy dtype already specifies a byte order (:pull:`330`) by `Anton Soloviev <https://github.com/antonsoo>`_
+- Update contributors, add AI disclosure, condense project history (:pull:`332`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.8.1 (January 23rd, 2026):
 
