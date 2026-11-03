@@ -95,7 +95,7 @@ def is_h5py_char_working(tmp_netcdf, name):
             raise
 
 
-def write_legacy_netcdf(tmp_netcdf, write_module, format="NETCDF4"):
+def write_legacy_netcdf(tmp_netcdf, write_module, format="NETCDF4", unlimited_size=1):
     ds = write_module.Dataset(tmp_netcdf, mode="w", format=format)
     intf = np.int64 if ds.data_model == "NETCDF4" else np.int32
 
@@ -129,7 +129,8 @@ def write_legacy_netcdf(tmp_netcdf, write_module, format="NETCDF4"):
     v[...] = 2
 
     v = ds.createVariable("foo_unlimited", float, ("x", "unlimited"))
-    v[...] = 1
+    if unlimited_size:
+        v[:, :unlimited_size] = 1
 
     with raises(
         (h5netcdf.CompatibilityError, TypeError),
@@ -165,7 +166,7 @@ def write_legacy_netcdf(tmp_netcdf, write_module, format="NETCDF4"):
     ds.close()
 
 
-def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
+def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4", unlimited_size=0):
     ds = h5netcdf.File(tmp_netcdf, mode="w", format=format)
     intf = np.int64 if ds.data_model == "NETCDF4" else np.int32
     ds.attrs["global"] = intf(42)
@@ -211,7 +212,10 @@ def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
     v = ds.create_variable("intscalar", data=intf(2))
 
     v = ds.create_variable("foo_unlimited", ("x", "unlimited"), float)
-    v[...] = 1
+    # Leave the empty case intentional; the new API does not resize on write.
+    if unlimited_size:
+        ds.resize_dimension("unlimited", unlimited_size)
+        v[...] = 1
 
     with raises((h5netcdf.CompatibilityError, TypeError)):
         ds.create_variable("boolean", data=True)
@@ -246,7 +250,9 @@ def write_h5netcdf(tmp_netcdf, compression="gzip", format="NETCDF4"):
     ds.close()
 
 
-def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend="h5py"):
+def read_legacy_netcdf(
+    tmp_netcdf, read_module, write_module, backend="h5py", unlimited_size=None
+):
     if read_module is legacyapi:
         ds = read_module.Dataset(tmp_netcdf, "r", backend=backend)
         assert backend == ds.backend
@@ -287,6 +293,14 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend="h5py"):
     else:
         assert set(ds.dimensions) == dimensions
         assert set(ds.variables) == variables
+
+    if unlimited_size is None:
+        unlimited_size = 0 if write_module is h5netcdf else 1
+    v = ds.variables["foo_unlimited"]
+    assert v.dimensions == ("x", "unlimited")
+    assert v.shape == (4, unlimited_size)
+    assert ds.dimensions["unlimited"].isunlimited()
+    np.testing.assert_array_equal(v[...], np.ones((4, unlimited_size)))
 
     if ds.data_model == "NETCDF4":
         assert set(ds.enumtypes) == {"enum_t"}
@@ -383,7 +397,9 @@ def read_legacy_netcdf(tmp_netcdf, read_module, write_module, backend="h5py"):
     ds.close()
 
 
-def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py"):
+def read_h5netcdf(
+    tmp_netcdf, write_module, decode_vlen_strings, backend="h5py", unlimited_size=None
+):
     remote_file = isinstance(tmp_netcdf, str) and tmp_netcdf.startswith(remote_h5)
     ds = h5netcdf.File(tmp_netcdf, "r", **decode_vlen_strings, backend=backend)
     intf = np.int64 if ds.data_model == "NETCDF4" else np.int32
@@ -422,6 +438,14 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py")
         assert set(ds.variables) == variables - {"enum_var", "var_len_str"}
 
     assert set(ds.variables) == variables
+
+    if unlimited_size is None:
+        unlimited_size = 0 if write_module is h5netcdf else 1
+    v = ds["foo_unlimited"]
+    assert v.dimensions == ("x", "unlimited")
+    assert v.shape == (4, unlimited_size)
+    assert ds.dimensions["unlimited"].isunlimited()
+    np.testing.assert_array_equal(v[...], np.ones((4, unlimited_size)))
 
     assert ds.parent is None
 
@@ -515,7 +539,10 @@ def read_h5netcdf(tmp_netcdf, write_module, decode_vlen_strings, backend="h5py")
     ds.close()
 
 
-def test_roundtrip_local(tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkeypatch):
+@pytest.mark.parametrize("unlimited_size", [0, 3], ids=["empty", "populated"])
+def test_roundtrip_local(
+    tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkeypatch, unlimited_size
+):
     # test matrix is created in conftest.py from available modules
     wmod = pytest.importorskip(wmod, reason=f"requires {wmod}")
     rmod = pytest.importorskip(rmod, reason=f"requires {rmod}")
@@ -523,15 +550,23 @@ def test_roundtrip_local(tmp_local_netcdf, wmod, rmod, bmod, decode_vlen, monkey
         _ = pytest.importorskip(bmod, reason=f"requires {bmod}")
 
     if wmod.__name__ in ["netCDF4", "h5netcdf.legacyapi"]:
-        write_legacy_netcdf(tmp_local_netcdf, wmod)
+        write_legacy_netcdf(tmp_local_netcdf, wmod, unlimited_size=unlimited_size)
     else:
-        write_h5netcdf(tmp_local_netcdf)
+        write_h5netcdf(tmp_local_netcdf, unlimited_size=unlimited_size)
     if bmod == "pyfive":
         monkeypatch.setenv("PYFIVE_UNSUPPORTED_FEATURE", "warn")
     if rmod.__name__ in ["netCDF4", "h5netcdf.legacyapi"]:
-        read_legacy_netcdf(tmp_local_netcdf, rmod, wmod, backend=bmod)
+        read_legacy_netcdf(
+            tmp_local_netcdf, rmod, wmod, backend=bmod, unlimited_size=unlimited_size
+        )
     else:
-        read_h5netcdf(tmp_local_netcdf, wmod, decode_vlen, backend=bmod)
+        read_h5netcdf(
+            tmp_local_netcdf,
+            wmod,
+            decode_vlen,
+            backend=bmod,
+            unlimited_size=unlimited_size,
+        )
 
 
 @requires_h5pyd
