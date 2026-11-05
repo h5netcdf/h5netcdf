@@ -1,6 +1,11 @@
 Change Log
 ----------
 
+Unreleased:
+
+- Add ``Group.create_virtual_variable`` for explicit h5py virtual layouts with
+  fixed dimensions and numeric dtypes, including virtual coordinates (:issue:`299`).
+
 Version 1.8.2 (October 27th, 2026):
 
 - Fix negative indexing of partially written variables to use the full shared dimension, including unwritten fill values (:pull:`329`) by `Anton Soloviev <https://github.com/antonsoo>`_
