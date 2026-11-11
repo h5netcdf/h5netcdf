@@ -686,7 +686,7 @@ def test_reference_attributes(
     location,
 ):
     # Regression test for reading HDF5 object and region reference attributes
-    # checks the returned shape and that references retain their type and 
+    # checks the returned shape and that references retain their type and
     # resolve to the expected target.
     # https://github.com/h5netcdf/h5netcdf/issues/203
     import h5py
@@ -2156,7 +2156,6 @@ def test_legacyapi_explicit_dtype_endian(
 def test_netcdf4_explicit_dtype_endian(
     tmp_local_netcdf, netcdf_write_module, netcdf_read_module, datatype, endian
 ):
-
     values = np.array([1, -2, 3, 4], dtype=datatype)
     with netcdf_write_module.Dataset(tmp_local_netcdf, "w") as ds:
         ds.createDimension("x", len(values))
