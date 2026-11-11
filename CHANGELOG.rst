@@ -3,7 +3,7 @@ Change Log
 
 Development Version (unreleased):
 
-- FIX HDF 1.10 compatibility CI run, which broke with ubuntu-26.04, pin Cython to 0.29.37 (:pull:`336`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- FIX HDF 1.10 compatibility CI run, which broke with ubuntu-26.04, pin Cython to 3.0 (:pull:`336`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.8.2 (October 27th, 2026):
 
