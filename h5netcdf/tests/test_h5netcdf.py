@@ -685,6 +685,10 @@ def test_reference_attributes(
     expected_shape,
     location,
 ):
+    # Regression test for reading HDF5 object and region reference attributes
+    # checks the returned shape and that references retain their type and 
+    # resolve to the expected target.
+    # https://github.com/h5netcdf/h5netcdf/issues/203
     import h5py
 
     if local_backend == "pyfive" and reference_kind == "region":
@@ -727,6 +731,10 @@ def test_reference_attributes(
 
 @requires_h5py
 def test_ragged_vlen_numeric_attributes(tmp_local_netcdf, local_backend):
+    # Regression test for attrs.py: __getitem__ should only unwrap single-item
+    # ndarrays/lists. A ragged vlen attribute with multiple arrays must remain a
+    # collection, with each array's values preserved.
+    # Related issue: https://github.com/h5netcdf/h5netcdf/issues/203
     import h5py
 
     values = [np.arange(2), np.arange(3)]
@@ -744,6 +752,9 @@ def test_ragged_vlen_numeric_attributes(tmp_local_netcdf, local_backend):
 
 @requires_h5py
 def test_hidden_reference_attributes(tmp_local_netcdf, local_backend):
+    # Ensure HDF5 reference attributes used internally by h5netcdf remain hidden
+    # from the public attrs API, including lookup, iteration, and dict conversion.
+    # https://github.com/h5netcdf/h5netcdf/issues/203
     import h5py
 
     from h5netcdf.attrs import _HIDDEN_ATTRS
