@@ -263,7 +263,8 @@ in the ``h5netcdf.File`` constructor to opt-in to automatic decoding.
 
 .. _new behavior: https://docs.h5py.org/en/stable/strings.html
 
-.. rubric:: String attributes with incorrect encoding
+String attributes with incorrect encoding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some files contain string attributes whose declared encoding does not match
 their bytes. For example, UTF-8 bytes may be stored in a fixed-length attribute
