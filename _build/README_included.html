@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>h5netcdf &#8212; h5netcdf - 1.8.2</title>
+    <title>h5netcdf &#8212; h5netcdf - 1.8.3</title>
   
   
   
@@ -39,7 +39,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
-    <script src="../_static/documentation_options.js?v=de5c7ae1"></script>
+    <script src="../_static/documentation_options.js?v=65a0f8fc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
@@ -177,7 +177,7 @@
   
   
   
-    <p class="title logo__title">h5netcdf - 1.8.2</p>
+    <p class="title logo__title">h5netcdf - 1.8.3</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -449,6 +449,7 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyfive-support">Pyfive support</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#invalid-netcdf-files">Invalid netCDF files</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#decoding-variable-length-strings">Decoding variable length strings</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#string-attributes-with-incorrect-encoding">String attributes with incorrect encoding</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#datasets-with-missing-dimension-scales">Datasets with missing dimension scales</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#track-order">Track Order</a></li>
 </ul>
@@ -696,6 +697,26 @@ and automatically decodes strings.</p>
 <p>The new API matches h5py behavior. Explicitly set <code class="docutils literal notranslate"><span class="pre">decode_vlen_strings=True</span></code>
 in the <code class="docutils literal notranslate"><span class="pre">h5netcdf.File</span></code> constructor to opt-in to automatic decoding.</p>
 </section>
+<section id="string-attributes-with-incorrect-encoding">
+<h3>String attributes with incorrect encoding<a class="headerlink" href="#string-attributes-with-incorrect-encoding" title="Link to this heading">#</a></h3>
+<p>Some files contain string attributes whose declared encoding does not match
+their bytes. For example, UTF-8 bytes may be stored in a fixed-length attribute
+marked as ASCII. h5netcdf decodes attributes using the declared encoding and
+<code class="docutils literal notranslate"><span class="pre">surrogateescape</span></code>, preserving undecodable bytes as surrogate characters.</p>
+<p>If you know that such an attribute actually contains UTF-8 bytes, recover the
+original bytes before decoding them with the correct encoding:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">h5netcdf</span>
+
+<span class="k">with</span> <span class="n">h5netcdf</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="s2">"mydata.nc"</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"platform_name"</span><span class="p">]</span>
+    <span class="n">recovered</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"surrogateescape"</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Apply this only when the declared and actual encodings are known; it is not an
+encoding detector or a general conversion for correctly decoded attributes.
+The recovery does not modify the file. Where possible, ask the data provider to
+correct the attribute’s encoding metadata.</p>
+</section>
 <section id="datasets-with-missing-dimension-scales">
 <span id="phony-dims"></span><h3>Datasets with missing dimension scales<a class="headerlink" href="#datasets-with-missing-dimension-scales" title="Link to this heading">#</a></h3>
 <p>By default <a class="footnote-reference brackets" href="#id5" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> h5netcdf raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> if variables with no dimension
@@ -797,6 +818,7 @@ parameter is set to <code class="docutils literal notranslate"><span class="pre"
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyfive-support">Pyfive support</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#invalid-netcdf-files">Invalid netCDF files</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#decoding-variable-length-strings">Decoding variable length strings</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#string-attributes-with-incorrect-encoding">String attributes with incorrect encoding</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#datasets-with-missing-dimension-scales">Datasets with missing dimension scales</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#track-order">Track Order</a></li>
 </ul>
