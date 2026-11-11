@@ -1,10 +1,11 @@
 Change Log
 ----------
 
-Development Version (unreleased):
+Version 1.8.3 (November 11th, 2026):
 
-- FIX HDF 1.10 compatibility CI run, which broke with ubuntu-26.04, use GCC 13 in CI (:pull:`336`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Fix HDF 1.10 compatibility CI run, which broke with ubuntu-26.04, use GCC 13 in CI (:pull:`336`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Fix reading scalar HDF5 object and region reference attributes (:issue:`203`), (:pull:`327`) by `loaff123 <https://github.com/loaff123>`_
+- MNT: use hashes for actions in CI, change to PyPI trusted publishing (:pull:`337`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.8.2 (October 27th, 2026):
 
