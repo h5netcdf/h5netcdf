@@ -134,6 +134,12 @@ def decode_vlen_strings(request):
     return dict(decode_vlen_strings=request.param)
 
 
+@pytest.fixture(params=["netCDF4", "h5netcdf.legacyapi", "h5netcdf"])
+def netcdf_read_module(request):
+    mod = request.param
+    return pytest.importorskip(mod, reason=f"requires {mod}")
+
+
 @pytest.fixture(params=["netCDF4", "h5netcdf.legacyapi"])
 def netcdf_write_module(request):
     mod = request.param

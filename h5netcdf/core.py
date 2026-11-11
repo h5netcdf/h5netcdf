@@ -644,12 +644,16 @@ class BaseVariable(BaseObject):
                 # Return the maximum index for ndarray, list, slice, or int,
                 # handling empty arrays/lists safely
                 if isinstance(k, np.ndarray):
-                    if k.size == 0:
+                    if k.size == 0 or k.min() < 0:
                         return None
                     return k.max() + 1
                 elif isinstance(k, list):
-                    return max(k) + 1 if k else None
+                    return max(k) + 1 if k and min(k) >= 0 else None
                 elif isinstance(k, slice):
+                    # Negative bounds refer to the full netCDF dimension, not
+                    # the potentially shorter HDF5 dataset or partial padding.
+                    if any(v is not None and v < 0 for v in (k.start, k.stop)):
+                        return None
                     return k.stop
                 elif isinstance(k, int):
                     return k + 1

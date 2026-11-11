@@ -1985,6 +1985,41 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
         assert f.variables["dummy4"]._h5ds.shape == (0, 3)
 
 
+@requires_netCDF4
+@requires_h5py
+@pytest.mark.parametrize("api", [h5netcdf.File, legacyapi.Dataset])
+@pytest.mark.parametrize(
+    "key",
+    [
+        -1,
+        -2,
+        slice(None, -1),
+        slice(-2, 4),
+        slice(-5, -1),
+        [-2, -1],
+        np.array([-2, -1]),
+        slice(None, 2),
+    ],
+)
+def test_negative_indexing_of_padded_variables(tmp_local_netcdf, api, key):
+    """Negative indices use the shared dimension, including its unwritten tail."""
+    import netCDF4
+
+    with netCDF4.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("time", None)
+        ds.createVariable("time", "i8", ("time",))[:] = np.arange(6)
+        variable = ds.createVariable("sensor", "f8", ("time",), fill_value=-999)
+        variable[:3] = [11, 12, 13]
+
+    with netCDF4.Dataset(tmp_local_netcdf) as ds:
+        ds.set_auto_mask(False)
+        expected = ds["sensor"][key]
+
+    with api(tmp_local_netcdf, backend="h5py") as ds:
+        assert ds["sensor"].shape == (6,)
+        np.testing.assert_array_equal(ds["sensor"][key], expected)
+
+
 # https://github.com/h5netcdf/h5netcdf/issues/136
 @requires_h5py_ge_3_7_0
 @requires_netCDF4
@@ -2084,6 +2119,48 @@ def test_group_names(tmp_local_netcdf, local_backend):
         for i in range(10):
             name = "/".join([name, f"group{i:02d}"])
             assert ds[name].name == name
+
+
+@pytest.mark.parametrize("datatype", [">i2", "<i2", ">f4", "<f4", ">f8", "<f8"])
+@pytest.mark.parametrize("endian", ["native", "little", "big"])
+def test_legacyapi_explicit_dtype_endian(
+    write_backend, read_backend, tmp_backend_netcdf, datatype, endian
+):
+    values = np.array([1, -2, 3, 4], dtype=datatype)
+    with legacyapi.Dataset(tmp_backend_netcdf, "w", backend=write_backend) as ds:
+        ds.createDimension("x", len(values))
+        variable = ds.createVariable("values", values.dtype, ("x",), endian=endian)
+        variable[:] = values
+
+    order = {"native": "=", "little": "<", "big": ">"}[endian]
+    expected_dtype = np.dtype(order + datatype[1:])
+    h5 = get_backend_module(read_backend)
+    with h5.File(tmp_backend_netcdf, "r") as ds:
+        assert ds["values"].dtype == expected_dtype
+        np.testing.assert_array_equal(ds["values"][:], values)
+
+
+@pytest.mark.parametrize("datatype", [">i2", "<i2", ">f4", "<f4", ">f8", "<f8"])
+@pytest.mark.parametrize("endian", ["native", "little", "big"])
+def test_netcdf4_explicit_dtype_endian(
+    tmp_local_netcdf, netcdf_write_module, netcdf_read_module, datatype, endian
+):
+
+    values = np.array([1, -2, 3, 4], dtype=datatype)
+    with netcdf_write_module.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("x", len(values))
+        variable = ds.createVariable("values", values.dtype, ("x",), endian=endian)
+        variable[:] = values
+
+    order = {"native": "=", "little": "<", "big": ">"}[endian]
+    expected_dtype = np.dtype(order + datatype[1:])
+
+    reader = netcdf_read_module
+    open_dataset = getattr(reader, "Dataset", None) or reader.File
+
+    with open_dataset(tmp_local_netcdf, "r") as ds:
+        assert ds["values"].dtype == expected_dtype
+        np.testing.assert_array_equal(ds["values"][:], values)
 
 
 def test_legacyapi_endianess(write_backend, read_backend, tmp_backend_netcdf):
