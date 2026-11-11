@@ -1552,6 +1552,181 @@ class Group(Mapping):
             **kwargs,
         )
 
+    def create_virtual_variable(self, name, dimensions, layout, fillvalue=None):
+        """Create a variable from an explicit HDF5 virtual layout.
+
+        Parameters
+        ----------
+        name : str
+            Variable name, optionally relative to an existing group. A leading
+            slash selects the root group. Intermediate groups must already exist.
+        dimensions : tuple of str
+            Existing, fixed-size dimensions, in the same order as ``layout.shape``.
+        layout : h5py.VirtualLayout
+            Mapping of source datasets into the variable. The layout must have a
+            fixed shape and a primitive integer or floating-point dtype supported
+            by netCDF4. Sources are not opened or inspected by this method.
+        fillvalue : int or float, optional
+            Value for unmapped regions or missing sources. If provided, also sets
+            the netCDF ``_FillValue`` attribute. Otherwise HDF5 uses zero.
+
+        Returns
+        -------
+        h5netcdf.Variable
+            Variable with dimension scales and netCDF coordinate metadata.
+
+        Notes
+        -----
+        Only the ``h5py`` backend supports creation of virtual variables.
+        Coordinates, attributes, groups and source mappings are specified by the
+        caller; they are not inferred or copied from source files. A one-dimensional
+        virtual coordinate may replace its local dimension's dummy scale.
+        Unlimited dimensions, resizable layouts, unlimited mapping selections and
+        user-defined dtypes are not supported. See :ref:`creating virtual variables`
+        for a complete example.
+
+        A virtual variable stores mappings, not source data. Keep the source files
+        available. Writing a mapped region of a writable virtual variable can
+        modify the corresponding source file.
+        """
+        if self._root._backend != "h5py":
+            raise NotImplementedError(
+                "creating virtual variables requires the h5py backend"
+            )
+        if not self._root._writable:
+            raise RuntimeError("H5NetCDF: Write to read only")
+        if not isinstance(layout, h5py.VirtualLayout):
+            raise TypeError("layout must be an h5py.VirtualLayout")
+        if not isinstance(name, str) or not name or not name.split("/")[-1]:
+            raise ValueError("name must be a non-empty variable name")
+
+        # Resolve paths without creating intermediate objects on failure.
+        group = self._root if name.startswith("/") else self
+        keys = name.lstrip("/").split("/")
+        for key in keys[:-1]:
+            group = group.groups[key]
+        name = keys[-1]
+        if name in group:
+            raise ValueError(
+                f"unable to create variable {name!r} (name already exists)"
+            )
+
+        dimensions = tuple(dimensions)
+        dims = [group._all_dimensions[d] for d in dimensions]
+        shape = tuple(dim.size for dim in dims)
+        if any(dim.isunlimited() for dim in dims):
+            raise ValueError("virtual variables require fixed-size dimensions")
+        if tuple(layout.shape) != shape:
+            raise ValueError("layout shape must match the specified dimensions")
+        if layout.maxshape is not None and tuple(layout.maxshape) != shape:
+            raise ValueError("virtual variables require a fixed-size layout")
+        if self._root._format == "NETCDF4_CLASSIC" and not dimensions:
+            raise CompatibilityError(
+                "NETCDF4_CLASSIC format does not allow variables without dimensions."
+            )
+
+        dtype = np.dtype(layout.dtype)
+        if (
+            dtype.metadata
+            or dtype.kind not in "iuf"
+            or (dtype.kind in "iu" and dtype.itemsize not in (1, 2, 4, 8))
+            or (dtype.kind == "f" and dtype.itemsize not in (4, 8))
+        ):
+            raise TypeError(
+                "virtual variables require a primitive netCDF numeric dtype"
+            )
+        _check_dtype(group, dtype.newbyteorder("="))
+        if fillvalue is not None and np.ndim(fillvalue) != 0:
+            raise ValueError("fillvalue must be a scalar")
+        fillvalue, h5fillvalue = _check_fillvalue(group, fillvalue, dtype)
+        # h5py can retain an earlier fill value when the same layout is reused.
+        # Keep the new API's default of zero independent of prior creations.
+        if h5fillvalue is None:
+            h5fillvalue = dtype.type(0)
+
+        coordinate = name in dimensions
+        if coordinate and name in group._all_dimensions:
+            if name not in group._dimensions or dimensions != (name,):
+                raise ValueError(
+                    "virtual coordinates require a single local dimension of the same name"
+                )
+        h5name = (
+            "_nc4_non_coord_" + name
+            if name in group._dimensions and not coordinate
+            else name
+        )
+        if h5name in group._h5group and not coordinate:
+            raise ValueError(
+                f"unable to create variable {name!r} (name already exists)"
+            )
+
+        # Validate HDF5 creation before detaching or replacing any dimension scale.
+        # An anonymous dataset is reclaimed if creation or later setup fails.
+        staged = group._h5group.create_virtual_dataset(
+            None, layout, fillvalue=h5fillvalue
+        )
+        # A layout with maxshape=None may still contain unlimited selections.
+        # Source growth would then exceed a fixed netCDF dimension at read time.
+        dcpl = staged.id.get_create_plist()
+        # Older h5py versions use a contiguous placeholder for an empty layout.
+        mappings = (
+            dcpl.get_virtual_count() if dcpl.get_layout() == h5py.h5d.VIRTUAL else 0
+        )
+        for index in range(mappings):
+            for space in (
+                dcpl.get_virtual_vspace(index),
+                dcpl.get_virtual_srcspace(index),
+            ):
+                if (
+                    space.get_select_type() == h5py.h5s.SEL_HYPERSLABS
+                    and space.is_regular_hyperslab()
+                ):
+                    _, _, count, block = space.get_regular_hyperslab()
+                    if h5py.h5s.UNLIMITED in count + block:
+                        raise ValueError(
+                            "virtual variables do not support unlimited mapping selections"
+                        )
+        old_scale = group._h5group[name] if coordinate else None
+        refs = list(old_scale.attrs.get("REFERENCE_LIST", [])) if coordinate else []
+        dimid = group._dimensions[name]._dimid if coordinate else None
+        try:
+            if coordinate:
+                group._dimensions[name]._detach_scale()
+                del group._h5group[name]
+            group._h5group[h5name] = staged
+            variable = group._variable_cls(group, h5name, dimensions)
+            group._variables[h5name] = variable
+            if coordinate:
+                group._dimensions[name]._create_scale(dimid=dimid)
+                group._dimensions[name]._attach_scale(refs)
+            else:
+                variable._attach_dim_scales()
+            variable._attach_coords()
+            variable._ensure_dim_id()
+            if fillvalue is not None:
+                variable._add_fillvalue(fillvalue)
+        except Exception:
+            # Inspect actual attachments: a helper may have failed midway through
+            # its loop. Only this new variable and its replaced dummy are undone.
+            for ref, axis in list(staged.attrs.get("REFERENCE_LIST", [])):
+                group._root._h5file[ref].dims[axis].detach_scale(staged)
+            if not coordinate:
+                for axis in staged.dims:
+                    for scale in list(axis.values()):
+                        axis.detach_scale(scale)
+            if h5name in group._h5group and group._h5group[h5name].id == staged.id:
+                del group._h5group[h5name]
+            group._variables._objects.pop(h5name, None)
+            if old_scale is not None:
+                if name not in group._h5group:
+                    group._h5group[name] = old_scale
+                for ref, axis in refs:
+                    target = group._root._h5file[ref]
+                    if not h5py.h5ds.is_attached(target.id, old_scale.id, axis):
+                        target.dims[axis].attach_scale(old_scale)
+            raise
+        return variable
+
     def _get_child(self, key):
         try:
             return self.variables[key]

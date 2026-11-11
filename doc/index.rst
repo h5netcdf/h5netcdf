@@ -20,6 +20,7 @@ h5netcdf: A Python interface for the netCDF4 file-format based on h5py
 
    Overview <self>
    Feature comparison <feature>
+   Virtual variables <virtual>
    New API Reference <api>
    Legacy API Reference <legacyapi>
 
