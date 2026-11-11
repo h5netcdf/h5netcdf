@@ -144,11 +144,6 @@ def _parse_backend(path, mode, backend, **kwargs):
             "'pyfive', 'h5py', 'h5pyd'"
         )
 
-    if driver == "h5pyd" and backend not in ["pyfive", "h5py"]:
-        msg = "Specifying driver='h5pyd' is deprecated, please use backend='h5pyd' instead."
-        warnings.warn(msg, DeprecationWarning)
-        backend, driver = "h5pyd", None
-
     if driver is not None:
         if backend not in [None, "h5py"]:
             msg = f"driver={driver!r} only works with 'h5py' backend, but given backend={backend}."
@@ -649,12 +644,16 @@ class BaseVariable(BaseObject):
                 # Return the maximum index for ndarray, list, slice, or int,
                 # handling empty arrays/lists safely
                 if isinstance(k, np.ndarray):
-                    if k.size == 0:
+                    if k.size == 0 or k.min() < 0:
                         return None
                     return k.max() + 1
                 elif isinstance(k, list):
-                    return max(k) + 1 if k else None
+                    return max(k) + 1 if k and min(k) >= 0 else None
                 elif isinstance(k, slice):
+                    # Negative bounds refer to the full netCDF dimension, not
+                    # the potentially shorter HDF5 dataset or partial padding.
+                    if any(v is not None and v < 0 for v in (k.start, k.stop)):
+                        return None
                     return k.stop
                 elif isinstance(k, int):
                     return k + 1
@@ -902,7 +901,11 @@ class _LazyObjectLookup(Mapping):
 
 
 def _netcdf_dimension_but_not_variable(h5py_dataset):
-    return NOT_A_VARIABLE in h5py_dataset.attrs.get("NAME", b"")
+    name = h5py_dataset.attrs.get("NAME", b"")
+    # h5pyd returns str instead of bytes
+    if isinstance(name, str):
+        name = name.encode("ascii")
+    return NOT_A_VARIABLE in name
 
 
 def _unlabeled_dimension_mix(h5py_dataset):
@@ -1214,7 +1217,8 @@ class Group(Mapping):
     @property
     def _track_order(self):
         if self._root._backend == "h5pyd":
-            return self._h5group.track_order
+            # track_order is True when create_order is set
+            return bool(self._h5group.id.create_order)
 
         # TODO: make a suggestion to upstream to create a property
         # for files to get if they track the order
@@ -1749,11 +1753,11 @@ class Group(Mapping):
         return cmptype
 
 
-def _open_pyfive(path, mode):
+def _open_pyfive(path, mode, **kwargs):
     import pyfive
 
     try:
-        h5file = pyfive.File(path, mode)
+        h5file = pyfive.File(path, mode, **kwargs)
     except Exception:
         raise
     else:
@@ -1761,32 +1765,12 @@ def _open_pyfive(path, mode):
 
 
 def _open_h5pyd(path, mode, **kwargs):
-    original_mode = mode
     if mode != "r":
         kwargs.setdefault("track_order", _get_track_order("h5pyd"))
     if mode == "a":
-        mode = "r+"  # probe for existing before creating
-    try:
-        h5file = h5pyd.File(path, mode, **kwargs)
-    except OSError:
-        if original_mode == "a":
-            msg = (
-                "Append mode for h5pyd now probes with 'r+' first and "
-                "only falls back to 'w' if the file is missing.\n"
-                "To silence this warning use 'r+' (open-existing) or 'w' "
-                "(create-new) directly."
-            )
-            warnings.warn(msg, UserWarning, stacklevel=2)
-
-            try:
-                h5file = h5pyd.File(path, "w", **kwargs)
-            except Exception:
-                raise
-            else:
-                return h5file, False
-        raise
-    else:
-        return h5file, (mode != "w")
+        mode = "r+"
+    h5file = h5pyd.File(path, mode, **kwargs)
+    return h5file, (mode != "w")
 
 
 def _open_h5py(path, mode, **kwargs):
@@ -1896,7 +1880,14 @@ class File(Group):
                     os.environ.get("PYFIVE_UNSUPPORTED_FEATURE", "error"),
                 )
                 self._h5py = pyfive
-                self.__h5file = _open_pyfive(path, mode)
+                # from version 1.2.0 behaviour switched
+                # set decoding_strings = True explicitly
+                if version.parse(pyfive.__version__) >= version.parse("1.2.0"):
+                    self.decode_vlen_strings = (
+                        None if "legacy" in self._cls_name else True
+                    )
+                    kwargs = dict(decode_strings=True)
+                self.__h5file = _open_pyfive(path, mode, **kwargs)
             elif self.backend == "h5pyd":
                 self._h5py = h5pyd
                 self.__h5file, self._preexisting_file = _open_h5pyd(

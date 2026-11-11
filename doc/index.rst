@@ -53,9 +53,8 @@ The library evolved constantly over the years (fixing bugs and adding enhancemen
 and gained contributions from 25 :ref:`contributors` so far. The library is widely used,
 especially as backend within `xarray`_.
 
-Early 2020 Kai Mühlbauer started to add contributions and after some time he volunteered
-to help in maintaining ``h5netcdf``. Two years later in January 2022 Stephan handed the
-project-lead over to Kai. ``h5netcdf`` version 1.0 was released on 31st of March 2022.
+In 2020 Kai Mühlbauer started to add contributions and after some time he volunteered
+to help in maintaining ``h5netcdf``. In January 2022, maintainership transitioned from Stephan to Kai, followed by the release of h5netcdf 1.0 on March 31, 2022.
 
 .. _netCDF4 file-format: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html#netcdf_4_spec
 .. _h5py: https://www.h5py.org/

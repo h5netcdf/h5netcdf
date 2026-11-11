@@ -263,6 +263,30 @@ in the ``h5netcdf.File`` constructor to opt-in to automatic decoding.
 
 .. _new behavior: https://docs.h5py.org/en/stable/strings.html
 
+String attributes with incorrect encoding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some files contain string attributes whose declared encoding does not match
+their bytes. For example, UTF-8 bytes may be stored in a fixed-length attribute
+marked as ASCII. h5netcdf decodes attributes using the declared encoding and
+``surrogateescape``, preserving undecodable bytes as surrogate characters.
+
+If you know that such an attribute actually contains UTF-8 bytes, recover the
+original bytes before decoding them with the correct encoding:
+
+.. code-block:: python
+
+    import h5netcdf
+
+    with h5netcdf.File("mydata.nc", "r") as f:
+        value = f.attrs["platform_name"]
+        recovered = value.encode("ascii", errors="surrogateescape").decode("utf-8")
+
+Apply this only when the declared and actual encodings are known; it is not an
+encoding detector or a general conversion for correctly decoded attributes.
+The recovery does not modify the file. Where possible, ask the data provider to
+correct the attribute's encoding metadata.
+
 .. _phony dims:
 
 Datasets with missing dimension scales

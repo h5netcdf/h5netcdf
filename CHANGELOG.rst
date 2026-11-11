@@ -3,10 +3,20 @@ Change Log
 
 Development Version (unreleased):
 
+- FIX HDF 1.10 compatibility CI run, which broke with ubuntu-26.04, use GCC 13 in CI (:pull:`336`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Fix reading scalar HDF5 object and region reference attributes (:issue:`203`), (:pull:`327`) by `loaff123 <https://github.com/loaff123>`_
+
+Version 1.8.2 (October 27th, 2026):
+
+- Fix negative indexing of partially written variables to use the full shared dimension, including unwritten fill values (:pull:`329`) by `Anton Soloviev <https://github.com/antonsoo>`_
 - Fix CI issues with xarray nightly tests (add pytz dependency) and h5pyd tests (pin setuptools=81) (:issue:`312`, :pull:`313`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - FIX CI wrt setup-micromamba v3, update ros3 tests to work with HDF v2 (:pull:`316`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Use netcdf4 instead of netCDF4 for conda-based installations (:pull:`318`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 - Add HDF5 V2.2 tests to CI test matrix (:pull:`323`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Update h5pyd>=1.0.0, hsds>=1.0.0, fix code and tests, xfail remaining h5pyd/hsds tests with issues reported to h5pyd, update CI (:pull:`328`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Update pyfive>=1.2.0, pin pyfive>=1.3.0 in CI, remove pyfive from numpy 1 CI runs, use `decode_strings=True` (:pull:`331`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Honor the requested byte order in legacy ``createVariable`` when the NumPy dtype already specifies a byte order (:pull:`330`) by `Anton Soloviev <https://github.com/antonsoo>`_
+- Update contributors, add AI disclosure, condense project history (:pull:`332`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
 
 Version 1.8.1 (January 23rd, 2026):
 

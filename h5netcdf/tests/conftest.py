@@ -134,6 +134,12 @@ def decode_vlen_strings(request):
     return dict(decode_vlen_strings=request.param)
 
 
+@pytest.fixture(params=["netCDF4", "h5netcdf.legacyapi", "h5netcdf"])
+def netcdf_read_module(request):
+    mod = request.param
+    return pytest.importorskip(mod, reason=f"requires {mod}")
+
+
 @pytest.fixture(params=["netCDF4", "h5netcdf.legacyapi"])
 def netcdf_write_module(request):
     mod = request.param
@@ -242,12 +248,7 @@ def pytest_generate_tests(metafunc):
                 ids.append(f"{wmod}->{rmod}::no-backend")
             else:
                 for backend in backends:
-                    # decode_vlen True/False only for h5netcdf reads, others False
-                    decode_values = (
-                        [True, False]
-                        if rmod == "h5netcdf" and backend == "h5py"
-                        else [False]
-                    )
+                    decode_values = [True, False]
                     for dec in decode_values:
                         cases.append(
                             (
