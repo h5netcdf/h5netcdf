@@ -696,6 +696,118 @@ def test_attrs_api(write_backend, read_backend, tmp_backend_netcdf):
         assert sorted(ds["x"].attrs) == ["foo", "units"]
 
 
+@requires_h5py
+@pytest.mark.parametrize("reference_kind", ["object", "region"])
+@pytest.mark.parametrize("null", [False, True])
+@pytest.mark.parametrize(
+    "shape, expected_shape",
+    [
+        ((), ()),
+        ((0,), (0,)),
+        ((1,), ()),
+        ((2,), (2,)),
+        ((1, 2), (2,)),
+        ((2, 1), (2, 1)),
+    ],
+)
+@pytest.mark.parametrize("location", ["/", "target"])
+def test_reference_attributes(
+    tmp_local_netcdf,
+    local_backend,
+    reference_kind,
+    null,
+    shape,
+    expected_shape,
+    location,
+):
+    # Regression test for reading HDF5 object and region reference attributes
+    # checks the returned shape and that references retain their type and
+    # resolve to the expected target.
+    # https://github.com/h5netcdf/h5netcdf/issues/203
+    import h5py
+
+    if local_backend == "pyfive" and reference_kind == "region":
+        pytest.skip("pyfive does not support region references")
+
+    with h5py.File(tmp_local_netcdf, "w") as ds:
+        target = ds.create_dataset("target", data=np.arange(6))
+        if reference_kind == "object":
+            reference = h5py.Reference() if null else target.ref
+            dtype = h5py.ref_dtype
+        else:
+            reference = h5py.RegionReference() if null else target.regionref[1:4]
+            dtype = h5py.regionref_dtype
+        value = np.full(shape, reference, dtype=dtype) if shape else reference
+        ds[location].attrs["reference"] = value
+
+    backend = get_backend_module(local_backend)
+    with (
+        h5netcdf.File(tmp_local_netcdf, "r", backend=local_backend) as ds,
+        backend.File(tmp_local_netcdf, "r") as raw,
+    ):
+        output = (ds if location == "/" else ds[location]).attrs["reference"]
+        assert np.shape(output) == expected_shape
+        if expected_shape:
+            expected_type = np.ndarray if local_backend == "h5py" else list
+            assert isinstance(output, expected_type)
+        else:
+            assert not isinstance(output, (np.ndarray, list))
+        original = np.asarray(raw[location].attrs["reference"])
+        for reference, expected in zip(np.asarray(output).flat, original.flat):
+            assert type(reference) is type(expected)
+            assert bool(reference) == bool(expected) == (not null)
+            if not null:
+                assert raw[reference].name == "/target"
+                if reference_kind == "region":
+                    np.testing.assert_array_equal(
+                        raw[reference][reference], np.arange(1, 4)
+                    )
+
+
+@requires_h5py
+def test_ragged_vlen_numeric_attributes(tmp_local_netcdf, local_backend):
+    # Regression test for attrs.py: __getitem__ should only unwrap single-item
+    # ndarrays/lists. A ragged vlen attribute with multiple arrays must remain a
+    # collection, with each array's values preserved.
+    # Related issue: https://github.com/h5netcdf/h5netcdf/issues/203
+    import h5py
+
+    values = [np.arange(2), np.arange(3)]
+    data = np.empty(2, dtype=h5py.vlen_dtype(np.dtype("int64")))
+    data[:] = values
+    with h5py.File(tmp_local_netcdf, "w") as ds:
+        ds.attrs["ragged"] = data
+
+    with h5netcdf.File(tmp_local_netcdf, "r", backend=local_backend) as ds:
+        output = ds.attrs["ragged"]
+        assert len(output) == len(values)
+        for actual, expected in zip(output, values):
+            np.testing.assert_array_equal(actual, expected)
+
+
+@requires_h5py
+def test_hidden_reference_attributes(tmp_local_netcdf, local_backend):
+    # Ensure HDF5 reference attributes used internally by h5netcdf remain hidden
+    # from the public attrs API, including lookup, iteration, and dict conversion.
+    # https://github.com/h5netcdf/h5netcdf/issues/203
+    import h5py
+
+    from h5netcdf.attrs import _HIDDEN_ATTRS
+
+    with h5py.File(tmp_local_netcdf, "w") as ds:
+        for name in _HIDDEN_ATTRS:
+            ds.attrs[name] = ds.ref
+        ds.attrs["visible"] = ds.ref
+
+    with h5netcdf.File(tmp_local_netcdf, "r", backend=local_backend) as ds:
+        assert list(ds.attrs) == ["visible"]
+        assert len(ds.attrs) == 1
+        assert list(dict(ds.attrs)) == ["visible"]
+        for name in _HIDDEN_ATTRS:
+            with raises(KeyError, match=name):
+                ds.attrs[name]
+
+
 def test_shape_is_tied_to_coordinate(tmp_local_or_remote_netcdf):
     with h5netcdf.legacyapi.Dataset(
         tmp_local_or_remote_netcdf,
@@ -2079,7 +2191,6 @@ def test_legacyapi_explicit_dtype_endian(
 def test_netcdf4_explicit_dtype_endian(
     tmp_local_netcdf, netcdf_write_module, netcdf_read_module, datatype, endian
 ):
-
     values = np.array([1, -2, 3, 4], dtype=datatype)
     with netcdf_write_module.Dataset(tmp_local_netcdf, "w") as ds:
         ds.createDimension("x", len(values))
