@@ -176,7 +176,6 @@ jobs:
           hdf5=${{ matrix.hdf5-version }}
           libnetcdf
           numpy=${{ matrix.numpy-version }}
-          cython=3.0
           gcc_linux-64=13
           gxx_linux-64=13
     - name: Install h5py
