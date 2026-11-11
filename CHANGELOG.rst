@@ -1,10 +1,12 @@
 Change Log
 ----------
 
-Unreleased:
+Development Version (unreleased):
 
 - Add ``Group.create_virtual_variable`` for explicit h5py virtual layouts with
   fixed dimensions and numeric dtypes, including virtual coordinates (:issue:`299`).
+- FIX HDF 1.10 compatibility CI run, which broke with ubuntu-26.04, use GCC 13 in CI (:pull:`336`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+- Fix reading scalar HDF5 object and region reference attributes (:issue:`203`), (:pull:`327`) by `loaff123 <https://github.com/loaff123>`_
 
 Version 1.8.2 (October 27th, 2026):
 
