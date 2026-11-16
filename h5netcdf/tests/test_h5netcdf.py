@@ -1946,6 +1946,8 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
         dummy4 = f.createVariable("dummy4", float, ("x", "y"))
 
         dummy1[:] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        # integer index with a keepdims-shaped value
+        dummy1[:, 0] = [[1], [4], [7]]
         dummy2[1, :] = [4, 5, 6]
         dummy3[0:2, :] = [[1, 2, 3], [4, 5, 6]]
 
@@ -2064,6 +2066,29 @@ def test_negative_indexing_of_padded_variables(tmp_local_netcdf, api, key):
     with api(tmp_local_netcdf, backend="h5py") as ds:
         assert ds["sensor"].shape == (6,)
         np.testing.assert_array_equal(ds["sensor"][key], expected)
+
+
+@requires_netCDF4
+@pytest.mark.parametrize("key", [-1, -2, slice(-3, -1), np.int64(-1)])
+def test_legacyapi_negative_index_write_unlimited(tmp_local_netcdf, key):
+    """Negative write indices count from the end of the shared dimension."""
+    import netCDF4
+
+    results = []
+    for module in [netCDF4, legacyapi]:
+        with module.Dataset(tmp_local_netcdf, "w") as ds:
+            ds.createDimension("time", None)
+            ds.createVariable("time", "i4", ("time",))[:5] = np.arange(5)
+            variable = ds.createVariable("sensor", "i4", ("time",), fill_value=-1)
+            variable[:3] = [1, 2, 3]
+            variable[key] = 9 if isinstance(key, slice) else [9]
+            if module is legacyapi:
+                with pytest.raises(IndexError):
+                    variable[-6] = 9
+        with netCDF4.Dataset(tmp_local_netcdf) as ds:
+            ds.set_auto_mask(False)
+            results.append(ds["sensor"][:])
+    np.testing.assert_array_equal(results[1], results[0])
 
 
 # https://github.com/h5netcdf/h5netcdf/issues/136
