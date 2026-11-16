@@ -3,7 +3,7 @@ Change Log
 
 Development Version (unreleased):
 
-- Fix legacy API writes with negative indices on unlimited dimensions, which were dropped or written to the wrong record (:issue:`340`) by `AryanRG <https://github.com/AryanRG>`_
+- Fix legacy API writes with negative indices on unlimited dimensions, which were dropped or written to the wrong record (:issue:`340`, :pull:`341`) by `AryanRG <https://github.com/AryanRG>`_
 
 Version 1.8.3 (November 11th, 2026):
 
