@@ -77,7 +77,7 @@ def _transform_1d_boolean_indexers(key):
     )
 
 
-def _expanded_indexer(key, ndim, shape=None):
+def _expanded_indexer(key, ndim, shape=None, allow_growth=False):
     """Expand indexing key to tuple with length equal the number of dimensions."""
     # ToDo: restructure this routine to gain more performance
     # short circuit, if we have only slice
@@ -116,15 +116,15 @@ def _expanded_indexer(key, ndim, shape=None):
 
     # convert remaining integer indices to slices, checking bounds if shape given
     sizes = (None,) * len(key) if shape is None else shape
-    return tuple(_int_to_slice(k, n) for k, n in zip(key, sizes))
+    return tuple(_int_to_slice(k, n, allow_growth) for k, n in zip(key, sizes))
 
 
-def _int_to_slice(k, size=None):
+def _int_to_slice(k, size=None, allow_growth=False):
     """Convert an integer index to the equivalent one-element slice."""
     if not isinstance(k, (int, np.integer)):
         return k
     k = int(k)
-    if size is not None and not -size <= k < size:
+    if size is not None and (k < -size or (k >= size and not allow_growth)):
         raise IndexError(f"index {k} is out of bounds for axis with size {size}")
     # slice(-1, 0) would be empty, so -1 needs an open stop
     return slice(k, None if k == -1 else k + 1)
@@ -499,19 +499,23 @@ class BaseVariable(BaseObject):
         """
         new_shape = ()
         v = np.asarray(value)
+        value_shape = (1,) * (self.ndim - v.ndim) + v.shape
         for i, dim in enumerate(self.dimensions):
             # is unlimited dimensions (check in all dimensions)
             if self._parent._all_dimensions[dim].isunlimited():
-                current_dim_size = len(self._parent._all_dimensions[dim])
                 if any(b is not None and b < 0 for b in (key[i].start, key[i].stop)):
                     # negative positions count from the end of the shared
                     # dimension, so extend the variable to the dimension size
                     new_max = max(
                         self._parent._all_dimensions[dim].size, self._h5ds.shape[i]
                     )
-                    # keep growing to fit full-length data written with [-n:]
-                    if key[i].stop is None and v.ndim == self.ndim:
-                        new_max = max(new_max, v.shape[i])
+                    # Negative slices cannot grow the shared dimension.
+                    selection_size = len(range(*key[i].indices(new_max)))
+                    if v.ndim <= self.ndim and value_shape[i] not in (
+                        1,
+                        selection_size,
+                    ):
+                        raise IndexError("shape of data does not conform to slice")
                 elif key[i].stop is None:
                     # if stop is None, get dimensions from value,
                     # they must match with variable dimension
@@ -531,15 +535,15 @@ class BaseVariable(BaseObject):
                         raise IndexError("shape of data does not conform to slice")
                 else:
                     new_max = max(key[i].stop, self._h5ds.shape[i])
-                # resize unlimited dimension if needed but no other variables
-                # this is in line with `netcdf4-python` which only resizes
-                # the dimension and this variable
-                # todo: check above assumptions with latest netcdf4-python/netcdf-c
-                if current_dim_size < new_max and self.name == dim:
-                    self._parent.resize_dimension(dim, new_max)
                 new_shape += (new_max,)
             else:
                 new_shape += (self._parent._all_dimensions[dim].size,)
+
+        # Validate every axis before growing a coordinate dimension.
+        # Other variables retain their stored sizes, as in netCDF4.
+        for dim, size in zip(self.dimensions, new_shape):
+            if self.name == dim and len(self._parent._all_dimensions[dim]) < size:
+                self._parent.resize_dimension(dim, size)
 
         # increase variable size if shape is changing
         if self._h5ds.shape != new_shape:
@@ -761,7 +765,7 @@ class BaseVariable(BaseObject):
         if isinstance(self._parent._root, Dataset):
             # resize on write only for legacyapi
             resize_key = _transform_1d_boolean_indexers(
-                _expanded_indexer(key, self.ndim)
+                _expanded_indexer(key, self.ndim, self.shape, allow_growth=True)
             )
             self._maybe_resize_dimensions(resize_key, value)
             # check integer indices against the resized shape
