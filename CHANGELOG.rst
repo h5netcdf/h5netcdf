@@ -1,6 +1,10 @@
 Change Log
 ----------
 
+Development Version (unreleased):
+
+- Fix legacy API writes with negative indices on unlimited dimensions, which were dropped or written to the wrong record (:issue:`340`, :pull:`341`) by `AryanRG <https://github.com/AryanRG>`_
+
 Version 1.8.3 (November 11th, 2026):
 
 - Fix HDF 1.10 compatibility CI run, which broke with ubuntu-26.04, use GCC 13 in CI (:pull:`336`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
