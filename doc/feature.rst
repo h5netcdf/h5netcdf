@@ -45,3 +45,14 @@ differences which are outlined in the following table.
 | track order         | |cross|                 | |check|        | File/Group       |
 |                     |                         |                | Dataset          |
 +---------------------+-------------------------+----------------+------------------+
+
+Numeric attributes read through h5py
+------------------------------------
+
+With the h5py backend, h5netcdf writes a numeric scalar attribute and a
+one-element numeric sequence as the same one-element array on disk. When
+reading the file through h5netcdf, both attributes come back as scalars.
+Reading them directly with h5py instead returns arrays with shape ``(1,)``.
+The stored attributes do not distinguish the original scalar and sequence.
+This matches how netCDF4-Python and netCDF-C handle one-element numeric
+attributes.
