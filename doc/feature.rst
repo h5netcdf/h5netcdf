@@ -54,3 +54,5 @@ one-element numeric sequence as the same one-element array on disk. When
 reading the file through h5netcdf, both attributes come back as scalars.
 Reading them directly with h5py instead returns arrays with shape ``(1,)``.
 The stored attributes do not distinguish the original scalar and sequence.
+This matches how netCDF4-Python and netCDF-C handle one-element numeric
+attributes.
