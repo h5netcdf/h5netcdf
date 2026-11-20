@@ -1,6 +1,10 @@
 Change Log
 ----------
 
+Development version (unreleased):
+
+- Stop adding ``_Netcdf4Dimid`` to regular variables when they are created. The attribute is now written only for dimension scales, matching latest netCDF-C behavior (https://github.com/Unidata/netcdf-c/pull/3483). (:pull:`342`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
+
 Version 1.8.3 (November 11th, 2026):
 
 - Fix HDF 1.10 compatibility CI run, which broke with ubuntu-26.04, use GCC 13 in CI (:pull:`336`) by `Kai Mühlbauer <https://github.com/kmuehlbauer>`_
