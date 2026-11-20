@@ -466,15 +466,6 @@ class BaseVariable(BaseObject):
         if len(coord_ids) >= 1:
             self._h5ds.attrs["_Netcdf4Coordinates"] = coord_ids
 
-    def _ensure_dim_id(self):
-        """Set _Netcdf4Dimid"""
-        # set _Netcdf4Dimid, use id of first dimension
-        # netCDF4 does this when the first variable's data is written
-        if self.dimensions and not self._h5ds.attrs.get("_Netcdf4Dimid", False):
-            dim = self._parent._all_h5groups[self.dimensions[0]]
-            if "_Netcdf4Dimid" in dim.attrs:
-                self._h5ds.attrs["_Netcdf4Dimid"] = dim.attrs["_Netcdf4Dimid"]
-
     def _maybe_resize_dimensions(self, key, value):
         """Resize according to given (expanded) key with respect to variable dimensions.
 
@@ -1432,15 +1423,6 @@ class Group(Mapping):
         if name in self.variables and h5name not in self._dimensions:
             variable._attach_dim_scales()
             variable._attach_coords()
-
-        # This is a bit of a hack, netCDF4 attaches _Netcdf4Dimid to every variable
-        # when a variable is first written to, after variable creation.
-        # Last known behaviour since netcdf4-python 1.7.2 and netcdf-c 4.9.2
-        if (None in maxshape and maxshape[0] is not None) or (
-            None not in maxshape
-            and len(variable._h5ds.attrs.get("_Netcdf4Coordinates", [])) >= 1
-        ):
-            variable._ensure_dim_id()
 
         # add fillvalue attribute to variable
         if fillvalue is not None:
