@@ -1082,6 +1082,36 @@ def test_Netcdf4Dimid(write_backend, read_backend, tmp_backend_netcdf):
         assert dim_ids == {0, 1, 2}
 
 
+@requires_h5py
+@requires_netCDF4
+def test_netcdf4_dimid_only_on_dimension_scales(tmp_local_netcdf):
+    import h5py
+    import netCDF4
+
+    with h5netcdf.File(tmp_local_netcdf, "w") as f:
+        f.dimensions["x"] = 3
+        f.dimensions["time"] = None
+
+        ordinary = f.create_variable("ordinary", ("x",), dtype="i4")
+        unlimited = f.create_variable("unlimited", ("time",), dtype="i4")
+
+        ordinary[:] = [1, 2, 3]
+        f.resize_dimension("time", 1)
+        unlimited[:] = [4]
+
+    with h5py.File(tmp_local_netcdf, "r") as f:
+        assert "_Netcdf4Dimid" in f["x"].attrs
+        assert "_Netcdf4Dimid" in f["time"].attrs
+        assert "_Netcdf4Dimid" not in f["ordinary"].attrs
+        assert "_Netcdf4Dimid" not in f["unlimited"].attrs
+
+    with netCDF4.Dataset(tmp_local_netcdf) as f:
+        assert len(f.dimensions["x"]) == 3
+        assert f.dimensions["time"].isunlimited()
+        np.testing.assert_array_equal(f.variables["ordinary"][:], [1, 2, 3])
+        np.testing.assert_array_equal(f.variables["unlimited"][:], [4])
+
+
 @requires_netCDF4
 def test_reading_str_array_from_netCDF4(
     tmp_local_netcdf, local_backend, decode_vlen_strings
