@@ -59,7 +59,7 @@ jobs:
           pytest
           wheel
           h5py=${{ matrix.h5py-version }}
-          netcdf4
+          netcdf4<1.7.5|>=1.7.6
           numpy=${{ matrix.numpy-version }}
     - name: Install h5netcdf
       run: |
@@ -99,7 +99,7 @@ jobs:
           pytest
           wheel
           h5py=${{ matrix.h5py-version }}
-          netcdf4
+          netcdf4<1.7.5|>=1.7.6
           numpy=${{ matrix.numpy-version }}
           pyfive>=1.3.0
     - name: Install h5netcdf
@@ -137,7 +137,7 @@ jobs:
           wheel
           h5py=${{ matrix.h5py-version }}
           hdf5=${{ matrix.hdf5-version }}
-          netcdf4
+          netcdf4<1.7.5|>=1.7.6
           numpy=${{ matrix.numpy-version }}
           pyfive>=1.3.0
     - name: Install h5netcdf
@@ -226,7 +226,7 @@ jobs:
           wheel
           setuptools=81
           h5py=${{ matrix.h5py-version }}
-          netcdf4
+          netcdf4<1.7.5|>=1.7.6
           numpy<=${{ matrix.numpy-version }}
     - name: Install h5netcdf
       run: |
@@ -304,7 +304,7 @@ jobs:
           python=${{ matrix.python-version }}
           dask
           h5py
-          netcdf4
+          netcdf4<1.7.5|>=1.7.6
           packaging
           pandas
           pip
@@ -362,7 +362,7 @@ jobs:
           pytest
           wheel
           h5py
-          netcdf4
+          netcdf4<1.7.5|>=1.7.6
           sphinx
           sphinx-book-theme>=0.3.2
     - name: Install h5netcdf
@@ -373,7 +373,7 @@ jobs:
         cd doc
         make html
     - name: Upload artifacts
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: html-doc
         path: doc/_build/html
