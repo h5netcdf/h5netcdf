@@ -1976,6 +1976,8 @@ def test_expanded_variables_netcdf4(tmp_local_netcdf, netcdf_write_module):
         dummy4 = f.createVariable("dummy4", float, ("x", "y"))
 
         dummy1[:] = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+        # integer index with a keepdims-shaped value
+        dummy1[:, 0] = [[1], [4], [7]]
         dummy2[1, :] = [4, 5, 6]
         dummy3[0:2, :] = [[1, 2, 3], [4, 5, 6]]
 
@@ -2094,6 +2096,69 @@ def test_negative_indexing_of_padded_variables(tmp_local_netcdf, api, key):
     with api(tmp_local_netcdf, backend="h5py") as ds:
         assert ds["sensor"].shape == (6,)
         np.testing.assert_array_equal(ds["sensor"][key], expected)
+
+
+@pytest.mark.parametrize(
+    "key, expected",
+    [
+        (-1, [1, 2, 3, -1, 9]),
+        (-2, [1, 2, 3, 9, -1]),
+        (slice(-3, -1), [1, 2, 9, 9, -1]),
+        (np.int64(-1), [1, 2, 3, -1, 9]),
+    ],
+)
+def test_negative_index_write_unlimited(
+    tmp_local_netcdf, netcdf_write_module, key, expected
+):
+    """Negative write indices count from the end of the shared dimension."""
+    with netcdf_write_module.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("time", None)
+        ds.createVariable("time", "i4", ("time",))[:5] = np.arange(5)
+        variable = ds.createVariable("sensor", "i4", ("time",), fill_value=-1)
+        variable[:3] = [1, 2, 3]
+        variable[key] = 9 if isinstance(key, slice) else [9]
+        with pytest.raises(IndexError):
+            variable[-6] = 9
+        if netcdf_write_module.__name__ == "netCDF4":
+            variable.set_auto_mask(False)
+        np.testing.assert_array_equal(variable[:], expected)
+
+
+@pytest.mark.parametrize("value", [9, [9]])
+def test_negative_index_write_empty_unlimited_dimension(
+    tmp_local_netcdf, netcdf_write_module, value
+):
+    with netcdf_write_module.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("time", None)
+        variable = ds.createVariable("sensor", "i4", ("time",), fill_value=-1)
+        with pytest.raises(IndexError):
+            variable[-1] = value
+        assert variable.shape == (0,)
+
+
+def test_negative_slice_write_does_not_resize_unlimited_dimension(
+    tmp_local_netcdf, netcdf_write_module
+):
+    with netcdf_write_module.Dataset(tmp_local_netcdf, "w") as ds:
+        ds.createDimension("time", None)
+        variable = ds.createVariable("sensor", "i4", ("time",), fill_value=-1)
+        variable[:] = [0, 1]
+        with pytest.raises(IndexError):
+            variable[-3:] = [9, 8, 7]
+        assert variable.shape == (2,)
+        np.testing.assert_array_equal(variable[:], [0, 1])
+
+
+@requires_h5py
+def test_legacy_invalid_scalar_write_preserves_value(tmp_local_netcdf):
+    with legacyapi.Dataset(tmp_local_netcdf, "w", backend="h5py") as ds:
+        scalar = ds.createVariable("scalar", "i4", ())
+        scalar[()] = 3
+        with pytest.raises(ValueError):
+            scalar[-1] = 9
+
+    with legacyapi.Dataset(tmp_local_netcdf, "r", backend="h5py") as ds:
+        assert ds["scalar"][()] == 3
 
 
 # https://github.com/h5netcdf/h5netcdf/issues/136
